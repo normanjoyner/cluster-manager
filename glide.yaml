@@ -1,0 +1,8 @@
+package: github.com/containership/cloud-agent
+import:
+- package: k8s.io/client-go
+  version: v4.0.0
+- package: github.com/gorilla/mux
+  version: v1.6.0
+- package: github.com/coreos/go-iptables
+  version: v0.2.0

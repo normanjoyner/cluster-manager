@@ -1,0 +1,53 @@
+---
+apiVersion: extensions/v1beta1
+kind: DaemonSet
+metadata:
+  namespace: containership-core
+  name: containership-agent
+  labels:
+    app: containership-agent
+    tier: cloud-synchronize
+    version: v1
+spec:
+  template:
+    metadata:
+      labels:
+        app: containership-agent
+        name: cloud-agent
+    spec:
+      volumes:
+        - name: code
+          hostPath:
+              path: /Users/.minikube-mounts/internal
+      containers:
+        - env:
+            -
+              name: CONTAINERSHIP_CLOUD_CLUSTER_API_KEY
+              value: ""
+            -
+              name: CONTAINERSHIP_CLOUD_ORGANIZATION_ID
+              value: ""
+            -
+              name: CONTAINERSHIP_CLOUD_CLUSTER_ID
+              value: ""
+            -
+              name: NODE_PRIVATE_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.hostIP
+            -
+              name: NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+          image: agent:debug
+          imagePullPolicy: IfNotPresent
+          name: containership-agent
+          volumeMounts:
+            - mountPath: /go/src/github.com/containership/cloud-agent/internal
+              name: code
+          resources:
+            requests:
+              cpu: 0.15
+          securityContext:
+            privileged: true
