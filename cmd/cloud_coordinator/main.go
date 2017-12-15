@@ -12,6 +12,22 @@ import (
 func main() {
 	log.Println("Starting containership coordinator...")
 
+	// Cluster level
+	loadbalancers := resources.NewLoadbalancers()
+	rbacs := resources.NewRoleBasedAccessControls()
+	registries := resources.NewRegistries()
+
+	// Host level
+	sshKeys := resources.NewSSHKeys()
+	firewalls := resources.NewFirewalls()
+
+	resources.Register(loadbalancers, loadbalancers.Write)
+	resources.Register(rbacs, rbacs.Write)
+	resources.Register(registries, rbacs.Write)
+	resources.Register(sshKeys, updateAgents)
+	resources.Register(firewalls, updateAgents)
+
+	// Kick off watch loop
 	watchResources()
 
 	runtime.Goexit()
@@ -27,30 +43,16 @@ func watchResources() {
 		for {
 			select {
 			case <-ticker.C:
-				reconcile() // compare disk to cache, if diff then invalidate cache
-				sync()      // hit api to grab latest, if diff from cache then update cache and call passed func
+				// compare disk to cache, if diff then invalidate cache
+				resources.ReconcileByType(resources.ResourceTypeCluster)
+				// hit api to grab latest, if diff from cache then update cache and call passed func
+				resources.Sync()
 			case <-quit:
 				ticker.Stop()
 				return
 			}
 		}
 	}()
-}
-
-func reconcile() {
-	resources.Loadbalancers.Reconcile()
-	resources.RoleBasedAccessControls.Reconcile()
-	resources.Registries.Reconcile()
-}
-
-func sync() {
-	resources.Loadbalancers.Sync(resources.Loadbalancers.Write)
-	resources.RoleBasedAccessControls.Sync(resources.RoleBasedAccessControls.Write)
-	resources.Registries.Sync(resources.Registries.Write)
-
-	// Host level resources, need to let all hosts know to sync
-	resources.SSHKeys.Sync(updateAgents)
-	resources.Firewalls.Sync(updateAgents)
 }
 
 func updateAgents() {

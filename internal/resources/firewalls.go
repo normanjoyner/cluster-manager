@@ -4,30 +4,43 @@ import (
 	"log"
 )
 
-// FirewallsDef defines the Containership Cloud firewall resource
-type FirewallsDef struct {
+// Firewalls defines the Containership Cloud Firewalls resource
+type Firewalls struct {
 	csResource
 }
 
-// Firewalls resource
-var Firewalls *FirewallsDef
+// NewFirewalls constructs a new Firewalls
+func NewFirewalls() *Firewalls {
+	return &Firewalls{csResource{
+		Endpoint: "/firewalls",
+		Type:     ResourceTypeHost,
+	}}
+}
 
-func init() {
-	Firewalls = &FirewallsDef{csResource{"/firewalls"}}
+// GetEndpoint returns the Endpoint
+func (fs *Firewalls) GetEndpoint() string {
+	return fs.Endpoint
+}
+
+// GetType returns the ResourceType
+func (fs *Firewalls) GetType() ResourceType {
+	return fs.Type
 }
 
 // Reconcile compares created firewalls against cached firewalls
-func (fs *FirewallsDef) Reconcile() {
+func (fs *Firewalls) Reconcile() {
 	log.Println("Reconciling Firewalls...")
 }
 
-// Write creates firewalls on the host
-func (fs *FirewallsDef) Write() {
-	log.Println("Writing Firewalls...")
+// Sync fetches firewalls from Containership Cloud and executes a callback if
+// the fetched data does not match the internal cache
+func (fs *Firewalls) Sync(onCacheMismatch func()) error {
+	log.Println("Sync Firewalls...")
+	onCacheMismatch()
+	return nil
 }
 
-// Sync fetches firewalls from Containership Cloud and executes a callback if the fetched data does not match the internal cache
-func (fs *FirewallsDef) Sync(f func()) {
-	log.Println("Syncing Firewalls...")
-	f()
+// Write creates firewalls on the host
+func (fs *Firewalls) Write() {
+	log.Println("Writing Firewalls...")
 }

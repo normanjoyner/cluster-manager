@@ -4,30 +4,43 @@ import (
 	"log"
 )
 
-// LoadbalancersDef defines the Containership Cloud loadbalancer resource
-type LoadbalancersDef struct {
+// Loadbalancers defines the Containership Cloud Loadbalancers resource
+type Loadbalancers struct {
 	csResource
 }
 
-// Loadbalancers resource
-var Loadbalancers *LoadbalancersDef
+// NewLoadbalancers constructs a new Loadbalancers
+func NewLoadbalancers() *Loadbalancers {
+	return &Loadbalancers{csResource{
+		Endpoint: "/loadbalancers",
+		Type:     ResourceTypeCluster,
+	}}
+}
 
-func init() {
-	Loadbalancers = &LoadbalancersDef{csResource{"/loadbalancers"}}
+// GetEndpoint returns the Endpoint
+func (lbs *Loadbalancers) GetEndpoint() string {
+	return lbs.Endpoint
+}
+
+// GetType returns the ResourceType
+func (lbs *Loadbalancers) GetType() ResourceType {
+	return lbs.Type
 }
 
 // Reconcile compares created loadbalancers against cached loadbalancers
-func (lbs *LoadbalancersDef) Reconcile() {
+func (lbs *Loadbalancers) Reconcile() {
 	log.Println("Reconciling Loadbalancers...")
 }
 
-// Write creates loadbalancers on the cluster
-func (lbs *LoadbalancersDef) Write() {
-	log.Println("Writing Loadbalancers...")
+// Sync fetches loadbalancers from Containership Cloud and executes a callback
+// if the fetched data does not match the internal cache
+func (lbs *Loadbalancers) Sync(onCacheMismatch func()) error {
+	log.Println("Syncing Loadbalancers...")
+	onCacheMismatch()
+	return nil
 }
 
-// Sync fetches loadbalancers from Containership Cloud and executes a callback if the fetched data does not match the internal cache
-func (lbs *LoadbalancersDef) Sync(f func()) {
-	log.Println("Syncing Loadbalancers...")
-	f()
+// Write creates loadbalancers on the cluster
+func (lbs *Loadbalancers) Write() {
+	log.Println("Writing Loadbalancers...")
 }

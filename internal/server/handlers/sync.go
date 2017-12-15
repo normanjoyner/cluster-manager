@@ -8,8 +8,13 @@ import (
 
 // POST forces host to sync
 func (s *Sync) POST(w http.ResponseWriter, r *http.Request) {
-	resources.Firewalls.Sync(resources.Firewalls.Write)
-	resources.SSHKeys.Sync(resources.SSHKeys.Write)
+	// TODO take path/query param(s) to indicate which resources to sync
+	// TODO should be able to identify which particular sync failed if multiple
+	err := resources.Sync()
 
-	respondWithStatus(w, http.StatusOK)
+	if err == nil {
+		respondWithStatus(w, http.StatusOK)
+	} else {
+		respondWithStatus(w, http.StatusInternalServerError)
+	}
 }

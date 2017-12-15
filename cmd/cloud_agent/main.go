@@ -11,15 +11,23 @@ import (
 
 func main() {
 	log.Println("Starting containership agent...")
+
+	// The agent only cares about host-level resources
+	sshKeys := resources.NewSSHKeys()
+	firewalls := resources.NewFirewalls()
+
+	resources.Register(sshKeys, sshKeys.Write)
+	resources.Register(firewalls, firewalls.Write)
+
+	// Kick off the reconciliation loop
 	watchResources()
 
+	// Run the http server
 	s := server.New()
 	s.Run()
 }
 
 func watchResources() {
-	log.Println("Watching resources...")
-
 	ticker := time.NewTicker(time.Duration(envvars.GetAgentSyncIntervalInSeconds()) * time.Second)
 	quit := make(chan struct{})
 
@@ -27,8 +35,7 @@ func watchResources() {
 		for {
 			select {
 			case <-ticker.C:
-				resources.SSHKeys.Reconcile()
-				resources.Firewalls.Reconcile()
+				resources.ReconcileByType(resources.ResourceTypeHost)
 			case <-quit:
 				ticker.Stop()
 				return

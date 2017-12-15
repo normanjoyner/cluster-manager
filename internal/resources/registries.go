@@ -4,30 +4,43 @@ import (
 	"log"
 )
 
-// RegistriesDef defines the Containership Cloud registries resource
-type RegistriesDef struct {
+// Registries defines the Containership Cloud Registries resource
+type Registries struct {
 	csResource
 }
 
-// Registries resource
-var Registries *RegistriesDef
+// NewRegistries constructs a new Registries
+func NewRegistries() *Registries {
+	return &Registries{csResource{
+		Endpoint: "/registries",
+		Type:     ResourceTypeCluster,
+	}}
+}
 
-func init() {
-	Registries = &RegistriesDef{csResource{"/registries"}}
+// GetEndpoint returns the Endpoint
+func (rs *Registries) GetEndpoint() string {
+	return rs.Endpoint
+}
+
+// GetType returns the ResourceType
+func (rs *Registries) GetType() ResourceType {
+	return rs.Type
 }
 
 // Reconcile compares created registries against cached registries
-func (rs *RegistriesDef) Reconcile() {
+func (rs *Registries) Reconcile() {
 	log.Println("Reconciling Registries...")
 }
 
-// Write creates registries on the cluster
-func (rs *RegistriesDef) Write() {
-	log.Println("Writing Registries...")
+// Sync fetches registries from Containership Cloud and executes a callback if
+// the fetched data does not match the internal cache
+func (rs *Registries) Sync(onCacheMismatch func()) error {
+	log.Println("Syncing Registries...")
+	onCacheMismatch()
+	return nil
 }
 
-// Sync fetches registries from Containership Cloud and executes a callback if the fetched data does not match the internal cache
-func (rs *RegistriesDef) Sync(f func()) {
-	log.Println("Syncing Registries...")
-	f()
+// Write creates registries on the cluster
+func (rs *Registries) Write() {
+	log.Println("Writing Registries...")
 }

@@ -4,30 +4,42 @@ import (
 	"log"
 )
 
-// SSHKeysDef defines the Containership Cloud SSH Keys resource
-type SSHKeysDef struct {
+// SSHKeys defines the Containership Cloud SSH Keys resource
+type SSHKeys struct {
 	csResource
 }
 
-// SSHKeys resource
-var SSHKeys *SSHKeysDef
+// NewSSHKeys constructs a new SSHKeys
+func NewSSHKeys() *SSHKeys {
+	return &SSHKeys{csResource{
+		Endpoint: "/ssh-keys",
+		Type:     ResourceTypeHost,
+	}}
+}
 
-func init() {
-	SSHKeys = &SSHKeysDef{csResource{"/ssh-keys"}}
+// GetEndpoint returns the Endpoint
+func (sshks *SSHKeys) GetEndpoint() string {
+	return sshks.Endpoint
+}
+
+// GetType returns the ResourceType
+func (sshks *SSHKeys) GetType() ResourceType {
+	return ResourceTypeHost
 }
 
 // Reconcile compares created SSH Keys against cached SSH Keys
-func (sshks *SSHKeysDef) Reconcile() {
+func (sshks *SSHKeys) Reconcile() {
 	log.Println("Reconciling SSH Keys...")
 }
 
-// Write creates SSH Keys on the host
-func (sshks *SSHKeysDef) Write() {
-	log.Println("Writing SSH Keys...")
+// Sync fetches SSH Keys from Containership Cloud and executes a callback if the fetched data does not match the internal cache
+func (sshks *SSHKeys) Sync(onCacheMismatch func()) error {
+	log.Println("Syncing SSH Keys...")
+	onCacheMismatch()
+	return nil
 }
 
-// Sync fetches SSH Keys from Containership Cloud and executes a callback if the fetched data does not match the internal cache
-func (sshks *SSHKeysDef) Sync(f func()) {
-	log.Println("Syncing SSH Keys...")
-	f()
+// Write creates SSH Keys on the host
+func (sshks *SSHKeys) Write() {
+	log.Println("Writing SSH Keys...")
 }

@@ -3,6 +3,7 @@ package resources
 import (
 	"bytes"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"time"
@@ -49,4 +50,15 @@ func MakeRequest(path, method string, jsonBody []byte) (*http.Response, error) {
 	}
 
 	return res, nil
+}
+
+// GetResource executes a GET request against the Containership Cloud API for a
+// specific resource
+func GetResource(resource Syncable) ([]byte, error) {
+	resp, err := MakeRequest(resource.GetEndpoint(), "GET", nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return ioutil.ReadAll(resp.Body)
 }
