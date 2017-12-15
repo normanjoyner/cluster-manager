@@ -13,7 +13,6 @@ func main() {
 	log.Println("Starting containership coordinator...")
 
 	watchResources()
-	syncResources()
 
 	runtime.Goexit()
 }
@@ -28,9 +27,8 @@ func watchResources() {
 		for {
 			select {
 			case <-ticker.C:
-				resources.Loadbalancers.Reconcile()
-				resources.RoleBasedAccessControls.Reconcile()
-				resources.Registries.Reconcile()
+				reconcile() // compare disk to cache, if diff then invalidate cache
+				sync() // hit api to grab latest, if diff from cache then update cache and call passed func
 			case <-quit:
 				ticker.Stop()
 				return
@@ -39,29 +37,20 @@ func watchResources() {
 	}()
 }
 
-func syncResources() {
-	log.Println("Syncing resources...")
+func reconcile() {
+	resources.Loadbalancers.Reconcile()
+	resources.RoleBasedAccessControls.Reconcile()
+	resources.Registries.Reconcile()
+}
 
-	ticker := time.NewTicker(time.Duration(envvars.GetAgentSyncIntervalInSeconds()) * time.Second)
-	quit := make(chan struct{})
+func sync() {
+	resources.Loadbalancers.Sync(resources.Loadbalancers.Write)
+	resources.RoleBasedAccessControls.Sync(resources.RoleBasedAccessControls.Write)
+	resources.Registries.Sync(resources.Registries.Write)
 
-	go func() {
-		for {
-			select {
-			case <-ticker.C:
-				resources.Loadbalancers.Sync(resources.Loadbalancers.Write)
-				resources.RoleBasedAccessControls.Sync(resources.RoleBasedAccessControls.Write)
-				resources.Registries.Sync(resources.Registries.Write)
-
-				// Host level resources, need to let all hosts know to sync
-				resources.SSHKeys.Sync(updateAgents)
-				resources.Firewalls.Sync(updateAgents)
-			case <-quit:
-				ticker.Stop()
-				return
-			}
-		}
-	}()
+	// Host level resources, need to let all hosts know to sync
+	resources.SSHKeys.Sync(updateAgents)
+	resources.Firewalls.Sync(updateAgents)
 }
 
 func updateAgents() {
