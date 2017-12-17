@@ -24,4 +24,5 @@ func (fs *FirewallsDef) Write() {
 
 func (fs *FirewallsDef) Sync(f func()) {
 	log.Println("Syncing Firewalls...")
+	f()
 }

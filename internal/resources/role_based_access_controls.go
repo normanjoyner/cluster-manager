@@ -24,4 +24,5 @@ func (rbacs *RoleBasedAccessControlsDef) Write() {
 
 func (rbacs *RoleBasedAccessControlsDef) Sync(f func()) {
 	log.Println("Syncing rbac...")
+	f()
 }

@@ -24,4 +24,5 @@ func (lbs *LoadbalancersDef) Write() {
 
 func (lbs *LoadbalancersDef) Sync(f func()) {
 	log.Println("Syncing Loadbalancers...")
+	f()
 }

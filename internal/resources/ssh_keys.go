@@ -24,4 +24,5 @@ func (sshks *SSHKeysDef) Write() {
 
 func (sshks *SSHKeysDef) Sync(f func()) {
 	log.Println("Syncing SSH Keys...")
+	f()
 }

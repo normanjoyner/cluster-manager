@@ -24,4 +24,5 @@ func (rs *RegistriesDef) Write() {
 
 func (rs *RegistriesDef) Sync(f func()) {
 	log.Println("Syncing Registries...")
+	f()
 }
