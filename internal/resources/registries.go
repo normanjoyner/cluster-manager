@@ -11,7 +11,7 @@ type RegistriesDef struct {
 var Registries *RegistriesDef
 
 func init() {
-	Registries = &RegistriesDef{csResource{"/regiestries"}}
+	Registries = &RegistriesDef{csResource{"/registries"}}
 }
 
 func (rs *RegistriesDef) Reconcile() {
