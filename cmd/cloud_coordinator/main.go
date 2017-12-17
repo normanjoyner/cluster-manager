@@ -28,7 +28,7 @@ func watchResources() {
 			select {
 			case <-ticker.C:
 				reconcile() // compare disk to cache, if diff then invalidate cache
-				sync() // hit api to grab latest, if diff from cache then update cache and call passed func
+				sync()      // hit api to grab latest, if diff from cache then update cache and call passed func
 			case <-quit:
 				ticker.Stop()
 				return

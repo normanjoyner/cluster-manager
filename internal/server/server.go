@@ -10,12 +10,14 @@ import (
 	"github.com/containership/cloud-agent/internal/envvars"
 )
 
-type csServer struct {
+// CSServer defines the server
+type CSServer struct {
 	Router *mux.Router
 }
 
-func New() *csServer {
-	cs := &csServer{}
+// New creates a new server
+func New() *CSServer {
+	cs := &CSServer{}
 	cs.initialize()
 
 	return cs
@@ -23,17 +25,17 @@ func New() *csServer {
 
 // Run is exported for main agent to start server,
 // which is what containership uses to talk with the cluster
-func (cs *csServer) Run() {
+func (cs *CSServer) Run() {
 	port := envvars.GetCSServerPort()
 
 	cs.run(fmt.Sprintf(":%s", port))
 }
 
-func (cs *csServer) initialize() {
+func (cs *CSServer) initialize() {
 	cs.Router = mux.NewRouter()
 	cs.initializeRoutes()
 }
 
-func (cs *csServer) run(addr string) {
+func (cs *CSServer) run(addr string) {
 	log.Fatal(http.ListenAndServe(addr, cs.Router))
 }

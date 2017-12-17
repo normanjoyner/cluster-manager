@@ -49,30 +49,37 @@ func init() {
 	}
 }
 
+// GetOrganizationID returns Containership Cloud organization id
 func GetOrganizationID() string {
 	return organizationID
 }
 
+// GetClusterID returns Containership Cloud cluster id
 func GetClusterID() string {
 	return clusterID
 }
 
+// GetCloudClusterAPIKey returns Containership Cloud cluster api key
 func GetCloudClusterAPIKey() string {
 	return cloudClusterAPIKey
 }
 
+// GetBaseURL returns Containership Cloud API url
 func GetBaseURL() string {
 	return baseURL
 }
 
+// GetAgentSyncIntervalInSeconds returns agent sync interval in seconds
 func GetAgentSyncIntervalInSeconds() int {
 	return agentSyncIntervalInSeconds
 }
 
+// GetCSCloudEnvironment returns Containership Cloud environment
 func GetCSCloudEnvironment() string {
 	return csCloudEnvironment
 }
 
+// GetCSServerPort returns cloud-agent http server port
 func GetCSServerPort() string {
 	return csServerPort
 }

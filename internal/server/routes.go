@@ -9,7 +9,7 @@ import (
 //     vars := mux.Vars(r)
 //     id, err := strconv.Atoi(vars["id"])
 //
-func (a *csServer) initializeRoutes() {
+func (a *CSServer) initializeRoutes() {
 	m := &handlers.Metadata{}
 	s := &handlers.Sync{}
 

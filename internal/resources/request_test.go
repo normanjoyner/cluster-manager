@@ -9,7 +9,7 @@ import (
 	"time"
 )
 
-func TestmakeURL(t *testing.T) {
+func TestMakeURL(t *testing.T) {
 	path := "/metadata"
 	url := makeURL(path)
 	expected := "https://stage-api.containership.io/metadata"

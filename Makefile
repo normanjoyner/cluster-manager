@@ -3,15 +3,21 @@ PKG := "github.com/containership/$(PROJECT_NAME)"
 PKG_LIST := $(shell glide novendor)
 GO_FILES := $(shell find . -name '*.go' | grep -v /vendor/ | grep -v _test.go)
 
-.PHONY: all dep build clean test coverage coverhtml lint
+.PHONY: all fmt-check lint test vet dep build clean coverage coverhtml
 
 all: build
 
-lint: ##Lint the files
+fmt-check: ## Check the file format
+	@gofmt -e -d ${GO_FILES}
+
+lint: ## Lint the files
 	@golint -set_exit_status ${PKG_LIST}
 
 test: ## Run unittests
 	@go test -short ${PKG_LIST}
+
+vet: ## Vet the files
+	@go vet ${PKG_LIST}
 
 ## Read about data race https://golang.org/doc/articles/race_detector.html
 ## to not test file for race use `// +build !race` at top

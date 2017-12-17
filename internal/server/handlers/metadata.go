@@ -14,7 +14,7 @@ import (
 
 type node struct {
 	typev1.NodeSystemInfo
-	NodeID string `json: "nodeID"`
+	NodeID string `json:"nodeID"`
 }
 
 type containershipClusterMetadata struct {
