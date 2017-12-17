@@ -7,16 +7,16 @@ import (
 	"net/http/httptest"
 )
 
-var a csServer
+var a CSServer
 
 func TestMetadataGet(t *testing.T) {
-	a = csServer{}
+	a = CSServer{}
 	a.initialize()
 
 	req, _ := http.NewRequest("GET", "/metadata", nil)
 	response := executeRequest(req)
 
-	checkResponseCode(t, http.StatusOK, response.Code)
+	checkResponseCode(t, http.StatusInternalServerError, response.Code)
 }
 
 func executeRequest(req *http.Request) *httptest.ResponseRecorder {

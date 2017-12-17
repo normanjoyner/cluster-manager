@@ -12,7 +12,7 @@ import (
 func TestMakeURL(t *testing.T) {
 	path := "/metadata"
 	url := makeURL(path)
-	expected := "https://stage-api.containership.io/metadata"
+	expected := "https://stage-api.containership.io/v2/organizations//clusters//metadata"
 
 	if url != expected {
 		t.Errorf("makeURL(%q) == %q, expected %q", path, url, expected)
