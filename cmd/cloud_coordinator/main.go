@@ -54,7 +54,7 @@ func sync() {
 }
 
 func updateAgents() {
-	log.Println("Make call to each agent pod..")
+	log.Println("Make call to each agent pod...")
 	// TODO
 	// get all agents endpoints
 	// make request to /update
