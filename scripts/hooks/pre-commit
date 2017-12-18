@@ -1,0 +1,9 @@
+#!/bin/sh
+set -ex
+
+make vet
+make lint
+
+if [[ $(make fmt-check) ]]; then
+  exit 1
+fi
