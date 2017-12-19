@@ -23,7 +23,7 @@ func main() {
 
 	resources.Register(loadbalancers, loadbalancers.Write)
 	resources.Register(rbacs, rbacs.Write)
-	resources.Register(registries, rbacs.Write)
+	resources.Register(registries, registries.Write)
 	resources.Register(sshKeys, updateAgents)
 	resources.Register(firewalls, updateAgents)
 

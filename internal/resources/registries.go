@@ -12,7 +12,7 @@ type Registries struct {
 // NewRegistries constructs a new Registries
 func NewRegistries() *Registries {
 	return &Registries{csResource{
-		Endpoint: "/registries",
+		Endpoint: "/organization/{{.OrganizationID}}/registries",
 		Type:     ResourceTypeCluster,
 	}}
 }

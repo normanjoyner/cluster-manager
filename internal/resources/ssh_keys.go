@@ -12,7 +12,7 @@ type SSHKeys struct {
 // NewSSHKeys constructs a new SSHKeys
 func NewSSHKeys() *SSHKeys {
 	return &SSHKeys{csResource{
-		Endpoint: "/ssh-keys",
+		Endpoint: "/organization/{{.OrganizationID}}/ssh-keys",
 		Type:     ResourceTypeHost,
 	}}
 }

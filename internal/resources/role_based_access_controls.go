@@ -12,7 +12,7 @@ type RoleBasedAccessControls struct {
 // NewRoleBasedAccessControls constructs a new RoleBasedAccessControls
 func NewRoleBasedAccessControls() *RoleBasedAccessControls {
 	return &RoleBasedAccessControls{csResource{
-		Endpoint: "/rbac",
+		Endpoint: "/organization/{{.OrganizationID}}/rbac",
 		Type:     ResourceTypeCluster,
 	}}
 }
