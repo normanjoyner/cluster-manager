@@ -57,6 +57,7 @@ build-agent:
 	docker image build -t agent:debug -f Dockerfile.agent .
 
 deploy-agent:
+	kubectl apply -f deploy/development/containership-core-namespace.yaml
 	kubectl apply -f deploy/development/agent.yaml
 
 agent: build-agent deploy-agent
@@ -66,6 +67,7 @@ build-coordinator:
 	docker image build -t coordinator:debug -f Dockerfile.coordinator .
 
 deploy-coordinator:
+	kubectl apply -f deploy/development/containership-core-namespace.yaml
 	kubectl apply -f deploy/development/coordinator.yaml
 
 coordinator: build-coordinator deploy-coordinator
