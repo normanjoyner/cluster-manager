@@ -4,12 +4,10 @@ import (
 	"net/http"
 	"time"
 
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/kubernetes"
 	typev1 "k8s.io/client-go/pkg/api/v1"
-	"k8s.io/client-go/rest"
 
 	"github.com/containership/cloud-agent/internal/envvars"
+	"github.com/containership/cloud-agent/internal/k8sutil"
 )
 
 type node struct {
@@ -28,18 +26,7 @@ type metadata struct {
 }
 
 func getNodes() ([]node, error) {
-	config, err := rest.InClusterConfig()
-	if err != nil {
-		return nil, err
-	}
-
-	// creates the clientset
-	clientset, err := kubernetes.NewForConfig(config)
-	if err != nil {
-		return nil, err
-	}
-
-	nodes, err := clientset.CoreV1Client.Nodes().List(metav1.ListOptions{})
+	nodes, err := k8sutil.GetNodes()
 	if err != nil {
 		return nil, err
 	}
