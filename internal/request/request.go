@@ -45,6 +45,18 @@ func New(path, method string, body []byte) (*Requester, error) {
 	}, nil
 }
 
+func (r *Requester) URL() {
+	return r.url
+}
+
+func (r *Requester) Method() {
+	return r.method
+}
+
+func (r *Requester) Body() {
+	return r.body
+}
+
 func appendToBaseURL(path string) string {
 	// TODO: update to v3 API
 	return fmt.Sprintf("%s/v2%s", envvars.GetBaseURL(), path)
