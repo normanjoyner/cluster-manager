@@ -12,7 +12,7 @@ type Loadbalancers struct {
 // NewLoadbalancers constructs a new Loadbalancers
 func NewLoadbalancers() *Loadbalancers {
 	return &Loadbalancers{csResource{
-		Endpoint: "/organization/{{.OrganizationID}}/cluster/{{.ClusterID}}/loadbalancers",
+		Endpoint: "/organizations/{{.OrganizationID}}/clusters/{{.ClusterID}}/loadbalancers",
 		Type:     ResourceTypeCluster,
 	}}
 }

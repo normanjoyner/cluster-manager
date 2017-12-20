@@ -12,7 +12,7 @@ type Firewalls struct {
 // NewFirewalls constructs a new Firewalls
 func NewFirewalls() *Firewalls {
 	return &Firewalls{csResource{
-		Endpoint: "/organization/{{.OrganizationID}}/cluster/{{.ClusterID}}/firewalls",
+		Endpoint: "/organizations/{{.OrganizationID}}/clusters/{{.ClusterID}}/firewalls",
 		Type:     ResourceTypeHost,
 	}}
 }
