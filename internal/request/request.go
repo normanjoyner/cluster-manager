@@ -45,15 +45,15 @@ func New(path, method string, body []byte) (*Requester, error) {
 	}, nil
 }
 
-func (r *Requester) URL() {
+func (r *Requester) URL() string {
 	return r.url
 }
 
-func (r *Requester) Method() {
+func (r *Requester) Method() string {
 	return r.method
 }
 
-func (r *Requester) Body() {
+func (r *Requester) Body() []byte {
 	return r.body
 }
 
