@@ -30,7 +30,7 @@ func init() {
 		log.Println("CONTAINERSHIP_CLOUD_CLUSTER_API_KEY env var not specified")
 	}
 
-	csCloudEnvironment = os.Getenv("CONTAINERSHIP_CLOUD_BASE_URL")
+	csCloudEnvironment = os.Getenv("CONTAINERSHIP_CLOUD_ENVIRONMENT")
 	if csCloudEnvironment == "" || csCloudEnvironment == "Development" {
 		baseURL = "https://stage-api.containership.io"
 	} else {
