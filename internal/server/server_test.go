@@ -16,7 +16,7 @@ func TestMetadataGet(t *testing.T) {
 	req, _ := http.NewRequest("GET", "/metadata", nil)
 	response := executeRequest(req)
 
-	checkResponseCode(t, http.StatusInternalServerError, response.Code)
+	checkResponseCode(t, http.StatusOK, response.Code)
 }
 
 func executeRequest(req *http.Request) *httptest.ResponseRecorder {

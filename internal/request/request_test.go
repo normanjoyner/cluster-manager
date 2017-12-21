@@ -7,15 +7,42 @@ import (
 	"os"
 	"testing"
 	"time"
+
+	"github.com/containership/cloud-agent/internal/envvars"
 )
 
-func TestMakeURL(t *testing.T) {
+func TestNew(t *testing.T) {
+	path := "/path"
+	method := "GET"
+	//body := nil
+	n, err := New("/path", "GET", nil)
+
+	if err != nil {
+		t.Errorf("Requester client errored on create: %v", err)
+	}
+
+	if url := n.URL(); url != appendToBaseURL(path) {
+		t.Errorf("Requester client path is %s, expected to be %s", url, path)
+	}
+
+	if m := n.Method(); m != method {
+		t.Errorf("Requester client path is %s, expected to be %s", m, method)
+	}
+
+	if b := n.Body(); b != nil {
+		t.Errorf("Requester client path is %s, expected to be nil", b)
+	}
+
+}
+
+func TestAppendToBaseURL(t *testing.T) {
+
 	path := "/metadata"
-	url := makeURL(path)
-	expected := "https://stage-api.containership.io/v2/organizations//clusters//metadata"
+	url := appendToBaseURL(path)
+	expected := fmt.Sprintf("%s/v2/metadata",  envvars.GetBaseURL())
 
 	if url != expected {
-		t.Errorf("makeURL(%q) == %q, expected %q", path, url, expected)
+		t.Errorf("appendToBaseURL(%q) == %q, expected %q", path, url, expected)
 	}
 }
 
