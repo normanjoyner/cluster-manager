@@ -31,7 +31,7 @@ func newClient(kubeconfigPath string) (*kubernetes.Clientset, error) {
 	// determine whether to use in cluster config or out of cluster config
 	// if kuebconfigPath is not specified, default to in cluster config
 	// otherwise, use out of cluster config
-	if kubeconfigPath != "" {
+	if kubeconfigPath == "" {
 		log.Println("Using in cluster k8s config")
 		config, err := rest.InClusterConfig()
 
