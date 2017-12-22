@@ -1,1 +1,13 @@
+# git
+.git
+
+# glide
 /vendor
+
+# Vagrant
+.vagrant
+Vagrantfile
+
+# misc
+/scripts
+*.log
