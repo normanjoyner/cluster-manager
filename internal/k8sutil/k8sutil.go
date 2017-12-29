@@ -4,9 +4,9 @@ import (
 	"flag"
 	"log"
 
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
-	typev1 "k8s.io/client-go/pkg/api/v1"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 )
@@ -63,8 +63,8 @@ func newClient(kubeconfigPath string) (*kubernetes.Clientset, error) {
 }
 
 // GetNodes returns all nodes running the kublet in the kubernetes cluster
-func GetNodes() (*typev1.NodeList, error) {
-	nodes, err := clientset.CoreV1Client.Nodes().List(metav1.ListOptions{})
+func GetNodes() (*corev1.NodeList, error) {
+	nodes, err := clientset.CoreV1().Nodes().List(metav1.ListOptions{})
 	if err != nil {
 		log.Println("Error getting nodes: ", err)
 		return nil, err
@@ -74,8 +74,8 @@ func GetNodes() (*typev1.NodeList, error) {
 }
 
 // GetNamespaces returns all namespaces from the kubernetes cluster
-func GetNamespaces() (*typev1.NamespaceList, error) {
-	namespaces, err := clientset.CoreV1Client.Namespaces().List(metav1.ListOptions{})
+func GetNamespaces() (*corev1.NamespaceList, error) {
+	namespaces, err := clientset.CoreV1().Namespaces().List(metav1.ListOptions{})
 	if err != nil {
 		log.Println("Error getting namespaces: ", err)
 		return nil, err

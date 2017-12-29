@@ -4,14 +4,14 @@ import (
 	"net/http"
 	"time"
 
-	typev1 "k8s.io/client-go/pkg/api/v1"
+	corev1 "k8s.io/api/core/v1"
 
 	"github.com/containership/cloud-agent/internal/envvars"
 	"github.com/containership/cloud-agent/internal/k8sutil"
 )
 
 type node struct {
-	typev1.NodeSystemInfo
+	corev1.NodeSystemInfo
 	NodeID string `json:"nodeID"`
 }
 
