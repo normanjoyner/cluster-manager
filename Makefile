@@ -1,7 +1,13 @@
 PROJECT_NAME := "cloud-agent"
 PKG := "github.com/containership/$(PROJECT_NAME)"
 PKG_LIST := $(shell glide novendor)
-GO_FILES := $(shell find . -name '*.go' | grep -v /vendor/ | grep -v _test.go)
+GO_FILES := $(shell find . -type f -not -path './vendor/*' -name '*.go' | grep -v _test.go)
+
+# TODO golint has no way to ignore specific files or directories, so we have to
+# manually build a lint list. This workaround can go away and we can use
+# $PKG_LIST when the k8s code generator is updated to follow golang conventions
+# for generated files. See https://github.com/kubernetes/code-generator/issues/30.
+LINT_LIST := $(shell go list ./... | grep -v '/pkg/client')
 
 .PHONY: all fmt-check lint test vet dep build clean coverage coverhtml
 
@@ -11,7 +17,7 @@ fmt-check: ## Check the file format
 	@gofmt -e -d ${GO_FILES}
 
 lint: ## Lint the files
-	@golint -set_exit_status ${PKG_LIST}
+	@golint -set_exit_status ${LINT_LIST}
 
 test: ## Run unittests
 	@go test -short ${PKG_LIST}
