@@ -39,7 +39,7 @@ func TestAppendToBaseURL(t *testing.T) {
 
 	path := "/metadata"
 	url := appendToBaseURL(path)
-	expected := fmt.Sprintf("%s/v2/metadata",  envvars.GetBaseURL())
+	expected := fmt.Sprintf("%s/v3/metadata", envvars.GetBaseURL())
 
 	if url != expected {
 		t.Errorf("appendToBaseURL(%q) == %q, expected %q", path, url, expected)
@@ -65,7 +65,7 @@ func TestAddHeaders(t *testing.T) {
 	addHeaders(req)
 
 	//TODO: update to JWT prefix
-	if req.Header.Get("Authorization") != fmt.Sprintf("Bearer %v", os.Getenv("CONTAINERSHIP_CLOUD_CLUSTER_API_KEY")) {
+	if req.Header.Get("Authorization") != fmt.Sprintf("JWT %v", os.Getenv("CONTAINERSHIP_CLOUD_CLUSTER_API_KEY")) {
 		t.Errorf("addHeaders(req) Authorization header is %q but expected to be %q", req.Header.Get("Authorization"), fmt.Sprintf("Bearer %v", os.Getenv("CONTAINERSHIP_CLOUD_CLUSTER_API_KEY")))
 	}
 }
