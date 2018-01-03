@@ -30,59 +30,59 @@ import (
 	time "time"
 )
 
-// UserInformer provides access to a shared informer and lister for
-// Users.
-type UserInformer interface {
+// RegistryInformer provides access to a shared informer and lister for
+// Registries.
+type RegistryInformer interface {
 	Informer() cache.SharedIndexInformer
-	Lister() v3.UserLister
+	Lister() v3.RegistryLister
 }
 
-type userInformer struct {
+type registryInformer struct {
 	factory          internalinterfaces.SharedInformerFactory
 	tweakListOptions internalinterfaces.TweakListOptionsFunc
 	namespace        string
 }
 
-// NewUserInformer constructs a new informer for User type.
+// NewRegistryInformer constructs a new informer for Registry type.
 // Always prefer using an informer factory to get a shared informer instead of getting an independent
 // one. This reduces memory footprint and number of connections to the server.
-func NewUserInformer(client versioned.Interface, namespace string, resyncPeriod time.Duration, indexers cache.Indexers) cache.SharedIndexInformer {
-	return NewFilteredUserInformer(client, namespace, resyncPeriod, indexers, nil)
+func NewRegistryInformer(client versioned.Interface, namespace string, resyncPeriod time.Duration, indexers cache.Indexers) cache.SharedIndexInformer {
+	return NewFilteredRegistryInformer(client, namespace, resyncPeriod, indexers, nil)
 }
 
-// NewFilteredUserInformer constructs a new informer for User type.
+// NewFilteredRegistryInformer constructs a new informer for Registry type.
 // Always prefer using an informer factory to get a shared informer instead of getting an independent
 // one. This reduces memory footprint and number of connections to the server.
-func NewFilteredUserInformer(client versioned.Interface, namespace string, resyncPeriod time.Duration, indexers cache.Indexers, tweakListOptions internalinterfaces.TweakListOptionsFunc) cache.SharedIndexInformer {
+func NewFilteredRegistryInformer(client versioned.Interface, namespace string, resyncPeriod time.Duration, indexers cache.Indexers, tweakListOptions internalinterfaces.TweakListOptionsFunc) cache.SharedIndexInformer {
 	return cache.NewSharedIndexInformer(
 		&cache.ListWatch{
 			ListFunc: func(options v1.ListOptions) (runtime.Object, error) {
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.ContainershipV3().Users(namespace).List(options)
+				return client.ContainershipV3().Registries(namespace).List(options)
 			},
 			WatchFunc: func(options v1.ListOptions) (watch.Interface, error) {
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.ContainershipV3().Users(namespace).Watch(options)
+				return client.ContainershipV3().Registries(namespace).Watch(options)
 			},
 		},
-		&containership_io_v3.User{},
+		&containership_io_v3.Registry{},
 		resyncPeriod,
 		indexers,
 	)
 }
 
-func (f *userInformer) defaultInformer(client versioned.Interface, resyncPeriod time.Duration) cache.SharedIndexInformer {
-	return NewFilteredUserInformer(client, f.namespace, resyncPeriod, cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc}, f.tweakListOptions)
+func (f *registryInformer) defaultInformer(client versioned.Interface, resyncPeriod time.Duration) cache.SharedIndexInformer {
+	return NewFilteredRegistryInformer(client, f.namespace, resyncPeriod, cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc}, f.tweakListOptions)
 }
 
-func (f *userInformer) Informer() cache.SharedIndexInformer {
-	return f.factory.InformerFor(&containership_io_v3.User{}, f.defaultInformer)
+func (f *registryInformer) Informer() cache.SharedIndexInformer {
+	return f.factory.InformerFor(&containership_io_v3.Registry{}, f.defaultInformer)
 }
 
-func (f *userInformer) Lister() v3.UserLister {
-	return v3.NewUserLister(f.Informer().GetIndexer())
+func (f *registryInformer) Lister() v3.RegistryLister {
+	return v3.NewRegistryLister(f.Informer().GetIndexer())
 }

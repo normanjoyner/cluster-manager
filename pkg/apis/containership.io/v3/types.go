@@ -42,3 +42,45 @@ type UserList struct {
 
 	Items []User `json:"items"`
 }
+
+// +genclient
+// +genclient:noStatus
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+
+// Registry describes a registry attached to Containership Cloud.
+type Registry struct {
+	metav1.TypeMeta   `json:",inline"`
+	metav1.ObjectMeta `json:"metadata,omitempty"`
+
+	Spec RegistrySpec `json:"spec"`
+}
+
+// RegistrySpec is the spec for a Containership Cloud Registry.
+type RegistrySpec struct {
+	ID            string            `json:"id"`
+	AddedAt       string            `json:"added_at"`
+	Description   string            `json:"description"`
+	Organization  string            `json:"organization"`
+	Email         string            `json:"email"`
+	Serveraddress string            `json:"serveraddress"`
+	Provider      string            `json:"provider"`
+	Credentials   map[string]string `json: credentials`
+	Owner         string            `json:"owner"`
+	AuthToken     AuthTokenSpec     `json:"authToken,omitempty"`
+}
+
+// AuthTokenSpec is the spec for an auth token
+type AuthTokenSpec struct {
+	Token    string `json:"token"`
+	Endpoint string `json:"endpoint"`
+}
+
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+
+// RegistryList is a list of Registries.
+type RegistryList struct {
+	metav1.TypeMeta `json:",inline"`
+	metav1.ListMeta `json:"metadata"`
+
+	Items []Registry `json:"items"`
+}

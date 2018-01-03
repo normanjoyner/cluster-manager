@@ -1,5 +1,5 @@
 /*
-Copyright 2017 The Kubernetes Authors.
+Copyright 2018 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -52,6 +52,8 @@ func (f *genericInformer) Lister() cache.GenericLister {
 func (f *sharedInformerFactory) ForResource(resource schema.GroupVersionResource) (GenericInformer, error) {
 	switch resource {
 	// Group=containership.io, Version=v3
+	case v3.SchemeGroupVersion.WithResource("registries"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Containership().V3().Registries().Informer()}, nil
 	case v3.SchemeGroupVersion.WithResource("users"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Containership().V3().Users().Informer()}, nil
 

@@ -1,5 +1,5 @@
 /*
-Copyright 2017 The Kubernetes Authors.
+Copyright 2018 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -25,12 +25,17 @@ import (
 
 type ContainershipV3Interface interface {
 	RESTClient() rest.Interface
+	RegistriesGetter
 	UsersGetter
 }
 
 // ContainershipV3Client is used to interact with features provided by the containership.io group.
 type ContainershipV3Client struct {
 	restClient rest.Interface
+}
+
+func (c *ContainershipV3Client) Registries(namespace string) RegistryInterface {
+	return newRegistries(c, namespace)
 }
 
 func (c *ContainershipV3Client) Users(namespace string) UserInterface {
