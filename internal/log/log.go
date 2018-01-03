@@ -72,7 +72,12 @@ func getLogLevelFromEnvironment() zapcore.Level {
 // getCloudEnvironment is an unfortunate artifact of not being able to use the
 // envvars package here.
 func getCloudEnvironment() string {
-	return strings.ToLower(os.Getenv("CONTAINERSHIP_CLOUD_ENVIRONMENT"))
+	cce := strings.ToLower(os.Getenv("CONTAINERSHIP_CLOUD_ENVIRONMENT"))
+	if cce == "" {
+		return "development"
+	}
+
+	return cce
 }
 
 // Fatal implements the fatal logging level

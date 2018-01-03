@@ -65,12 +65,10 @@ func (r *Requester) Body() []byte {
 }
 
 func appendToBaseURL(path string) string {
-	// TODO: update to v3 API
 	return fmt.Sprintf("%s/v3%s", envvars.GetBaseURL(), path)
 }
 
 func addHeaders(req *http.Request) {
-	// TODO: update to JWT prefix
 	req.Header.Set("Authorization", fmt.Sprintf("JWT %v", envvars.GetCloudClusterAPIKey()))
 }
 
@@ -87,12 +85,12 @@ func (r *Requester) MakeRequest() (*http.Response, error) {
 		r.url,
 		bytes.NewBuffer(r.body),
 	)
+	addHeaders(req)
 
 	if err == nil {
 		log.Infof("Request %+v\n", req)
 	}
 
-	addHeaders(req)
 	client := createClient()
 
 	res, err := client.Do(req)

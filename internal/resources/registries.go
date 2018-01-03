@@ -1,46 +1,41 @@
 package resources
 
-import (
-	"github.com/containership/cloud-agent/internal/log"
-)
-
-// Registries defines the Containership Cloud Registries resource
-type Registries struct {
-	csResource
-}
-
-// NewRegistries constructs a new Registries
-func NewRegistries() *Registries {
-	return &Registries{csResource{
-		Endpoint: "/organizations/{{.OrganizationID}}/registries",
-		Type:     ResourceTypeCluster,
-	}}
-}
-
-// GetEndpoint returns the Endpoint
-func (rs *Registries) GetEndpoint() string {
-	return rs.Endpoint
-}
-
-// GetType returns the ResourceType
-func (rs *Registries) GetType() ResourceType {
-	return rs.Type
-}
-
-// Reconcile compares created registries against cached registries
-func (rs *Registries) Reconcile() {
-	log.Info("Reconciling Registries...")
-}
-
-// Sync fetches registries from Containership Cloud and executes a callback if
-// the fetched data does not match the internal cache
-func (rs *Registries) Sync(onCacheMismatch func()) error {
-	log.Info("Syncing Registries...")
-	onCacheMismatch()
-	return nil
-}
-
-// Write creates registries on the cluster
-func (rs *Registries) Write() {
-	log.Info("Writing Registries...")
-}
+//
+// import (
+// 	"encoding/json"
+//  "github.com/containership/cloud-agent/internal/log"
+//
+// 	containershipv3 "github.com/containership/cloud-agent/pkg/apis/containership.io/v3"
+// )
+//
+// // CsRegistries defines the Containership Cloud CsRegistries resource
+// type CsRegistries struct {
+// 	cloudResource
+// 	cache []containershipv3.RegistrySpec
+// }
+//
+// // NewCsRegistries constructs a new CsRegistries
+// func NewCsRegistries() *CsRegistries {
+// 	return &CsRegistries{
+// 		cloudResource: cloudResource{
+// 			endpoint: "/organizations/{{.OrganizationID}}/registries",
+// 		},
+// 		cache: make([]containershipv3.RegistrySpec, 0),
+// 	}
+// }
+//
+// // Endpoint returns the Endpoint
+// func (rs *CsRegistries) Endpoint() string {
+// 	return rs.endpoint
+// }
+//
+// // UnmarshalToCache take the json returned from containership api
+// // and writes it to CsRegistries cache
+// func (rs *CsRegistries) UnmarshalToCache(bytes []byte) error {
+// 	// clear cache before updating it
+// 	rs.cache = nil
+// 	log.Println("CsRegistries UnmarshallToCache...")
+// 	err := json.Unmarshal(bytes, &rs.cache)
+// 	log.Printf("CsRegistries cache updated: %+v", rs.cache)
+// 	return err
+// }

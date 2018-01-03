@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/containership/cloud-agent/internal/log"
+	"time"
 )
 
 var agentSyncIntervalInSeconds int
@@ -82,8 +83,8 @@ func GetBaseURL() string {
 }
 
 // GetAgentSyncIntervalInSeconds returns agent sync interval in seconds
-func GetAgentSyncIntervalInSeconds() int {
-	return agentSyncIntervalInSeconds
+func GetAgentSyncIntervalInSeconds() time.Duration {
+	return time.Duration(agentSyncIntervalInSeconds)
 }
 
 // GetCSHome returns Containership home directory
