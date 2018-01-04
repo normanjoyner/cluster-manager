@@ -26,7 +26,7 @@ type metadata struct {
 }
 
 func getNodes() ([]node, error) {
-	nodes, err := k8sutil.GetNodes()
+	nodes, err := k8sutil.API().GetNodes()
 	if err != nil {
 		return nil, err
 	}

@@ -14,6 +14,7 @@ var csHome string
 var csCloudEnvironment string
 var csServerPort string
 var organizationID string
+var kubeconfig string
 
 func init() {
 	organizationID = os.Getenv("CONTAINERSHIP_CLOUD_ORGANIZATION_ID")
@@ -54,6 +55,8 @@ func init() {
 	if csServerPort == "" {
 		csServerPort = "8000"
 	}
+
+	kubeconfig = os.Getenv("KUBECONFIG")
 }
 
 // GetOrganizationID returns Containership Cloud organization id
@@ -94,4 +97,9 @@ func GetCSCloudEnvironment() string {
 // GetCSServerPort returns cloud-agent http server port
 func GetCSServerPort() string {
 	return csServerPort
+}
+
+// GetKubeconfig returns kubeconfig file if defined
+func GetKubeconfig() string {
+	return kubeconfig
 }

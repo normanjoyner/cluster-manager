@@ -2,8 +2,9 @@ package server
 
 import (
 	"fmt"
-	"os"
 	"testing"
+
+	"github.com/containership/cloud-agent/internal/k8sutil"
 
 	"github.com/stretchr/testify/assert"
 
@@ -11,15 +12,15 @@ import (
 	"net/http/httptest"
 )
 
-var a CSServer
+var a *CSServer
 
 func TestMetadataGet(t *testing.T) {
-	if os.Getenv("KUBERNETES_SERVICE_HOST") == "" {
+	if k8sutil.API() == nil {
 		fmt.Println("No configuration for kubernetes cluster, can't test server package")
 		return
 	}
 
-	a = CSServer{}
+	a = New()
 	a.initialize()
 
 	req, _ := http.NewRequest("GET", "/metadata", nil)
