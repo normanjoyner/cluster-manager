@@ -3,53 +3,52 @@ package coordinator
 import (
 	"fmt"
 	"log"
+	"strings"
 	"time"
 
-	appsv1beta2 "k8s.io/api/apps/v1beta2"
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/labels"
-	//"k8s.io/apimachinery/pkg/api/errors"
+
+	"k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	//"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"
+
+	containershipv3 "github.com/containership/cloud-agent/pkg/apis/containership.io/v3"
+	csclientset "github.com/containership/cloud-agent/pkg/client/clientset/versioned"
+	csscheme "github.com/containership/cloud-agent/pkg/client/clientset/versioned/scheme"
+	csinformers "github.com/containership/cloud-agent/pkg/client/informers/externalversions"
+	cslisters "github.com/containership/cloud-agent/pkg/client/listers/containership.io/v3"
+
 	kubeinformers "k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/scheme"
 	typedcorev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 	corelistersv1 "k8s.io/client-go/listers/core/v1"
 	"k8s.io/client-go/tools/cache"
-	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/client-go/tools/record"
 	"k8s.io/client-go/util/workqueue"
-	containershipv3 "github.com/containership/cloud-agent/pkg/apis/containership.io/v3"
-	csclientset "github.com/containership/cloud-agent/pkg/client/clientset/versioned"
-	csscheme "github.com/containership/cloud-agent/pkg/client/clientset/versioned/scheme"
-	csinformers "github.com/containership/cloud-agent/pkg/client/informers/externalversions"
-	cslisters "github.com/containership/cloud-agent/pkg/client/listers/containership.io/v3"
 )
 
-
 const (
+	// Type of agent that runs this controller
 	controllerAgentName = "coordinator"
-	// Namespace in which all containership resources will live
+	// ContainershipNamespace is that namespace in which all containership
+	// resources will live
 	ContainershipNamespace = "containership-core"
-	// SuccessSynced is used as part of the Event 'reason' when a Foo is synced
+	// ContainershipServiceAccountName is the name of containership controlled
+	// service account in every namespace
+	ContainershipServiceAccountName = "containership"
+	// SuccessSynced is used as part of the Event 'reason' when a Registry is synced
 	SuccessSynced = "Synced"
-	// ErrResourceExists is used as part of the Event 'reason' when a Foo fails
-	// to sync due to a Deployment of the same name already existing.
-	ErrResourceExists = "ErrResourceExists"
-
-	// MessageResourceExists is the message used for Events when a resource
-	// fails to sync due to a Deployment already existing
-	MessageResourceExists = "Resource %q already exists and is not managed by Foo"
-	// MessageResourceSynced is the message used for an Event fired when a Foo
+	// MessageResourceSynced is the message used for an Event fired when a Registry
 	// is synced successfully
 	MessageResourceSynced = "%q synced successfully"
-
-	// Template used for docker tokens
-	DockerConfigTemp   = `{"%s":{"username":"oauth2accesstoken","password":"%s","email":"none"}}`
-	// Template used for JSON tokens
+	// DockerConfigTemp is used for Docker tokens, using endpoint, and auth token as password
+	DockerConfigTemp = `{"%s":{"username":"oauth2accesstoken","password":"%s","email":"none"}}`
+	// DockerJSONTemplate is used for JSON tokens, endpoint is used under auths,
+	// while auth is the token generated
 	DockerJSONTemplate = `{"auths":{"%s":{"auth":"%s","email":"none"}}}`
 )
 
@@ -60,13 +59,14 @@ type Controller struct {
 	// clientset is a clientset for our own API group
 	clientset csclientset.Interface
 
-	//deploymentsLister appslisters.DeploymentLister
-	//deploymentsSynced cache.InformerSynced
-	namespacesLister corelistersv1.NamespaceLister
-	registriesLister cslisters.RegistryLister
-	registriesSynced cache.InformerSynced
-	secretsLister corelistersv1.SecretLister
-	secretsSynced cache.InformerSynced
+	namespacesLister      corelistersv1.NamespaceLister
+	namespacesSynced      cache.InformerSynced
+	serviceAccountsLister corelistersv1.ServiceAccountLister
+	serviceAccountsSynced cache.InformerSynced
+	registriesLister      cslisters.RegistryLister
+	registriesSynced      cache.InformerSynced
+	secretsLister         corelistersv1.SecretLister
+	secretsSynced         cache.InformerSynced
 
 	// workqueue is a rate limited work queue. This is used to queue work to be
 	// processed instead of performing it as soon as a change happens. This
@@ -86,15 +86,14 @@ func NewController(
 	kubeInformerFactory kubeinformers.SharedInformerFactory,
 	csInformerFactory csinformers.SharedInformerFactory) *Controller {
 
-	// obtain references to shared index informers for the Deployment and Registry
-	// types.
-	deploymentInformer := kubeInformerFactory.Apps().V1beta2().Deployments()
+	// obtain references to shared index informers for the Namespaces, Secrets,
+	// Service Accounts and Registry types.
 	namespaceInformer := kubeInformerFactory.Core().V1().Namespaces()
 	secretInformer := kubeInformerFactory.Core().V1().Secrets()
+	serviceAccountInformer := kubeInformerFactory.Core().V1().ServiceAccounts()
 
 	// informers for containership resources
 	registryInformer := csInformerFactory.Containership().V3().Registries()
-
 
 	// Create event broadcaster
 	// Add coordinator types to the default Kubernetes Scheme so Events can be
@@ -109,19 +108,25 @@ func NewController(
 	controller := &Controller{
 		kubeclientset: kubeclientset,
 		clientset:     clientset,
-		//deploymentsLister: deploymentInformer.Lister(),
-		//deploymentsSynced: deploymentInformer.Informer().HasSynced,
+
 		namespacesLister: namespaceInformer.Lister(),
+		namespacesSynced: namespaceInformer.Informer().HasSynced,
+
+		serviceAccountsLister: serviceAccountInformer.Lister(),
+		serviceAccountsSynced: serviceAccountInformer.Informer().HasSynced,
+
 		registriesLister: registryInformer.Lister(),
 		registriesSynced: registryInformer.Informer().HasSynced,
+
 		secretsLister: secretInformer.Lister(),
 		secretsSynced: secretInformer.Informer().HasSynced,
-		workqueue:        workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), "Registries"),
-		recorder:         recorder,
+
+		workqueue: workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), "Registries"),
+		recorder:  recorder,
 	}
 
 	log.Println("Setting up event handlers")
-	// Set up an event handler for when Registry resources change
+	// set up an event handler for when there is any change to a Registry resources
 	registryInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc: controller.enqueueRegistry,
 		UpdateFunc: func(old, new interface{}) {
@@ -134,15 +139,16 @@ func NewController(
 		},
 		DeleteFunc: controller.enqueueRegistry,
 	})
-	// secret informer to do stuff on secret change
+
+	// secret informer to check if the update, or deletion was authorized
+	// by checking against it's sudo parent, Registry
 	secretInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
-		//AddFunc: controller.handleObject,
 		UpdateFunc: func(old, new interface{}) {
 			newS := new.(*corev1.Secret)
 			oldS := old.(*corev1.Secret)
 			if newS.ResourceVersion == oldS.ResourceVersion {
-				// Periodic resync will send update events for all known Deployments.
-				// Two different versions of the same Deployment will always have different RVs.
+				// Periodic resync will send update events for all known Secrets.
+				// Two different versions of the same Secret will always have different RVs.
 				return
 			}
 			controller.handleObject(new)
@@ -150,25 +156,27 @@ func NewController(
 		DeleteFunc: controller.handleObject,
 	})
 
-	// Set up an event handler for when Deployment resources change. This
-	// handler will lookup the owner of the given Deployment, and if it is
-	// owned by a Registry resource will enqueue that Registry resource for
-	// processing. This way, we don't need to implement custom logic for
-	// handling Deployment resources. More info on this pattern:
-	// https://github.com/kubernetes/community/blob/8cafef897a22026d42f5e5bb3f104febe7e29830/contributors/devel/controllers.md
-	deploymentInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
-		AddFunc: controller.handleObject,
+	// namespace informer listen for add so we can create all registry
+	// secrets in the namespace and add a containership service Account
+	// to make containership magic happen
+	namespaceInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
+		AddFunc: controller.enqueueNamespace,
+	})
+
+	// set up service account listener to check if update or delete was authorized
+	// on containership sa account
+	serviceAccountInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
 		UpdateFunc: func(old, new interface{}) {
-			newDepl := new.(*appsv1beta2.Deployment)
-			oldDepl := old.(*appsv1beta2.Deployment)
-			if newDepl.ResourceVersion == oldDepl.ResourceVersion {
-				// Periodic resync will send update events for all known Deployments.
-				// Two different versions of the same Deployment will always have different RVs.
+			newSA := new.(*corev1.ServiceAccount)
+			oldSA := old.(*corev1.ServiceAccount)
+			if newSA.ResourceVersion == oldSA.ResourceVersion {
+				// Periodic resync will send update events for all known Service Account.
+				// Two different versions of the same Service Account will always have different RVs.
 				return
 			}
-			controller.handleObject(new)
+			controller.enqueueServiceAccount(new)
 		},
-		DeleteFunc: controller.handleObject,
+		DeleteFunc: controller.enqueueServiceAccount,
 	})
 
 	return controller
@@ -185,15 +193,12 @@ func (c *Controller) Run(threadiness int, stopCh <-chan struct{}) error {
 	// Start the informer factories to begin populating the informer caches
 	log.Println("Starting Registry controller")
 
-	// TODO
-	// Wait for the caches to be synced before starting workers
-	//log.Println("Waiting for informer caches to sync")
-	if ok := cache.WaitForCacheSync(stopCh, c.secretsSynced, c.registriesSynced); !ok {
+	if ok := cache.WaitForCacheSync(stopCh, c.secretsSynced, c.registriesSynced, c.serviceAccountsSynced, c.namespacesSynced); !ok {
 		return fmt.Errorf("failed to wait for caches to sync")
 	}
 
 	log.Println("Starting workers")
-	// Launch two workers to process Registry resources
+	// Launch threadiness amount of workers to process resources
 	for i := 0; i < threadiness; i++ {
 		go wait.Until(c.runWorker, time.Second, stopCh)
 	}
@@ -203,6 +208,42 @@ func (c *Controller) Run(threadiness int, stopCh <-chan struct{}) error {
 	log.Println("Shutting down workers")
 
 	return nil
+}
+
+// MetaResourceNamespaceKeyFunc is a convenient KeyFunc which knows how to make
+// keys for API objects which implement meta.Interface.
+// The key uses the format <kind>/<namespace>/<name> unless <namespace> is empty,
+// then it's <kind>/<name>.
+func MetaResourceNamespaceKeyFunc(kind string, obj interface{}) (string, error) {
+	if key, ok := obj.(string); ok {
+		return string(key), nil
+	}
+	m, err := meta.Accessor(obj)
+
+	if err != nil {
+		return "", fmt.Errorf("object has no meta: %v", err)
+	}
+
+	if len(m.GetNamespace()) > 0 {
+		return kind + "/" + m.GetNamespace() + "/" + m.GetName(), nil
+	}
+	return kind + "/" + m.GetName(), nil
+}
+
+// SplitMetaResourceNamespaceKeyFunc returns the kind, namespace and name that
+// MetaResourceNamespaceKeyFunc encoded into key.
+func SplitMetaResourceNamespaceKeyFunc(key string) (kind, namespace, name string, err error) {
+	parts := strings.Split(key, "/")
+	switch len(parts) {
+	case 2:
+		// kind and name only
+		return parts[0], "", parts[1], nil
+	case 3:
+		// kind, namespace and name
+		return parts[0], parts[1], parts[2], nil
+	}
+
+	return "", "", "", fmt.Errorf("unexpected key format: %q", key)
 }
 
 // runWorker is a long-running function that will continually call the
@@ -234,7 +275,7 @@ func (c *Controller) processNextWorkItem() bool {
 		var key string
 		var ok bool
 		// We expect strings to come off the workqueue. These are of the
-		// form namespace/name. We do this as the delayed nature of the
+		// form kind/namespace/name. We do this as the delayed nature of the
 		// workqueue means the items in the informer cache may actually be
 		// more up to date that when the item was initially put onto the
 		// workqueue.
@@ -246,15 +287,51 @@ func (c *Controller) processNextWorkItem() bool {
 			runtime.HandleError(fmt.Errorf("expected string in workqueue but got %#v", obj))
 			return nil
 		}
-		// Run the registrySyncHandler, passing it the namespace/name string of the
-		// Registry resource to be synced.
-		if err := c.registrySyncHandler(key); err != nil {
-			return fmt.Errorf("error syncing '%s': %s", key, err.Error())
+
+		kind, namespace, name, err := SplitMetaResourceNamespaceKeyFunc(key)
+
+		if err != nil {
+			// As the item in the workqueue is actually invalid, we call
+			// Forget here else we'd go into a loop of attempting to
+			// process a work item that is invalid.
+			c.workqueue.Forget(obj)
+			runtime.HandleError(fmt.Errorf("key is in incorrect format to process %#v", obj))
+			return nil
 		}
-		// Finally, if no error occurs we Forget this item so it does not
+
+		if namespace == "" && name != "" {
+			namespace = name
+		}
+
+		terminatingOrTerminated, err := c.checkNamespace(namespace)
+		if err != nil {
+			return err
+		}
+
+		if terminatingOrTerminated == true {
+			log.Printf("Namespace '%s' for %s in work queue does not exists \n", namespace, kind)
+			return nil
+		}
+
+		// Run the needed sync handler, passing it the kind from they key string
+		switch kind {
+		case "registry":
+			if err := c.registrySyncHandler(key); err != nil {
+				return fmt.Errorf("error syncing '%s': %s", key, err.Error())
+			}
+		case "serviceaccount":
+			if err := c.serviceAccountSyncHandler(key); err != nil {
+				return fmt.Errorf("error syncing '%s': %s", key, err.Error())
+			}
+		case "namespace":
+			if err := c.namespaceSyncHandler(key); err != nil {
+				return fmt.Errorf("error syncing '%s': %s", key, err.Error())
+			}
+		}
+		// Finally, if no error occurs we forget this item so it does not
 		// get queued again until another change happens.
 		c.workqueue.Forget(obj)
-		log.Println("Successfully synced '%s'", key)
+		log.Printf("Successfully synced '%s'", key)
 		return nil
 	}(obj)
 
@@ -266,15 +343,135 @@ func (c *Controller) processNextWorkItem() bool {
 	return true
 }
 
+// check for the namespace to know if it should be acted on or not
+func (c *Controller) checkNamespace(n string) (terminatingOrTerminated bool, err error) {
+	// Make sure the namespace that the service account resides in still exists
+	namespace, err := c.namespacesLister.Get(n)
+	if err != nil {
+		if errors.IsNotFound(err) {
+			return true, nil
+		}
+
+		return false, err
+	}
+
+	// Check that we are not creating things in a namespace that is terminating
+	if namespace.Status.Phase == "Terminating" {
+		return true, nil
+	}
+
+	return false, nil
+}
+
+func (c *Controller) serviceAccountSyncHandler(key string) error {
+	_, namespace, name, err := SplitMetaResourceNamespaceKeyFunc(key)
+
+	// Check the name of the SA. We only want to modify the one we own in each
+	// namespace that is named ContainershipServiceAccountName. If it is not a
+	// Service account we own, return nil so it doesn't get added back to the queue
+	if name != ContainershipServiceAccountName {
+		return nil
+	}
+
+	// get an array of all containership secrets so they can be add as
+	// image pull secrets to the containership service account
+	imagePullSecrets, err := c.GetUpdatedImagePullSecrets()
+
+	if err != nil {
+		return err
+	}
+
+	sa, err := c.serviceAccountsLister.ServiceAccounts(namespace).Get(name)
+	if err != nil {
+		// If the contianership service account is missing create it
+		if errors.IsNotFound(err) {
+			_, err = c.kubeclientset.CoreV1().ServiceAccounts(namespace).Create(newServiceAccount(namespace, imagePullSecrets))
+			// Return the status of kubernetes apis create,
+			// if it is not nil the service account will be requeued, otherwise its
+			// good to go
+			return err
+		}
+
+		return err
+	}
+
+	if err != nil {
+		return err
+	}
+
+	saCopy := sa.DeepCopy()
+	saCopy.ImagePullSecrets = imagePullSecrets
+
+	_, err = c.kubeclientset.CoreV1().ServiceAccounts(namespace).Update(saCopy)
+
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// getUpdatedImagePullSecrets makes an array of []corev1.LocalObjectReference
+// to be attacked to a service account with all the secrets that have been created
+// from registries
+func (c *Controller) getUpdatedImagePullSecrets() ([]corev1.LocalObjectReference, error) {
+	// TODO: could make this more performat to not have to regenerate this object
+	// for every SA add
+	registries, err := c.registriesLister.Registries(ContainershipNamespace).List(labels.NewSelector())
+	imagePullSecrets := make([]corev1.LocalObjectReference, 0)
+	if err != nil {
+		return imagePullSecrets, err
+	}
+
+	for _, registry := range registries {
+		imagePullSecrets = append(imagePullSecrets, corev1.LocalObjectReference{registry.Name})
+	}
+
+	return imagePullSecrets, nil
+}
+
+func (c *Controller) namespaceSyncHandler(key string) error {
+	_, _, name, err := SplitMetaResourceNamespaceKeyFunc(key)
+
+	registries, err := c.registriesLister.Registries(ContainershipNamespace).List(labels.NewSelector())
+
+	if err != nil {
+		return err
+	}
+
+	for _, registry := range registries {
+		_, err = c.kubeclientset.CoreV1().Secrets(name).Create(newSecret(registry))
+
+		// If the error is that the secret already exists, we want to clear the
+		// error so that it will be ignore it
+		if errors.IsAlreadyExists(err) == true {
+			err = nil
+		}
+
+		// If there is an error creating the secret, and the error
+		// is not that the Secret already exists we want to
+		// requeue this namespace to be reprocessed so all secrets are created
+		if err != nil {
+			break
+		}
+	}
+
+	if err != nil {
+		return err
+	}
+
+	// TODO is this bad practice :/
+	c.workqueue.AddRateLimited("serviceaccount/" + name + "/" + ContainershipServiceAccountName)
+
+	return nil
+}
 
 // registrySyncHandler compares the actual state with the desired, and attempts to
-// TODO make into sentence.. not sure what you where going for here
-// with the current status of the resource.
+// converge the two. By creating needed secrets and enqueuing a Service Account
+// for each namespace
 func (c *Controller) registrySyncHandler(key string) error {
-	log.Printf("registrySyncHandler: key=%s\n", key)
-	//TODO:// thinkabout.. namespace will only ever be containership-core
-	namespace, name, err := cache.SplitMetaNamespaceKey(key)
-	if err != nil {
+	_, namespace, name, err := SplitMetaResourceNamespaceKeyFunc(key)
+	if err != nil || namespace != ContainershipNamespace {
 		runtime.HandleError(fmt.Errorf("invalid resource key: %s", key))
 		return nil
 	}
@@ -293,10 +490,11 @@ func (c *Controller) registrySyncHandler(key string) error {
 			for _, n := range namespaces {
 				log.Println("Deleting secret in namespace", n.Name)
 				c.kubeclientset.CoreV1().Secrets(n.Name).Delete(name, &metav1.DeleteOptions{})
+
+				// Add service account for each namespace to queue so old secrets get
+				// removed from ImagePullSecrets
+				c.workqueue.AddRateLimited("serviceaccount/" + n.Name + "/" + ContainershipServiceAccountName)
 			}
-			//TODO:
-			// Get SA account in each namespaces using Lister
-			// 			enqueue ServiceAccount to workqueue to be checked for
 			runtime.HandleError(fmt.Errorf("Registry '%s' in work queue no longer exists", key))
 			return nil
 		}
@@ -306,16 +504,19 @@ func (c *Controller) registrySyncHandler(key string) error {
 
 	var registrySecretExists []*corev1.Namespace
 	for _, n := range namespaces {
-		//var secret *corev1.Secret
-		log.Printf("search namespace: %s", n.Name)
+		log.Printf("Searching namespace %s, for secret %s", n.Name, name)
 		_, err = c.secretsLister.Secrets(n.Name).Get(name)
-		// If the secret doesn't exist, we'll create it
+
+		// If the secret doesn't exist, we'll create it, if there was
+		// any other kind of error we break so that error can be returned
+		// and the registry can be reprocessed
 		if errors.IsNotFound(err) {
-			log.Printf("creating secret to use: %+v", registry)
-			_, err = c.kubeclientset.CoreV1().Secrets(n.Name).Create(newSecret(registry, n.Name))
+			_, err = c.kubeclientset.CoreV1().Secrets(n.Name).Create(newSecret(registry))
 		} else if err != nil {
 			break
 		} else {
+			// keep a list of namespaces that already contain the secret
+			// so that we can iterate on them for updating
 			registrySecretExists = append(registrySecretExists, n)
 		}
 	}
@@ -327,23 +528,13 @@ func (c *Controller) registrySyncHandler(key string) error {
 		return err
 	}
 
-	// If the Secret is not controlled by this Registry resource, we should log
-	// a warning to the event recorder and return
-	//TODO:// do we need something like this, or will the informer filter handle all that?
-	// if !metav1.IsControlledBy(secret, registry) {
-	// 	msg := fmt.Sprintf(MessageResourceExists, secret.Name)
-	// 	c.recorder.Event(registry, corev1.EventTypeWarning, ErrResourceExists, msg)
-	// 	return fmt.Errorf(msg)
-	// }
-
 	// TODO: according to the Sync() spec we should only be getting an update
 	// registry requests if the registry has changed and no longer equals the secret
-	// shouldn't need to compare here
-	log.Printf("updating secret to use: %+#v", registry.Spec)
+	// shouldn't need to compare here but double check/make sure that is implemented correctly
 	for _, n := range registrySecretExists {
 		//var secret *corev1.Secret
-		log.Printf("updating secret in namespace: %s", n.Name)
-		_, err = c.kubeclientset.CoreV1().Secrets(n.Name).Update(newSecret(registry, n.Name))
+		log.Printf("Updating secret %s in namespace %s", registry.Name, n.Name)
+		_, err = c.kubeclientset.CoreV1().Secrets(n.Name).Update(newSecret(registry))
 
 		if err != nil {
 			break
@@ -357,28 +548,48 @@ func (c *Controller) registrySyncHandler(key string) error {
 		return err
 	}
 
-	// Finally, we update the status block of the Registry resource to reflect the
-	// current state of the world
-	// TODO:// implement this later to keep track of authtokens or maybe resouce sync will take care of this..
-	// err = c.updateFooStatus(foo, deployment)
-	// if err != nil {
-	// 	return err
-	// }
+	for _, n := range namespaces {
+		c.workqueue.AddRateLimited("serviceaccount/" + n.Name + "/" + ContainershipServiceAccountName)
+	}
 
 	c.recorder.Event(registry, corev1.EventTypeNormal, SuccessSynced, fmt.Sprintf(MessageResourceSynced, "Registry"))
 
 	return nil
 }
 
-// func registryIsEqualToSecret(registry containershipv3.RegistrySpec, secret coreV1.SecretSpec)
-
-// enqueueRegistry takes a Registry resource and converts it into a namespace/name
+// enqueueRegistry takes a Registry resource and converts it into a kind/namespace/name
 // string which is then put onto the work queue. This method should *not* be
 // passed resources of any type other than Registry.
 func (c *Controller) enqueueRegistry(obj interface{}) {
 	var key string
 	var err error
-	if key, err = cache.MetaNamespaceKeyFunc(obj); err != nil {
+	if key, err = MetaResourceNamespaceKeyFunc("registry", obj); err != nil {
+		runtime.HandleError(err)
+		return
+	}
+	c.workqueue.AddRateLimited(key)
+}
+
+// enqueueNamespace takes a Namespace resource and converts it into a kind/namespace/name
+// string which is then put onto the work queue. This method should *not* be
+// passed resources of any type other than Namespace.
+func (c *Controller) enqueueNamespace(obj interface{}) {
+	var key string
+	var err error
+	if key, err = MetaResourceNamespaceKeyFunc("namespace", obj); err != nil {
+		runtime.HandleError(err)
+		return
+	}
+	c.workqueue.AddRateLimited(key)
+}
+
+// enqueueServiceAccount takes a ServiceAccount resource and converts it into a kind/namespace/name
+// string which is then put onto the work queue. This method should *not* be
+// passed resources of any type other than ServiceAccount.
+func (c *Controller) enqueueServiceAccount(obj interface{}) {
+	var key string
+	var err error
+	if key, err = MetaResourceNamespaceKeyFunc("serviceaccount", obj); err != nil {
 		runtime.HandleError(err)
 		return
 	}
@@ -387,9 +598,9 @@ func (c *Controller) enqueueRegistry(obj interface{}) {
 
 // handleObject will take any resource implementing metav1.Object and attempt
 // to find the Registry resource that 'owns' it. It does this by looking at the
-// objects metadata.ownerReferences field for an appropriate OwnerReference.
+// objects metadata.Name field to find the appropriate registry associated with it.
 // It then enqueues that Registry resource to be processed. If the object does not
-// have an appropriate OwnerReference, it will simply be skipped.
+// have an appropriate parent Registry, it will be skipped.
 func (c *Controller) handleObject(obj interface{}) {
 	var object metav1.Object
 	var ok bool
@@ -410,75 +621,70 @@ func (c *Controller) handleObject(obj interface{}) {
 	log.Printf("Processing object: %s in %s", object.GetName(), object.GetNamespace())
 	if s, ok := obj.(*corev1.Secret); ok {
 		// registry will only ever belong to the contianership core namespace
-		// secretsNamespace = object.GetNamespace()
+
 		registry, err := c.registriesLister.Registries(ContainershipNamespace).Get(s.Name)
 		if err != nil {
-			log.Printf("ignoring orphaned object '%s' of registry '%s', %v", s.GetSelfLink(), s.Name, err)
+			log.Printf("Secret %s does not belong to any known Registryies.", s.Name, err)
 			return
 		}
 
 		c.enqueueRegistry(registry)
 		return
 	}
+}
 
+// newServiceAccount creates a new Service Account for a Namespace resource if
+// the namespace does not currently contain a containership service account
+func newServiceAccount(namespace string, imagePullSecrets []corev1.LocalObjectReference) *corev1.ServiceAccount {
+	labels := map[string]string{
+		"containershio.io": "managed",
+	}
 
-	if ownerRef := metav1.GetControllerOf(object); ownerRef != nil {
-		// If this object is not owned by a Registry, we should not do anything more
-		// with it.
-		if ownerRef.Kind != "Registry" {
-			return
-		}
-
-		// // registry will only ever belong to the contianership core namespace
-		// // secretsNamespace = object.GetNamespace()
-		// registry, err := c.registriesLister.Registries(ContainershipNamespace).Get(ownerRef.Name)
-		// if err != nil {
-		// 	log.Printf("ignoring orphaned object '%s' of registry '%s'", object.GetSelfLink(), ownerRef.Name)
-		// 	return
-		// }
-		//
-		// c.enqueueRegistry(registry)
-		// return
+	return &corev1.ServiceAccount{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      ContainershipServiceAccountName,
+			Namespace: namespace,
+			Labels:    labels,
+		},
+		ImagePullSecrets: imagePullSecrets,
 	}
 }
 
 // newSecret creates a new Secret for a Registry resource. It also sets
 // the appropriate OwnerReferences on the resource so handleObject can discover
 // the Registry resource that 'owns' it.
-func newSecret(registry *containershipv3.Registry, namespace string) *corev1.Secret {
-	fmt.Sprintf("\n Creating New Secret Definition: %+#v \n", registry)
-	fmt.Println("SHOULD BE CREATED IN NAMESPACE: ", namespace)
+func newSecret(registry *containershipv3.Registry) *corev1.Secret {
+	log.Printf("\n Creating new secret definition using registry: %s \n", registry.Name)
 	rs := registry.Spec
 	rdt := rs.AuthToken.Type
 
+	// Add containership management label for easy filtering
 	labels := map[string]string{
 		"containershio.io": "managed",
-		"controller": registry.Name,
+		"controller":       registry.Name,
 	}
 
 	data := make(map[string][]byte, 0)
+	// Default tempate and type to be that of docker config
 	template := DockerConfigTemp
+	t := corev1.SecretTypeDockercfg
+
+	// If the authtoken type is set to dockerconfigjson we want to use the secret
+	// type, and template for a JSON auth key
 	if rdt == "dockerconfigjson" {
 		template = DockerJSONTemplate
+		t = corev1.SecretTypeDockerConfigJson
 	}
 
+	// Encrypt the token, and endpoint using the template docker template choosen
 	data[fmt.Sprintf(".%s", rdt)] = []byte(fmt.Sprintf(template, rs.AuthToken.Endpoint, rs.AuthToken.Token))
-	//secretType := fmt.Sprint("kubernetes.io/%s", rdt)
-	//TODO: going to need to know the type of registry to get the type that the data should be
+
 	return &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      registry.Name,
-			//Namespace: namespace,
-			// OwnerReferences: []metav1.OwnerReference{
-			// 	*metav1.NewControllerRef(registry, schema.GroupVersionKind{
-			// 		Group:   containershipv3.SchemeGroupVersion.Group,
-			// 		Version: containershipv3.SchemeGroupVersion.Version,
-			// 		Kind:    "Registry",
-			// 	}),
-			// },
+			Name:   registry.Name,
 			Labels: labels,
 		},
 		Data: data,
-		Type: "kubernetes.io/dockercfg",
+		Type: t,
 	}
 }

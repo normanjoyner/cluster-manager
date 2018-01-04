@@ -63,11 +63,15 @@ func newClient(kubeconfigPath string) (*kubernetes.Clientset, error) {
 	return client, nil
 }
 
+// Client is the clientset used to talk with kubernetes api
+// TODO this structure needs to be rethought about, and reorganized
 func Client() *kubernetes.Clientset {
 	return clientset
 }
 
-func Config() *rest.Config{
+// Config is the config used to get a clientset
+// TODO this structure needs to be rethought about, and reorganized
+func Config() *rest.Config {
 	return config
 }
 
