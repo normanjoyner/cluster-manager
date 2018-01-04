@@ -12,6 +12,7 @@ import (
 )
 
 var clientset *kubernetes.Clientset
+var config *rest.Config
 
 func init() {
 	var kubeconfig *string
@@ -27,13 +28,13 @@ func init() {
 
 func newClient(kubeconfigPath string) (*kubernetes.Clientset, error) {
 	var client *kubernetes.Clientset
-
+	var err error
 	// determine whether to use in cluster config or out of cluster config
 	// if kuebconfigPath is not specified, default to in cluster config
 	// otherwise, use out of cluster config
 	if kubeconfigPath == "" {
 		log.Println("Using in cluster k8s config")
-		config, err := rest.InClusterConfig()
+		config, err = rest.InClusterConfig()
 
 		if err != nil {
 			return nil, err
@@ -46,7 +47,7 @@ func newClient(kubeconfigPath string) (*kubernetes.Clientset, error) {
 		}
 	} else {
 		log.Println("Using out of cluster k8s config: %s", kubeconfigPath)
-		config, err := clientcmd.BuildConfigFromFlags("", kubeconfigPath)
+		config, err = clientcmd.BuildConfigFromFlags("", kubeconfigPath)
 
 		if err != nil {
 			return nil, err
@@ -64,6 +65,10 @@ func newClient(kubeconfigPath string) (*kubernetes.Clientset, error) {
 
 func Client() *kubernetes.Clientset {
 	return clientset
+}
+
+func Config() *rest.Config{
+	return config
 }
 
 // GetNodes returns all nodes running the kublet in the kubernetes cluster
