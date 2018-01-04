@@ -30,7 +30,7 @@ type SSHKeySpec struct {
 	ID          string `json:"id"`
 	Name        string `json:"name"`
 	Fingerprint string `json:"fingerprint"`
-	Key         string `json:"key"`
+	Key         string `json:"key"` // format: "<key_type> <key>"
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
