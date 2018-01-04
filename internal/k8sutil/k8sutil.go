@@ -62,6 +62,10 @@ func newClient(kubeconfigPath string) (*kubernetes.Clientset, error) {
 	return client, nil
 }
 
+func Client() *kubernetes.Clientset {
+	return clientset
+}
+
 // GetNodes returns all nodes running the kublet in the kubernetes cluster
 func GetNodes() (*corev1.NodeList, error) {
 	nodes, err := clientset.CoreV1().Nodes().List(metav1.ListOptions{})

@@ -12,3 +12,4 @@ import:
   version: v1.2.0
 - package: github.com/spf13/afero
   version: v1.0.1
+- package: github.com/golang/groupcache

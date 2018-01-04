@@ -1,63 +1,62 @@
 package main
 
 import (
+	"flag"
 	"log"
-	"runtime"
 	"time"
 
-	"github.com/containership/cloud-agent/internal/envvars"
-	"github.com/containership/cloud-agent/internal/resources"
+	kubeinformers "k8s.io/client-go/informers"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
+
+	"github.com/containership/cloud-agent/internal/coordinator"
+	"github.com/containership/cloud-agent/internal/k8sutil"
+	csclientset "github.com/containership/cloud-agent/pkg/client/clientset/versioned"
+	csinformers "github.com/containership/cloud-agent/pkg/client/informers/externalversions"
 )
 
 func main() {
-	log.Println("Starting containership coordinator...")
+	log.Println("Starting Containership coordinator...")
 
-	// Cluster level
-	loadbalancers := resources.NewLoadbalancers()
-	rbacs := resources.NewRoleBasedAccessControls()
-	registries := resources.NewRegistries()
+	flag.Parse()
 
-	// Host level
-	sshKeys := resources.NewSSHKeys()
-	firewalls := resources.NewFirewalls()
+	stopCh := make(chan struct{})
 
-	resources.Register(loadbalancers, loadbalancers.Write)
-	resources.Register(rbacs, rbacs.Write)
-	resources.Register(registries, registries.Write)
-	resources.Register(sshKeys, updateAgents)
-	resources.Register(firewalls, updateAgents)
+	// TODO need to kick off a sync() routine as well for cs->k8s sync
 
-	// Kick off watch loop
-	watchResources()
+	// TODO use k8sutil
+	/*
+		log.Println("Using in cluster k8s config")
+		config, err := rest.InClusterConfig()
 
-	runtime.Goexit()
-}
-
-func watchResources() {
-	log.Println("Watching resources...")
-
-	ticker := time.NewTicker(time.Duration(envvars.GetAgentSyncIntervalInSeconds()) * time.Second)
-	quit := make(chan struct{})
-
-	go func() {
-		for {
-			select {
-			case <-ticker.C:
-				// compare disk to cache, if diff then invalidate cache
-				resources.ReconcileByType(resources.ResourceTypeCluster)
-				// hit api to grab latest, if diff from cache then update cache and call passed func
-				resources.Sync()
-			case <-quit:
-				ticker.Stop()
-				return
-			}
+		if err != nil {
+			log.Fatalf("rest.InClusterConfig() failed: %s", err.Error())
 		}
-	}()
-}
 
-func updateAgents() {
-	log.Println("Make call to each agent pod...")
-	// TODO
-	// get all agents endpoints
-	// make request to /update
+		kubeClient, err := kubernetes.NewForConfig(config)
+
+		if err != nil {
+			log.Fatalf("kubernetes.NewForConfig() failed: %s", err.Error())
+		}
+	*/
+
+	kubeClient := k8sutil.Client()
+
+	csClient, err := csclientset.NewForConfig(config)
+	if err != nil {
+		log.Fatalf("csclientset.NewForConfig() failed: %s", err.Error())
+	}
+
+	kubeInformerFactory := kubeinformers.NewSharedInformerFactory(kubeClient, time.Second*10)
+	csInformerFactory := csinformers.NewSharedInformerFactory(csClient, time.Second*10)
+
+	controller := coordinator.NewController(
+		kubeClient, csClient, kubeInformerFactory, csInformerFactory)
+
+	go kubeInformerFactory.Start(stopCh)
+	go csInformerFactory.Start(stopCh)
+
+	if err = controller.Run(2, stopCh); err != nil {
+		log.Fatalf("Error running controller: %s", err.Error())
+	}
 }
