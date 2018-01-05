@@ -151,9 +151,17 @@ func NewController(
 				// Two different versions of the same Secret will always have different RVs.
 				return
 			}
-			controller.handleObject(new)
+
+			if isContainershipManaged(old) {
+				controller.handleObject(new)
+			}
+
 		},
-		DeleteFunc: controller.handleObject,
+		DeleteFunc: func(obj interface{}) {
+			if isContainershipManaged(obj) {
+				controller.handleObject(obj)
+			}
+		},
 	})
 
 	// namespace informer listen for add so we can create all registry
@@ -174,12 +182,35 @@ func NewController(
 				// Two different versions of the same Service Account will always have different RVs.
 				return
 			}
-			controller.enqueueServiceAccount(new)
+
+			if isContainershipManaged(old) {
+				controller.enqueueServiceAccount(new)
+			}
 		},
-		DeleteFunc: controller.enqueueServiceAccount,
+		DeleteFunc: func(obj interface{}) {
+			if isContainershipManaged(obj) {
+				controller.enqueueServiceAccount(obj)
+			}
+		},
 	})
 
 	return controller
+}
+
+func isContainershipManaged(obj interface{}) bool {
+	meta, err := meta.Accessor(obj)
+
+	if err != nil {
+		return false
+	}
+
+	l := meta.GetLabels()
+
+	if cs, ok := l["containership.io"]; ok && cs == "managed" {
+		return true
+	}
+
+	return false
 }
 
 // Run will set up the event handlers for types we are interested in, as well
@@ -375,7 +406,7 @@ func (c *Controller) serviceAccountSyncHandler(key string) error {
 
 	// get an array of all containership secrets so they can be add as
 	// image pull secrets to the containership service account
-	imagePullSecrets, err := c.GetUpdatedImagePullSecrets()
+	imagePullSecrets, err := c.getUpdatedImagePullSecrets()
 
 	if err != nil {
 		return err
