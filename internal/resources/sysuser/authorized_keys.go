@@ -3,16 +3,18 @@ package sysuser
 import (
 	"fmt"
 	"os"
+	"path"
 
 	"github.com/spf13/afero"
 
+	"github.com/containership/cloud-agent/internal/envvars"
 	v3 "github.com/containership/cloud-agent/pkg/apis/containership.io/v3"
 )
 
 const (
-	// TODO env vars
-	loginScript               = "/opt/containership/home/containership_login.sh"
-	authorizedKeysFile        = "/opt/containership/home/.ssh/authorized_keys"
+	// TODO where does this stuff actually belong?
+	loginScriptFilename       = "containership_login.sh"
+	authorizedKeysFilename    = "authorized_keys"
 	authorizedKeysPermissions = 0600
 )
 
@@ -30,7 +32,9 @@ func WriteAuthorizedKeys(users []v3.UserSpec) error {
 // writeAuthorizedKeys is the same as WriteAuthorizedKeys but takes a
 // filesystem argument for testing purposes.
 func writeAuthorizedKeys(fs afero.Fs, users []v3.UserSpec) error {
-	f, err := fs.OpenFile(authorizedKeysFile, os.O_CREATE|os.O_WRONLY,
+	filename := buildAuthorizedKeysFullPath()
+
+	f, err := fs.OpenFile(filename, os.O_CREATE|os.O_WRONLY,
 		authorizedKeysPermissions)
 	if err != nil {
 		return err
@@ -47,13 +51,14 @@ func writeAuthorizedKeys(fs afero.Fs, users []v3.UserSpec) error {
 // buildKeysStringForUser builds a string containing all authorized_keys lines
 // for a single user
 func buildKeysStringForUser(user v3.UserSpec) string {
+	loginScriptFullPath := path.Join(envvars.GetCSHome(), loginScriptFilename)
 	username := UsernameFromContainershipUID(user.ID)
 
 	// TODO concatenation using + is terribly inefficient
 	s := ""
 	for _, k := range user.SSHKeys {
 		s += fmt.Sprintf("command=\"%s %s\" %s\n",
-			loginScript, username, k.Key)
+			loginScriptFullPath, username, k.Key)
 	}
 
 	return s
@@ -67,4 +72,8 @@ func buildAllKeysString(users []v3.UserSpec) string {
 		s += buildKeysStringForUser(u)
 	}
 	return s
+}
+
+func buildAuthorizedKeysFullPath() string {
+	return path.Join(envvars.GetCSHome(), ".ssh", authorizedKeysFilename)
 }

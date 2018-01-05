@@ -74,11 +74,12 @@ func TestBuildAllKeysString(t *testing.T) {
 func TestWriteAuthorizedKeys(t *testing.T) {
 	fs := afero.NewMemMapFs()
 
-	// Write
 	err := writeAuthorizedKeys(fs, allUsers)
 	assert.Nil(t, err)
 
-	match, err := afero.FileContainsBytes(fs, authorizedKeysFile,
+	filename := buildAuthorizedKeysFullPath()
+
+	match, err := afero.FileContainsBytes(fs, filename,
 		[]byte(allUsersExpected))
 
 	assert.True(t, match)

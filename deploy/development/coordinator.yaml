@@ -31,6 +31,9 @@ spec:
               name: CONTAINERSHIP_CLOUD_CLUSTER_ID
               value: ""
             -
+              name: CONTAINERSHIP_HOME
+              value: ""
+            -
               name: NODE_PRIVATE_IP
               valueFrom:
                 fieldRef:

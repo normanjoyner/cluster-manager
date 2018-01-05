@@ -10,6 +10,7 @@ var agentSyncIntervalInSeconds int
 var cloudClusterAPIKey string
 var baseURL string
 var clusterID string
+var csHome string
 var csCloudEnvironment string
 var csServerPort string
 var organizationID string
@@ -28,6 +29,12 @@ func init() {
 	cloudClusterAPIKey = os.Getenv("CONTAINERSHIP_CLOUD_CLUSTER_API_KEY")
 	if cloudClusterAPIKey == "" {
 		log.Println("CONTAINERSHIP_CLOUD_CLUSTER_API_KEY env var not specified")
+	}
+
+	csHome = os.Getenv("CONTAINERSHIP_HOME")
+	if csHome == "" {
+		csHome = "/opt/containership/home"
+		log.Printf("CONTAINERSHIP_HOME env var not specified, defaulting to %s\n", csHome)
 	}
 
 	csCloudEnvironment = os.Getenv("CONTAINERSHIP_CLOUD_ENVIRONMENT")
@@ -72,6 +79,11 @@ func GetBaseURL() string {
 // GetAgentSyncIntervalInSeconds returns agent sync interval in seconds
 func GetAgentSyncIntervalInSeconds() int {
 	return agentSyncIntervalInSeconds
+}
+
+// GetCSHome returns Containership home directory
+func GetCSHome() string {
+	return csHome
 }
 
 // GetCSCloudEnvironment returns Containership Cloud environment
