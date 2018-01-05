@@ -44,7 +44,8 @@ func writeAuthorizedKeys(fs afero.Fs, users []v3.UserSpec) error {
 	writeMutex.Lock()
 	defer writeMutex.Unlock()
 
-	f, err := fs.OpenFile(filename, os.O_CREATE|os.O_WRONLY,
+	// O_TRUNC so we clear the file contents if there are no keys to write
+	f, err := fs.OpenFile(filename, os.O_CREATE|os.O_WRONLY|os.O_TRUNC,
 		authorizedKeysPermissions)
 	if err != nil {
 		return err

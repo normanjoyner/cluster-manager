@@ -74,14 +74,45 @@ func TestBuildAllKeysString(t *testing.T) {
 func TestWriteAuthorizedKeys(t *testing.T) {
 	fs := afero.NewMemMapFs()
 
-	err := writeAuthorizedKeys(fs, allUsers)
+	filename := buildAuthorizedKeysFullPath()
+
+	// New FS so file should not exist yet
+	exists, err := afero.Exists(fs, filename)
+	assert.False(t, exists)
 	assert.Nil(t, err)
 
-	filename := buildAuthorizedKeysFullPath()
+	// Verify that we can write a bunch of keys properly
+	err = writeAuthorizedKeys(fs, allUsers)
+	assert.Nil(t, err)
 
 	match, err := afero.FileContainsBytes(fs, filename,
 		[]byte(allUsersExpected))
-
 	assert.True(t, match)
+	assert.Nil(t, err)
+
+	// Verify that file contents are cleared if no keys users to write
+	noUsers := make([]v3.UserSpec, 0)
+	err = writeAuthorizedKeys(fs, noUsers)
+
+	empty, err := afero.IsEmpty(fs, filename)
+	assert.True(t, empty)
+	assert.Nil(t, err)
+
+	// Re-verify that we can write a bunch of keys properly after truncate
+	err = writeAuthorizedKeys(fs, allUsers)
+	assert.Nil(t, err)
+
+	match, err = afero.FileContainsBytes(fs, filename,
+		[]byte(allUsersExpected))
+	assert.True(t, match)
+	assert.Nil(t, err)
+
+	// Verify that file contents are cleared if there are users but no keys to
+	// write
+	oneUserNoKeys := []v3.UserSpec{testUserNoKeys}
+	err = writeAuthorizedKeys(fs, oneUserNoKeys)
+
+	empty, err = afero.IsEmpty(fs, filename)
+	assert.True(t, empty)
 	assert.Nil(t, err)
 }
