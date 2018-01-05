@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path"
+	"sync"
 
 	"github.com/spf13/afero"
 
@@ -23,6 +24,10 @@ const (
 // testable.
 var osFs = afero.NewOsFs()
 
+// This mutex protects against simultaneous write attempts to authorized_keys.
+// Note that the zero-value for a mutex is unlocked.
+var writeMutex sync.Mutex
+
 // WriteAuthorizedKeys writes the authorized keys for the given users to the
 // authorized_keys file, stomping on the existing file.
 func WriteAuthorizedKeys(users []v3.UserSpec) error {
@@ -34,14 +39,17 @@ func WriteAuthorizedKeys(users []v3.UserSpec) error {
 func writeAuthorizedKeys(fs afero.Fs, users []v3.UserSpec) error {
 	filename := buildAuthorizedKeysFullPath()
 
+	s := buildAllKeysString(users)
+
+	writeMutex.Lock()
+	defer writeMutex.Unlock()
+
 	f, err := fs.OpenFile(filename, os.O_CREATE|os.O_WRONLY,
 		authorizedKeysPermissions)
 	if err != nil {
 		return err
 	}
 	defer f.Close()
-
-	s := buildAllKeysString(users)
 
 	_, err = f.Write([]byte(s))
 
