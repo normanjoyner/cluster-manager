@@ -34,10 +34,15 @@ func WriteAuthorizedKeys(users []v3.UserSpec) error {
 	return writeAuthorizedKeys(osFs, users)
 }
 
+// GetAuthorizedKeysFullPath returns the full path to the authorized_keys file.
+func GetAuthorizedKeysFullPath() string {
+	return path.Join(envvars.GetCSHome(), ".ssh", authorizedKeysFilename)
+}
+
 // writeAuthorizedKeys is the same as WriteAuthorizedKeys but takes a
 // filesystem argument for testing purposes.
 func writeAuthorizedKeys(fs afero.Fs, users []v3.UserSpec) error {
-	filename := buildAuthorizedKeysFullPath()
+	filename := GetAuthorizedKeysFullPath()
 
 	s := buildAllKeysString(users)
 
@@ -81,8 +86,4 @@ func buildAllKeysString(users []v3.UserSpec) string {
 		s += buildKeysStringForUser(u)
 	}
 	return s
-}
-
-func buildAuthorizedKeysFullPath() string {
-	return path.Join(envvars.GetCSHome(), ".ssh", authorizedKeysFilename)
 }

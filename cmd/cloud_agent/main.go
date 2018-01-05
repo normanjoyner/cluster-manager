@@ -4,42 +4,29 @@ import (
 	"log"
 	"time"
 
-	"github.com/containership/cloud-agent/internal/envvars"
-	"github.com/containership/cloud-agent/internal/resources"
+	"github.com/containership/cloud-agent/internal/agent"
+	"github.com/containership/cloud-agent/internal/k8sutil"
 	"github.com/containership/cloud-agent/internal/server"
 )
 
 func main() {
-	log.Println("Starting containership agent...")
+	log.Println("Starting Containership agent...")
 
-	// The agent only cares about host-level resources
-	sshKeys := resources.NewSSHKeys()
-	firewalls := resources.NewFirewalls()
+	csInformerFactory := k8sutil.CSAPI().NewCSSharedInformerFactory(time.Second * 10)
 
-	resources.Register(sshKeys, sshKeys.Write)
-	resources.Register(firewalls, firewalls.Write)
+	// TODO change NewController to allow for different types (we need
+	// Firewalls too eventually)
+	controller := agent.NewController(k8sutil.CSAPI().Client(), csInformerFactory)
 
-	// Kick off the reconciliation loop
-	watchResources()
+	stopCh := make(chan struct{})
+	go csInformerFactory.Start(stopCh)
+
+	// Each controller is pretty lightweight so one worker should be fine
+	if err := controller.Run(1, stopCh); err != nil {
+		log.Fatalf("Error running controller: %s", err.Error())
+	}
 
 	// Run the http server
 	s := server.New()
 	s.Run()
-}
-
-func watchResources() {
-	ticker := time.NewTicker(time.Duration(envvars.GetAgentSyncIntervalInSeconds()) * time.Second)
-	quit := make(chan struct{})
-
-	go func() {
-		for {
-			select {
-			case <-ticker.C:
-				resources.ReconcileByType(resources.ResourceTypeHost)
-			case <-quit:
-				ticker.Stop()
-				return
-			}
-		}
-	}()
 }

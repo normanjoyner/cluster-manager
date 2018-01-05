@@ -74,7 +74,7 @@ func TestBuildAllKeysString(t *testing.T) {
 func TestWriteAuthorizedKeys(t *testing.T) {
 	fs := afero.NewMemMapFs()
 
-	filename := buildAuthorizedKeysFullPath()
+	filename := GetAuthorizedKeysFullPath()
 
 	// New FS so file should not exist yet
 	exists, err := afero.Exists(fs, filename)

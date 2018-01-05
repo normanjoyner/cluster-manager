@@ -15,6 +15,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"
 
+	"github.com/containership/cloud-agent/internal/constants"
 	containershipv3 "github.com/containership/cloud-agent/pkg/apis/containership.io/v3"
 	csclientset "github.com/containership/cloud-agent/pkg/client/clientset/versioned"
 	csscheme "github.com/containership/cloud-agent/pkg/client/clientset/versioned/scheme"
@@ -40,12 +41,6 @@ var baseContainershipManagedLabel = map[string]string{
 const (
 	// Type of agent that runs this controller
 	controllerAgentName = "coordinator"
-	// ContainershipNamespace is that namespace in which all containership
-	// resources will live
-	ContainershipNamespace = "containership-core"
-	// ContainershipServiceAccountName is the name of containership controlled
-	// service account in every namespace
-	ContainershipServiceAccountName = "containership"
 )
 
 const (
@@ -373,7 +368,7 @@ func (c *Controller) processNextWorkItem() bool {
 		case "registry":
 			// If the registry is not being modified in the containership
 			// namespace we don't care about the event (shouldn't happen)
-			if namespace != ContainershipNamespace {
+			if namespace != constants.ContainershipNamespace {
 				return nil
 			}
 
@@ -384,7 +379,7 @@ func (c *Controller) processNextWorkItem() bool {
 			// Check the name of the SA. We only want to modify the one we own in each
 			// namespace that is named ContainershipServiceAccountName. If it is not a
 			// Service account we own, return nil so it doesn't get added back to the queue
-			if name != ContainershipServiceAccountName {
+			if name != constants.ContainershipServiceAccountName {
 				return nil
 			}
 
@@ -483,7 +478,7 @@ func (c *Controller) serviceAccountSyncHandler(key string) error {
 func (c *Controller) getUpdatedImagePullSecrets() ([]corev1.LocalObjectReference, error) {
 	// TODO: could make this more performat to not have to regenerate this object
 	// for every SA add
-	registries, err := c.registriesLister.Registries(ContainershipNamespace).List(labels.NewSelector())
+	registries, err := c.registriesLister.Registries(constants.ContainershipNamespace).List(labels.NewSelector())
 	imagePullSecrets := make([]corev1.LocalObjectReference, 0)
 	if err != nil {
 		return imagePullSecrets, err
@@ -506,7 +501,7 @@ func (c *Controller) getUpdatedImagePullSecrets() ([]corev1.LocalObjectReference
 func (c *Controller) namespaceSyncHandler(key string) error {
 	_, _, name, err := SplitMetaResourceNamespaceKeyFunc(key)
 
-	registries, err := c.registriesLister.Registries(ContainershipNamespace).List(labels.NewSelector())
+	registries, err := c.registriesLister.Registries(constants.ContainershipNamespace).List(labels.NewSelector())
 
 	if err != nil {
 		return err
@@ -542,7 +537,7 @@ func (c *Controller) namespaceSyncHandler(key string) error {
 }
 
 func (c *Controller) addServiceAccountToWorkqueue(namespace string) {
-	c.workqueue.AddRateLimited("serviceaccount/" + namespace + "/" + ContainershipServiceAccountName)
+	c.workqueue.AddRateLimited("serviceaccount/" + namespace + "/" + constants.ContainershipServiceAccountName)
 }
 
 // registrySyncHandler compares the actual state with the desired, and attempts to
@@ -703,7 +698,7 @@ func (c *Controller) queueSecretOwnerRegistryIfApplicable(obj interface{}) {
 	log.Printf("Processing object: %s in %s", object.GetName(), object.GetNamespace())
 	if s, ok := obj.(*corev1.Secret); ok {
 		// registry will only ever belong to the containership core namespace
-		registry, err := c.registriesLister.Registries(ContainershipNamespace).Get(s.Name)
+		registry, err := c.registriesLister.Registries(constants.ContainershipNamespace).Get(s.Name)
 		if err != nil {
 			log.Printf("Secret %s does not belong to any known Registries. %v", s.Name, err)
 			return
@@ -726,7 +721,7 @@ func newServiceAccount(namespace string, imagePullSecrets []corev1.LocalObjectRe
 
 	return &corev1.ServiceAccount{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      ContainershipServiceAccountName,
+			Name:      constants.ContainershipServiceAccountName,
 			Namespace: namespace,
 			Labels:    labels,
 		},
