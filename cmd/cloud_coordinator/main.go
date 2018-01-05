@@ -6,8 +6,6 @@ import (
 	"time"
 
 	kubeinformers "k8s.io/client-go/informers"
-	//"k8s.io/client-go/kubernetes"
-	//"k8s.io/client-go/rest"
 
 	"github.com/containership/cloud-agent/internal/coordinator"
 	"github.com/containership/cloud-agent/internal/k8sutil"

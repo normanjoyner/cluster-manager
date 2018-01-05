@@ -64,7 +64,7 @@ type RegistrySpec struct {
 	Email         string            `json:"email"`
 	Serveraddress string            `json:"serveraddress"`
 	Provider      string            `json:"provider"`
-	Credentials   map[string]string `json: credentials`
+	Credentials   map[string]string `json:"credentials"`
 	Owner         string            `json:"owner"`
 	AuthToken     AuthTokenDef     	`json:"authToken,omitempty"`
 }

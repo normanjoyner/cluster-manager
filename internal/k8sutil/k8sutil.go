@@ -46,7 +46,7 @@ func newClient(kubeconfigPath string) (*kubernetes.Clientset, error) {
 			return nil, err
 		}
 	} else {
-		log.Println("Using out of cluster k8s config: %s", kubeconfigPath)
+		log.Printf("Using out of cluster k8s config: %s", kubeconfigPath)
 		config, err = clientcmd.BuildConfigFromFlags("", kubeconfigPath)
 
 		if err != nil {
