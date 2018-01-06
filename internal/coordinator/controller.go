@@ -536,12 +536,12 @@ func (c *Controller) namespaceSyncHandler(key string) error {
 	// This queues a service account in the namespace to be processed by the
 	// workqueue so it can check to see of a containership service account already
 	// exists in the specified namespace or if it needs to be create it creates it
-	addServiceAccountToWorkqueue(name)
+	c.addServiceAccountToWorkqueue(name)
 
 	return nil
 }
 
-func addServiceAccountToWorkqueue(namespace string) {
+func (c *Controller) addServiceAccountToWorkqueue(namespace string) {
 	c.workqueue.AddRateLimited("serviceaccount/" + namespace + "/" + ContainershipServiceAccountName)
 }
 
@@ -581,7 +581,7 @@ func (c *Controller) registrySyncHandler(key string) error {
 
 				// Add service account for each namespace to queue so old secrets get
 				// removed from ImagePullSecrets
-				addServiceAccountToWorkqueue(n.Name)
+				c.addServiceAccountToWorkqueue(n.Name)
 			}
 
 			runtime.HandleError(fmt.Errorf("Registry '%s' in work queue no longer exists", key))
@@ -631,7 +631,7 @@ func (c *Controller) registrySyncHandler(key string) error {
 	// to see if any secrets have been added, or delted in the namespace and
 	// modify the service account's image pull secrets accordingly
 	for _, n := range namespaces {
-		addServiceAccountToWorkqueue(n.Name)
+		c.addServiceAccountToWorkqueue(n.Name)
 	}
 
 	c.recorder.Event(registry, corev1.EventTypeNormal, SuccessSynced, fmt.Sprintf(MessageResourceSynced, "Registry"))
