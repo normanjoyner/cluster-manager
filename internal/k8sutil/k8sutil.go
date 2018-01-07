@@ -22,7 +22,7 @@ func init() {
 	var err error
 	clientset, err = newClient(*kubeconfig)
 	if err != nil {
-		log.Fatal(err.Error())
+		log.Println(err.Error())
 	}
 }
 

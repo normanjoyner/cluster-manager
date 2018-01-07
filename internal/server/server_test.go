@@ -1,7 +1,11 @@
 package server
 
 import (
+	"fmt"
 	"testing"
+	"os"
+
+	"github.com/stretchr/testify/assert"
 
 	"net/http"
 	"net/http/httptest"
@@ -10,6 +14,12 @@ import (
 var a CSServer
 
 func TestMetadataGet(t *testing.T) {
+		fmt.Println("hereeeee")
+	if os.Getenv("KUBERNETES_SERVICE_HOST") == "" {
+		fmt.Println("No configuration for kubernetes cluster, can't test server package")
+		return
+	}
+
 	a = CSServer{}
 	a.initialize()
 
@@ -27,7 +37,5 @@ func executeRequest(req *http.Request) *httptest.ResponseRecorder {
 }
 
 func checkResponseCode(t *testing.T, expected, actual int) {
-	if expected != actual {
-		t.Errorf("Expected response code %d. Got %d\n", expected, actual)
-	}
+	assert.Equal(t, expected, actual)
 }
