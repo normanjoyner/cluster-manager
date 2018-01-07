@@ -1,0 +1,48 @@
+{
+    "default": {
+        "docker": {
+            "dockerfile": "Dockerfile.coordinator",
+            "image": {
+                "owner": "containership",
+                "name": "cloud-agent"
+            },
+            "build-args": [{
+                "type": "string_arg",
+                "arg": "NPM_TOKEN",
+                "value": "Development"
+            }]
+        }
+    },
+    "stage": {
+        "branch": "development",
+        "docker": {
+            "when": ["commit"],
+            "image": {
+                "owner": "containership",
+                "name": "cloud-agent"
+            },
+            "dockerfile": "Dockerfile.coordinator",
+            "build-args": [{
+                "type": "string_arg",
+                "arg": "GITHUB_USERNAME",
+                "value": "containershipbot"
+            }, {
+                "arg": "GITHUB_TOKEN",
+                "jenkins_credential": {
+                    "id": "containershipbot_github_token",
+                    "type": "string"
+                }
+            }]
+        },
+        "containership": {
+            "when": ["commit"],
+            "application": "cloud-agnet",
+            "organization": "82b87c7e-f06d-4da5-936a-b9b6f4c7258c",
+            "cluster": "d4440def-11f6-4b53-a2f3-bca1d1c87a1c",
+            "jenkins_credential": {
+                "id": "containership_prod_org_token",
+                "type": "string"
+            }
+        }
+    }
+}
