@@ -70,7 +70,7 @@ def runStages() {
                     buildInfo.config.containership.'add_loadbalancer' = buildInfo.config.containership.'add_loadbalancer' || false
                 }
 
-				def branchNameVariables = utils.buildBranchVariableMap(buildInfo.config.branch, buildInfo.scm.branch)
+                def branchNameVariables = utils.buildBranchVariableMap(buildInfo.config.branch, buildInfo.scm.branch)
 
                 // replace all dynamic vars
                 for (def entry in utils.mapToList(branchNameVariables)) {
@@ -96,7 +96,7 @@ def runStages() {
                 buildInfo.image.'calculated-name' = "${buildInfo.image.name}:${buildInfo.image.tag}"
 
                 if(!fileExists(buildInfo.config.docker?.dockerfile ?: 'Dockerfile.coordinator')) {
-                    createGoDockerfile(buildInfo.config.docker?.dockerfile ?: 'Dockerfile.coordinator')
+                    throw new Exception("Dockerfile not found")
                 }
 
                 utils.buildDockerfile(buildInfo.config.docker?.dockerfile ?: 'Dockerfile.coordinator', "${buildInfo.image.'calculated-name'}", buildInfo.config.docker?.'build-args')
@@ -133,43 +133,4 @@ def runStages() {
             throw err
         }
     }
-}
-
-def createGoDockerfile(path) {
-    def docker = """
-####
-# Dockerfile for Containership Agent
-####
-FROM iron/go:dev
-MAINTAINER ContainerShip Developers <developers@containership.io>
-# add tools for debug and development purposes
-RUN apk update && apk add vim && apk add iptables && apk add glide
-
-ENV SRC_DIR=/gocode/src/github.com/containership/cloud-agent/
-
-WORKDIR /app
-
-# Add the source code:
-ADD . $SRC_DIR
-
-# Build it:
-RUN cd $SRC_DIR && \
-    glide install && \
-    go build -o coordinator cmd/cloud_coordinator/main.go && \
-    cp coordinator /app
-
-ENTRYPOINT /app/coordinator
-
-ARG NPM_TOKEN
-RUN mkdir /app
-ADD . /app
-WORKDIR /app
-RUN npm install yarn -g
-RUN yarn --version
-RUN echo "//registry.npmjs.org/:_authToken=\$NPM_TOKEN" > .npmrc
-RUN yarn install --ignore-engines
-CMD node application
-"""
-
-    sh "echo \"${docker}\" > ${path}"
 }
