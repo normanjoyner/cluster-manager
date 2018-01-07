@@ -1,6 +1,35 @@
-hash: 9f9e834c74fd2431a2bc646fb0264007616cb07282a2aa7c3d56c52f9fc574be
-updated: 2018-01-07T16:18:38.063094-05:00
+hash: 9a6681d0f93643d61bdd7589d2fd06f2d20d5a695d838285359f3690f3dae947
+updated: 2018-01-08T12:07:07.096401718-05:00
 imports:
+- name: github.com/aws/aws-sdk-go
+  version: ce8d7a13a9e7f883d91c39eb98d4f72021eb48e2
+  subpackages:
+  - aws
+  - aws/awserr
+  - aws/awsutil
+  - aws/client
+  - aws/client/metadata
+  - aws/corehandlers
+  - aws/credentials
+  - aws/credentials/ec2rolecreds
+  - aws/credentials/endpointcreds
+  - aws/credentials/stscreds
+  - aws/defaults
+  - aws/ec2metadata
+  - aws/endpoints
+  - aws/request
+  - aws/session
+  - aws/signer/v4
+  - internal/shareddefaults
+  - private/protocol
+  - private/protocol/json/jsonutil
+  - private/protocol/jsonrpc
+  - private/protocol/query
+  - private/protocol/query/queryutil
+  - private/protocol/rest
+  - private/protocol/xml/xmlutil
+  - service/ecr
+  - service/sts
 - name: github.com/coreos/go-iptables
   version: 259c8e6a4275d497442c721fa52204d7a58bde8b
 - name: github.com/davecgh/go-spew
@@ -15,6 +44,8 @@ imports:
   version: 629574ca2a5df945712d3079857300b5e4da0236
 - name: github.com/ghodss/yaml
   version: 73d445a93680fa1a78ae23a5839bad48f32ba1ee
+- name: github.com/go-ini/ini
+  version: 32e4c1e6bc4e7d0d8451aa6b75200d19e37a536a
 - name: github.com/go-openapi/jsonpointer
   version: 46af16f9f7b149af66e5d1bd010e3574dc06de98
 - name: github.com/go-openapi/jsonreference
@@ -68,6 +99,8 @@ imports:
   version: bf9dde6d0d2c004a008c27aaee91170c786f6db8
 - name: github.com/imdario/mergo
   version: 6633656539c1639d9d78127b7d47c622b5d7b6dc
+- name: github.com/jmespath/go-jmespath
+  version: dd801d4f4ce7ac746e7e7b4489d2fa600b3b096b
 - name: github.com/json-iterator/go
   version: 36b14963da70d11297d313183d7e6388c8510e1e
 - name: github.com/juju/ratelimit
