@@ -2,8 +2,8 @@ package server
 
 import (
 	"fmt"
-	"testing"
 	"os"
+	"testing"
 
 	"github.com/stretchr/testify/assert"
 
@@ -14,7 +14,6 @@ import (
 var a CSServer
 
 func TestMetadataGet(t *testing.T) {
-		fmt.Println("hereeeee")
 	if os.Getenv("KUBERNETES_SERVICE_HOST") == "" {
 		fmt.Println("No configuration for kubernetes cluster, can't test server package")
 		return

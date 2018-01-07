@@ -66,14 +66,14 @@ type RegistrySpec struct {
 	Provider      string            `json:"provider"`
 	Credentials   map[string]string `json:"credentials"`
 	Owner         string            `json:"owner"`
-	AuthToken     AuthTokenDef     	`json:"authToken,omitempty"`
+	AuthToken     AuthTokenDef      `json:"authToken,omitempty"`
 }
 
 // AuthTokenDef is the def for an auth token
 type AuthTokenDef struct {
 	Token    string `json:"token"`
 	Endpoint string `json:"endpoint"`
-	Type 	 string `json:"type"`
+	Type     string `json:"type"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
