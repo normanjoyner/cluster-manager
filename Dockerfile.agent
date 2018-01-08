@@ -14,7 +14,7 @@ ADD . $SRC_DIR
 # Build it:
 RUN cd $SRC_DIR && \
     glide install && \
-    go build -o agent cmd/cloud_agent/main.go && \
+    go build -o agent cmd/cloud_agent/agent.go && \
     cp agent /app/
 
 ENTRYPOINT /app/agent
