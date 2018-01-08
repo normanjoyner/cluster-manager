@@ -1,8 +1,8 @@
-hash: 9a6681d0f93643d61bdd7589d2fd06f2d20d5a695d838285359f3690f3dae947
-updated: 2018-01-08T12:07:07.096401718-05:00
+hash: 6fab63fac113354c97a54dd62495cc044303bfc6b2dc8cc755dab5ea60f2891f
+updated: 2018-01-08T18:04:06.50779-05:00
 imports:
 - name: github.com/aws/aws-sdk-go
-  version: ce8d7a13a9e7f883d91c39eb98d4f72021eb48e2
+  version: 82ad808f2307df0776c038bfd7ea85440a35c02e
   subpackages:
   - aws
   - aws/awserr
@@ -127,6 +127,18 @@ imports:
   version: b91bfb9ebec76498946beb6af7c0230c7cc7ba6c
   subpackages:
   - assert
+- name: go.uber.org/atomic
+  version: 8474b86a5a6f79c443ce4b2992817ff32cf208b8
+- name: go.uber.org/multierr
+  version: 3c4937480c32f4c13a875a1829af76c98ca3d40a
+- name: go.uber.org/zap
+  version: 35aad584952c3e7020db7b839f6b102de6271f89
+  subpackages:
+  - buffer
+  - internal/bufferpool
+  - internal/color
+  - internal/exit
+  - zapcore
 - name: golang.org/x/crypto
   version: 81e90905daefcd6fd217b62423c0908922eadb30
   subpackages:
