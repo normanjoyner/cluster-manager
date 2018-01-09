@@ -6,11 +6,21 @@ import (
 	"github.com/containership/cloud-agent/internal/agent"
 	"github.com/containership/cloud-agent/internal/k8sutil"
 	"github.com/containership/cloud-agent/internal/log"
+	"github.com/containership/cloud-agent/internal/resources/sysuser"
 	"github.com/containership/cloud-agent/internal/server"
 )
 
 func main() {
 	log.Info("Starting Containership agent...")
+
+	// Failure to initialize what we need for SSH to work is not a fatal error
+	// because the user may not have performed the manual steps required to
+	// make the feature work (also, we may just be running in a dev
+	// environment).
+	if err := sysuser.InitializeAuthorizedKeysFileStructure(); err != nil {
+		log.Info("Could not initialize authorized_keys:", err.Error())
+		log.Info("SSH feature will not work without manual intervention")
+	}
 
 	csInformerFactory := k8sutil.CSAPI().NewCSSharedInformerFactory(time.Second * 10)
 
