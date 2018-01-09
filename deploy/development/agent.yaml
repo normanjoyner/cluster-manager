@@ -19,6 +19,10 @@ spec:
         - name: code
           hostPath:
               path: /Users/.minikube-mounts/internal
+        - name: containership-volume
+          hostPath:
+              path: /opt/containership
+              type: Directory
       containers:
         - env:
             -
@@ -47,8 +51,8 @@ spec:
           imagePullPolicy: IfNotPresent
           name: containership-agent
           volumeMounts:
-            - mountPath: /go/src/github.com/containership/cloud-agent/internal
-              name: code
+            - name: containership-volume
+              mountPath: /opt/containership
           resources:
             requests:
               cpu: 0.15
