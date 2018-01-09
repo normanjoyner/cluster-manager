@@ -2,12 +2,12 @@ package server
 
 import (
 	"fmt"
-	"log"
 	"net/http"
 
 	"github.com/gorilla/mux"
 
 	"github.com/containership/cloud-agent/internal/envvars"
+	"github.com/containership/cloud-agent/internal/log"
 )
 
 // CSServer defines the server

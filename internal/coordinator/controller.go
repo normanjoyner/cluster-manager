@@ -2,12 +2,10 @@ package coordinator
 
 import (
 	"fmt"
-	"log"
 	"strings"
 	"time"
 
 	corev1 "k8s.io/api/core/v1"
-
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -16,6 +14,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 
 	"github.com/containership/cloud-agent/internal/constants"
+	"github.com/containership/cloud-agent/internal/log"
 	containershipv3 "github.com/containership/cloud-agent/pkg/apis/containership.io/v3"
 	csclientset "github.com/containership/cloud-agent/pkg/client/clientset/versioned"
 	csscheme "github.com/containership/cloud-agent/pkg/client/clientset/versioned/scheme"
@@ -106,9 +105,9 @@ func NewController(
 	// Add coordinator types to the default Kubernetes Scheme so Events can be
 	// logged for coordinator types.
 	csscheme.AddToScheme(scheme.Scheme)
-	log.Println("Creating event broadcaster")
+	log.Info("Creating event broadcaster")
 	eventBroadcaster := record.NewBroadcaster()
-	eventBroadcaster.StartLogging(log.Printf)
+	eventBroadcaster.StartLogging(log.Infof)
 	eventBroadcaster.StartRecordingToSink(&typedcorev1.EventSinkImpl{Interface: kubeclientset.CoreV1().Events("")})
 	recorder := eventBroadcaster.NewRecorder(scheme.Scheme, corev1.EventSource{Component: controllerAgentName})
 
@@ -134,7 +133,7 @@ func NewController(
 		recorder:  recorder,
 	}
 
-	log.Println("Setting up event handlers")
+	log.Info("Setting up event handlers")
 	// set up an event handler for when there is any change to a Registry resources
 	registryInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc: controller.enqueueRegistry,
@@ -233,7 +232,7 @@ func (c *Controller) Run(numWorkers int, stopCh <-chan struct{}) error {
 	defer c.workqueue.ShutDown()
 
 	// Start the informer factories to begin populating the informer caches
-	log.Println("Starting controller")
+	log.Info("Starting controller")
 
 	if ok := cache.WaitForCacheSync(
 		stopCh,
@@ -244,15 +243,15 @@ func (c *Controller) Run(numWorkers int, stopCh <-chan struct{}) error {
 		return fmt.Errorf("failed to wait for caches to sync")
 	}
 
-	log.Println("Starting workers")
+	log.Info("Starting workers")
 	// Launch numWorkers amount of workers to process resources
 	for i := 0; i < numWorkers; i++ {
 		go wait.Until(c.runWorker, time.Second, stopCh)
 	}
 
-	log.Println("Started workers")
+	log.Info("Started workers")
 	<-stopCh
-	log.Println("Shutting down workers")
+	log.Info("Shutting down workers")
 
 	return nil
 }
@@ -359,7 +358,7 @@ func (c *Controller) processNextWorkItem() bool {
 		}
 
 		if terminatingOrTerminated == true {
-			log.Printf("Namespace '%s' for %s in work queue does not exist \n", namespace, kind)
+			log.Infof("Namespace '%s' for %s in work queue does not exist\n", namespace, kind)
 			return nil
 		}
 
@@ -394,7 +393,7 @@ func (c *Controller) processNextWorkItem() bool {
 		// Finally, if no error occurs we forget this item so it does not
 		// get queued again until another change happens.
 		c.workqueue.Forget(obj)
-		log.Printf("Successfully synced '%s'", key)
+		log.Debugf("Successfully synced '%s'", key)
 		return nil
 	}(obj)
 
@@ -567,7 +566,7 @@ func (c *Controller) registrySyncHandler(key string) error {
 			// deleted using OwnerRefs. This is because the Owner has to be
 			// in the same namespace as its child
 			for _, n := range namespaces {
-				log.Println("Deleting secret in namespace", n.Name)
+				log.Info("Deleting secret in namespace", n.Name)
 				err = c.kubeclientset.CoreV1().Secrets(n.Name).Delete(name, &metav1.DeleteOptions{})
 
 				if err != nil {
@@ -588,7 +587,7 @@ func (c *Controller) registrySyncHandler(key string) error {
 
 	var namespacesThatContainRegistry []*corev1.Namespace
 	for _, n := range namespaces {
-		log.Printf("Searching namespace %s, for secret %s", n.Name, name)
+		log.Debugf("Searching namespace %s, for secret %s", n.Name, name)
 		_, err = c.secretsLister.Secrets(n.Name).Get(name)
 
 		// If the secret doesn't exist, we'll create it, if there was
@@ -613,7 +612,7 @@ func (c *Controller) registrySyncHandler(key string) error {
 	// shouldn't need to compare here but double check/make sure that is implemented correctly
 	for _, n := range namespacesThatContainRegistry {
 		//var secret *corev1.Secret
-		log.Printf("Updating secret %s in namespace %s", registry.Name, n.Name)
+		log.Infof("Updating secret %s in namespace %s", registry.Name, n.Name)
 		_, err = c.kubeclientset.CoreV1().Secrets(n.Name).Update(newSecret(registry))
 
 		if err != nil {
@@ -692,15 +691,15 @@ func (c *Controller) queueSecretOwnerRegistryIfApplicable(obj interface{}) {
 			runtime.HandleError(fmt.Errorf("error decoding object tombstone, invalid type"))
 			return
 		}
-		log.Printf("Recovered deleted object '%s' from tombstone", object.GetName())
+		log.Infof("Recovered deleted object '%s' from tombstone", object.GetName())
 	}
 
-	log.Printf("Processing object: %s in %s", object.GetName(), object.GetNamespace())
+	log.Debugf("Processing object: %s in %s", object.GetName(), object.GetNamespace())
 	if s, ok := obj.(*corev1.Secret); ok {
 		// registry will only ever belong to the containership core namespace
 		registry, err := c.registriesLister.Registries(constants.ContainershipNamespace).Get(s.Name)
 		if err != nil {
-			log.Printf("Secret %s does not belong to any known Registries. %v", s.Name, err)
+			log.Infof("Secret %s does not belong to any known Registries. %v", s.Name, err)
 			return
 		}
 
@@ -732,7 +731,7 @@ func newServiceAccount(namespace string, imagePullSecrets []corev1.LocalObjectRe
 // newSecret creates a new Secret for a Registry resource. It sets name
 // to be the same as its parent registry to couple them together
 func newSecret(registry *containershipv3.Registry) *corev1.Secret {
-	log.Printf("\n Creating new secret definition using registry: %s \n", registry.Name)
+	log.Infof("Creating new secret definition using registry: %s\n", registry.Name)
 	rs := registry.Spec
 	rdt := rs.AuthToken.Type
 

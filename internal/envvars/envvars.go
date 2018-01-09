@@ -1,9 +1,11 @@
 package envvars
 
 import (
-	"log"
 	"os"
 	"strconv"
+	"strings"
+
+	"github.com/containership/cloud-agent/internal/log"
 )
 
 var agentSyncIntervalInSeconds int
@@ -19,27 +21,27 @@ var kubeconfig string
 func init() {
 	organizationID = os.Getenv("CONTAINERSHIP_CLOUD_ORGANIZATION_ID")
 	if organizationID == "" {
-		log.Println("CONTAINERSHIP_CLOUD_ORGANIZATION_ID env var not specified")
+		log.Warn("CONTAINERSHIP_CLOUD_ORGANIZATION_ID env var not specified")
 	}
 
 	clusterID = os.Getenv("CONTAINERSHIP_CLOUD_CLUSTER_ID")
 	if clusterID == "" {
-		log.Println("CONTAINERSHIP_CLOUD_CLUSTER_ID env var not specified")
+		log.Warn("CONTAINERSHIP_CLOUD_CLUSTER_ID env var not specified")
 	}
 
 	cloudClusterAPIKey = os.Getenv("CONTAINERSHIP_CLOUD_CLUSTER_API_KEY")
 	if cloudClusterAPIKey == "" {
-		log.Println("CONTAINERSHIP_CLOUD_CLUSTER_API_KEY env var not specified")
+		log.Warn("CONTAINERSHIP_CLOUD_CLUSTER_API_KEY env var not specified")
 	}
 
 	csHome = os.Getenv("CONTAINERSHIP_HOME")
 	if csHome == "" {
 		csHome = "/opt/containership/home"
-		log.Printf("CONTAINERSHIP_HOME env var not specified, defaulting to %s\n", csHome)
+		log.Info("CONTAINERSHIP_HOME env var not specified, defaulting to", csHome)
 	}
 
-	csCloudEnvironment = os.Getenv("CONTAINERSHIP_CLOUD_ENVIRONMENT")
-	if csCloudEnvironment == "" || csCloudEnvironment == "Development" {
+	csCloudEnvironment = strings.ToLower(os.Getenv("CONTAINERSHIP_CLOUD_ENVIRONMENT"))
+	if csCloudEnvironment == "" || csCloudEnvironment == "development" {
 		baseURL = "https://stage-api.containership.io"
 	} else {
 		baseURL = "https://api.containership.io"

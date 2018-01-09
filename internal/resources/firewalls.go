@@ -1,7 +1,7 @@
 package resources
 
 import (
-	"log"
+	"github.com/containership/cloud-agent/internal/log"
 )
 
 // Firewalls defines the Containership Cloud Firewalls resource
@@ -29,18 +29,18 @@ func (fs *Firewalls) GetType() ResourceType {
 
 // Reconcile compares created firewalls against cached firewalls
 func (fs *Firewalls) Reconcile() {
-	log.Println("Reconciling Firewalls...")
+	log.Info("Reconciling Firewalls...")
 }
 
 // Sync fetches firewalls from Containership Cloud and executes a callback if
 // the fetched data does not match the internal cache
 func (fs *Firewalls) Sync(onCacheMismatch func()) error {
-	log.Println("Sync Firewalls...")
+	log.Info("Sync Firewalls...")
 	onCacheMismatch()
 	return nil
 }
 
 // Write creates firewalls on the host
 func (fs *Firewalls) Write() {
-	log.Println("Writing Firewalls...")
+	log.Info("Writing Firewalls...")
 }

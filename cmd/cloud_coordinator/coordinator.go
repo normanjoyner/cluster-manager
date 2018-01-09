@@ -1,15 +1,15 @@
 package main
 
 import (
-	"log"
 	"time"
 
 	"github.com/containership/cloud-agent/internal/coordinator"
 	"github.com/containership/cloud-agent/internal/k8sutil"
+	"github.com/containership/cloud-agent/internal/log"
 )
 
 func main() {
-	log.Println("Starting Containership coordinator...")
+	log.Info("Starting Containership coordinator...")
 
 	stopCh := make(chan struct{})
 
@@ -23,6 +23,6 @@ func main() {
 	go csInformerFactory.Start(stopCh)
 
 	if err := controller.Run(2, stopCh); err != nil {
-		log.Fatalf("Error running controller: %s", err.Error())
+		log.Fatal("Error running controller:", err.Error())
 	}
 }

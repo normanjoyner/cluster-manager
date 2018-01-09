@@ -1,7 +1,7 @@
 package resources
 
 import (
-	"log"
+	"github.com/containership/cloud-agent/internal/log"
 )
 
 // Registries defines the Containership Cloud Registries resource
@@ -29,18 +29,18 @@ func (rs *Registries) GetType() ResourceType {
 
 // Reconcile compares created registries against cached registries
 func (rs *Registries) Reconcile() {
-	log.Println("Reconciling Registries...")
+	log.Info("Reconciling Registries...")
 }
 
 // Sync fetches registries from Containership Cloud and executes a callback if
 // the fetched data does not match the internal cache
 func (rs *Registries) Sync(onCacheMismatch func()) error {
-	log.Println("Syncing Registries...")
+	log.Info("Syncing Registries...")
 	onCacheMismatch()
 	return nil
 }
 
 // Write creates registries on the cluster
 func (rs *Registries) Write() {
-	log.Println("Writing Registries...")
+	log.Info("Writing Registries...")
 }

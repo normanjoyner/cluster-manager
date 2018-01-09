@@ -1,7 +1,7 @@
 package resources
 
 import (
-	"log"
+	"github.com/containership/cloud-agent/internal/log"
 )
 
 // RoleBasedAccessControls defines the Containership Cloud role based access controls resource
@@ -29,18 +29,18 @@ func (rbacs *RoleBasedAccessControls) GetType() ResourceType {
 
 // Reconcile compares created role based access controls against cached role based access controls
 func (rbacs *RoleBasedAccessControls) Reconcile() {
-	log.Println("Reconciling rbac...")
+	log.Info("Reconciling rbac...")
 }
 
 // Sync fetches role based access controls from Containership Cloud and
 // executes a callback if the fetched data does not match the internal cache
 func (rbacs *RoleBasedAccessControls) Sync(onCacheMismatch func()) error {
-	log.Println("Syncing rbac...")
+	log.Info("Syncing rbac...")
 	onCacheMismatch()
 	return nil
 }
 
 // Write creates role based access controls on the cluster
 func (rbacs *RoleBasedAccessControls) Write() {
-	log.Println("Writing rbac...")
+	log.Info("Writing rbac...")
 }

@@ -1,7 +1,7 @@
 package resources
 
 import (
-	"log"
+	"github.com/containership/cloud-agent/internal/log"
 )
 
 // Loadbalancers defines the Containership Cloud Loadbalancers resource
@@ -29,18 +29,18 @@ func (lbs *Loadbalancers) GetType() ResourceType {
 
 // Reconcile compares created loadbalancers against cached loadbalancers
 func (lbs *Loadbalancers) Reconcile() {
-	log.Println("Reconciling Loadbalancers...")
+	log.Info("Reconciling Loadbalancers...")
 }
 
 // Sync fetches loadbalancers from Containership Cloud and executes a callback
 // if the fetched data does not match the internal cache
 func (lbs *Loadbalancers) Sync(onCacheMismatch func()) error {
-	log.Println("Syncing Loadbalancers...")
+	log.Info("Syncing Loadbalancers...")
 	onCacheMismatch()
 	return nil
 }
 
 // Write creates loadbalancers on the cluster
 func (lbs *Loadbalancers) Write() {
-	log.Println("Writing Loadbalancers...")
+	log.Info("Writing Loadbalancers...")
 }

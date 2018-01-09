@@ -2,7 +2,6 @@ package agent
 
 import (
 	"fmt"
-	"log"
 	"time"
 
 	"github.com/fsnotify/fsnotify"
@@ -15,6 +14,7 @@ import (
 
 	"github.com/containership/cloud-agent/internal/constants"
 	"github.com/containership/cloud-agent/internal/envvars"
+	"github.com/containership/cloud-agent/internal/log"
 	"github.com/containership/cloud-agent/internal/resources/sysuser"
 	containershipv3 "github.com/containership/cloud-agent/pkg/apis/containership.io/v3"
 	csclientset "github.com/containership/cloud-agent/pkg/client/clientset/versioned"
@@ -87,28 +87,28 @@ func (c *Controller) Run(numWorkers int, stopCh <-chan struct{}) error {
 	defer c.workqueue.ShutDown()
 
 	// Start the informer factories to begin populating the informer caches
-	log.Println("Starting User controller")
+	log.Info("Starting User controller")
 
-	log.Println("Waiting for informer caches to sync")
+	log.Info("Waiting for informer caches to sync")
 	if ok := cache.WaitForCacheSync(stopCh, c.usersSynced); !ok {
 		return fmt.Errorf("Failed to wait for caches to sync")
 	}
 
-	log.Println("Starting write request handler")
+	log.Info("Starting write request handler")
 	go c.handleWriteRequests(stopCh)
 
 	go c.authorizedKeysWatcher()
 	c.sendCmdToFileWatcher(fileWatchStart)
 
-	log.Println("Starting workers")
+	log.Info("Starting workers")
 	// Launch two workers to process User resources
 	for i := 0; i < numWorkers; i++ {
 		go wait.Until(c.runWorker, time.Second, stopCh)
 	}
 
-	log.Println("Started workers")
+	log.Info("Started workers")
 	<-stopCh
-	log.Println("Shutting down workers")
+	log.Info("Shutting down workers")
 
 	return nil
 }
@@ -148,7 +148,7 @@ func (c *Controller) processNextWorkItem() bool {
 		// Finally, if no error occurs we Forget this item so it does not
 		// get queued again until another change happens.
 		c.workqueue.Forget(obj)
-		log.Printf("Successfully synced '%s'", key)
+		log.Debugf("Successfully synced '%s'", key)
 		return nil
 	}(obj)
 
@@ -178,7 +178,7 @@ func (c *Controller) enqueueUser(obj interface{}) {
 // requests are rate limited on the other side, so we can request as many times
 // as we want here and it will collapse to periodic writes of the latest cache
 func (c *Controller) syncHandler(key string) error {
-	log.Printf("User updated: key=%s\n", key)
+	log.Debugf("User updated: key=%s\n", key)
 	c.requestWriteCh <- key
 	return nil
 }
@@ -197,7 +197,7 @@ func (c *Controller) handleWriteRequests(stopCh <-chan struct{}) {
 		select {
 		case <-ticker.C:
 			if writeRequested {
-				log.Println("Writing resource to host...")
+				log.Debug("Writing resource to host...")
 				err := c.writeAuthorizedUsers()
 				if err == nil {
 					writeRequested = false
@@ -205,7 +205,7 @@ func (c *Controller) handleWriteRequests(stopCh <-chan struct{}) {
 			}
 
 		case <-c.requestWriteCh:
-			log.Println("Write requested")
+			log.Debug("Write requested")
 			writeRequested = true
 
 		case <-stopCh:
@@ -230,11 +230,11 @@ func (c *Controller) writeAuthorizedUsers() error {
 		users = append(users, u.Spec)
 	}
 
-	log.Printf("Users: %+v\n", users)
+	log.Debugf("Users: %+v\n", users)
 
 	// Stop file notifications while we write
 	c.sendCmdToFileWatcher(fileWatchStop)
-	log.Println("Calling WriteAuthorizedKeys...")
+	log.Info("Writing authorized_keys")
 	err = sysuser.WriteAuthorizedKeys(users)
 	c.sendCmdToFileWatcher(fileWatchStart)
 
@@ -260,6 +260,7 @@ func (c *Controller) authorizedKeysWatcher() {
 
 	fileWatcher, err := fsnotify.NewWatcher()
 	if err != nil {
+		// TODO consider attempting to handle this case
 		log.Fatal(err)
 	}
 	defer fileWatcher.Close()
@@ -268,26 +269,26 @@ func (c *Controller) authorizedKeysWatcher() {
 		select {
 		case event := <-fileWatcher.Events:
 			// We don't care what kind of event - always request a write
-			log.Println("File watcher event:", event)
+			log.Info("Unexpected authorized_key file event detected:", event)
 			c.requestWriteCh <- "write please"
 
 		case err := <-fileWatcher.Errors:
-			log.Println("File watcher error:", err)
+			log.Error("File watcher error:", err)
 
 		case cmd := <-c.fileWatchCmdCh:
 			switch cmd {
 			case fileWatchStart:
-				log.Println("Starting file watcher")
+				log.Debug("Starting file watcher")
 				if err := fileWatcher.Add(filename); err != nil {
-					log.Println("fileWatcher.Add() failed:", err)
+					log.Error("fileWatcher.Add() failed:", err)
 					// TODO how to handle this?
 				}
 				c.fileWatchCmdCh <- fileWatchCmdComplete
 
 			case fileWatchStop:
-				log.Println("Stopping file watcher")
+				log.Debug("Stopping file watcher")
 				if err := fileWatcher.Remove(filename); err != nil {
-					log.Println("fileWatcher.Remove() failed:", err)
+					log.Error("fileWatcher.Remove() failed:", err)
 					// TODO how to handle this?
 				}
 				c.fileWatchCmdCh <- fileWatchCmdComplete

@@ -1,16 +1,16 @@
 package main
 
 import (
-	"log"
 	"time"
 
 	"github.com/containership/cloud-agent/internal/agent"
 	"github.com/containership/cloud-agent/internal/k8sutil"
+	"github.com/containership/cloud-agent/internal/log"
 	"github.com/containership/cloud-agent/internal/server"
 )
 
 func main() {
-	log.Println("Starting Containership agent...")
+	log.Info("Starting Containership agent...")
 
 	csInformerFactory := k8sutil.CSAPI().NewCSSharedInformerFactory(time.Second * 10)
 
@@ -23,7 +23,7 @@ func main() {
 
 	// Each controller is pretty lightweight so one worker should be fine
 	if err := controller.Run(1, stopCh); err != nil {
-		log.Fatalf("Error running controller: %s", err.Error())
+		log.Fatal("Error running controller:", err.Error())
 	}
 
 	// Run the http server

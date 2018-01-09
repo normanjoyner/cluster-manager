@@ -3,12 +3,12 @@ package request
 import (
 	"bytes"
 	"fmt"
-	"log"
 	"net/http"
 	"text/template"
 	"time"
 
 	"github.com/containership/cloud-agent/internal/envvars"
+	"github.com/containership/cloud-agent/internal/log"
 )
 
 // Requester returns an object that can be used for making requests to the
@@ -89,7 +89,7 @@ func (r *Requester) MakeRequest() (*http.Response, error) {
 	)
 
 	if err == nil {
-		log.Printf("Request %+v \n", req)
+		log.Infof("Request %+v\n", req)
 	}
 
 	addHeaders(req)
