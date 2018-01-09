@@ -99,24 +99,34 @@ func (c *UserController) doSync() {
 
 		item, err := c.informer.GetIndexer().ByIndex("byID", cloudItem.ID)
 		if err == nil && len(item) == 0 {
-			c.Create(cloudItem)
+			err = c.Create(cloudItem)
+			if err != nil {
+				log.Error(err)
+			}
 			continue
 		}
 
 		if equal, err := c.cloudResource.IsEqual(cloudItem, item); err != nil && !equal {
-			c.Update(cloudItem, item)
+			err = c.Update(cloudItem, item)
+			if err != nil {
+				log.Error(err)
+			}
 			continue
 		}
 	}
 
 	allUserCRDS, err := c.lister.List(labels.NewSelector())
 	if err != nil {
+		log.Error(err)
 		return
 	}
 
 	for _, u := range allUserCRDS {
 		if _, exists := cloudCacheByID[u.Name]; !exists {
-			c.Delete(u.Name)
+			err = c.Delete(u.Name)
+			if err != nil {
+				log.Error(err)
+			}
 		}
 	}
 
