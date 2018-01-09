@@ -11,8 +11,6 @@ import (
 //
 func (a *CSServer) initializeRoutes() {
 	m := &handlers.Metadata{}
-	s := &handlers.Sync{}
 
 	a.Router.HandleFunc("/metadata", m.Get).Methods("GET")
-	a.Router.HandleFunc("/sync", s.POST).Methods("POST")
 }

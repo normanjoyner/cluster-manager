@@ -484,7 +484,9 @@ func (c *Controller) getUpdatedImagePullSecrets() ([]corev1.LocalObjectReference
 	}
 
 	for _, registry := range registries {
-		imagePullSecrets = append(imagePullSecrets, corev1.LocalObjectReference{registry.Name})
+		imagePullSecrets = append(imagePullSecrets, corev1.LocalObjectReference{
+			Name: registry.Name,
+		})
 	}
 
 	return imagePullSecrets, nil
