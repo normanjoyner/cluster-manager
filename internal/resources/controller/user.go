@@ -33,7 +33,7 @@ type UserController struct {
 }
 
 // NewUser returns a UserController that will be in control of pulling from cloud
-// comparing to the CRD cach and modifying based on those compares
+// comparing to the CRD cache and modifying based on those compares
 func NewUser(csInformerFactory csinformers.SharedInformerFactory, clientset csclientset.Interface) *UserController {
 	userInformer := csInformerFactory.Containership().V3().Users()
 
@@ -53,32 +53,28 @@ func NewUser(csInformerFactory csinformers.SharedInformerFactory, clientset cscl
 func (c *UserController) SyncWithCloud(stopCh <-chan struct{}) error {
 	log.Info("Starting User resource controller")
 
-	log.Info("Waiting for user informer caches to sync")
+	log.Info("Waiting for User informer caches to sync")
 	if ok := cache.WaitForCacheSync(stopCh, c.synced); !ok {
-		return fmt.Errorf("Failed to wait for caches to sync")
+		return fmt.Errorf("Failed to wait for User cache to sync")
 	}
 
-	log.Info("Starting user workers")
-	numWorkers := 1
-	// Launch two workers to process User resources
-	for i := 0; i < numWorkers; i++ {
-		go wait.Until(c.doSync, time.Second*envvars.GetAgentSyncIntervalInSeconds(), stopCh)
-	}
+	// Only run one worker because a resource's underlying
+	// cache is not thread-safe and we don't want to do parallel
+	// requests to the API anyway
+	go wait.Until(c.doSync, time.Second*envvars.GetAgentSyncIntervalInSeconds(), stopCh)
 
-	log.Info("Started user workers")
 	<-stopCh
-	log.Info("Shutting down user workers")
+	log.Info("User sync stopped")
 
 	return nil
 }
 
 func (c *UserController) doSync() {
-	log.Info("Starting user controller doSync()")
-	// makes a request to containership api and write results to the resouce's cache
+	// makes a request to containership api and write results to the resource's cache
 	err := resources.Sync(c.cloudResource)
 
 	if err != nil {
-		log.Error("Failed to sync")
+		log.Error("Users failed to sync:", err.Error())
 	}
 
 	// write the cloud items by ID so we can easily see if anything needs
@@ -92,7 +88,7 @@ func (c *UserController) doSync() {
 		if err == nil && len(item) == 0 {
 			err = c.Create(cloudItem)
 			if err != nil {
-				log.Error(err)
+				log.Error("User Create failed:", err.Error())
 			}
 			continue
 		}
@@ -102,7 +98,7 @@ func (c *UserController) doSync() {
 		if equal, err := c.cloudResource.IsEqual(cloudItem, item[0]); err != nil && !equal {
 			err = c.Update(cloudItem, item[0])
 			if err != nil {
-				log.Error(err)
+				log.Error("User Update failed:", err.Error())
 			}
 			continue
 		}
@@ -118,7 +114,7 @@ func (c *UserController) doSync() {
 		if _, exists := cloudCacheByID[u.Name]; !exists {
 			err = c.Delete(u.Namespace, u.Name)
 			if err != nil {
-				log.Error(err)
+				log.Error("User Delete failed:", err.Error())
 			}
 		}
 	}
@@ -147,7 +143,7 @@ func (c *UserController) Delete(namespace, name string) error {
 func (c *UserController) Update(u containershipv3.UserSpec, obj interface{}) error {
 	user, ok := obj.(*containershipv3.User)
 	if !ok {
-		return fmt.Errorf("Error tying to use a non User CRD object to update a User CRD")
+		return fmt.Errorf("Error trying to use a non User CRD object to update a User CRD")
 	}
 
 	uCopy := user.DeepCopy()

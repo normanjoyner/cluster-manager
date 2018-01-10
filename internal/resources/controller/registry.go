@@ -33,7 +33,7 @@ type RegistryController struct {
 }
 
 // NewRegistry returns a RegistryController that will be in control of pulling from cloud
-// comparing to the CRD cach and modifying based on those compares
+// comparing to the CRD cache and modifying based on those compares
 func NewRegistry(csInformerFactory csinformers.SharedInformerFactory, clientset csclientset.Interface) *RegistryController {
 	registryInformer := csInformerFactory.Containership().V3().Registries()
 
@@ -53,32 +53,28 @@ func NewRegistry(csInformerFactory csinformers.SharedInformerFactory, clientset 
 func (c *RegistryController) SyncWithCloud(stopCh <-chan struct{}) error {
 	log.Info("Starting Registry resource controller")
 
-	log.Info("Waiting for registry informer caches to sync")
+	log.Info("Waiting for Registry informer caches to sync")
 	if ok := cache.WaitForCacheSync(stopCh, c.synced); !ok {
-		return fmt.Errorf("Failed to wait for caches to sync")
+		return fmt.Errorf("Failed to wait for Registry cache to sync")
 	}
 
-	log.Info("Starting registry workers")
-	numWorkers := 1
-	// Launch two workers to process Registry resources
-	for i := 0; i < numWorkers; i++ {
-		go wait.Until(c.doSync, time.Second*envvars.GetAgentSyncIntervalInSeconds(), stopCh)
-	}
+	// Only run one worker because a resource's underlying
+	// cache is not thread-safe and we don't want to do parallel
+	// requests to the API anyway
+	go wait.Until(c.doSync, time.Second*envvars.GetAgentSyncIntervalInSeconds(), stopCh)
 
-	log.Info("Started registry workers")
 	<-stopCh
-	log.Info("Shutting down registry workers")
+	log.Info("Registry sync stopped")
 
 	return nil
 }
 
 func (c *RegistryController) doSync() {
-	log.Info("Starting registry controller doSync()")
-	// makes a request to containership api and write results to the resouce's cache
+	// makes a request to containership api and write results to the resource's cache
 	err := resources.Sync(c.cloudResource)
 
 	if err != nil {
-		log.Error("Failed to sync")
+		log.Error("Registries failed to sync:", err.Error())
 	}
 
 	// write the cloud items by ID so we can easily see if anything needs
@@ -92,7 +88,7 @@ func (c *RegistryController) doSync() {
 		if err == nil && len(item) == 0 {
 			err = c.Create(cloudItem)
 			if err != nil {
-				log.Error(err)
+				log.Error("Registry Create failed:", err.Error())
 			}
 			continue
 		}
@@ -102,7 +98,7 @@ func (c *RegistryController) doSync() {
 		if equal, err := c.cloudResource.IsEqual(cloudItem, item[0]); err != nil && !equal {
 			err = c.Update(cloudItem, item[0])
 			if err != nil {
-				log.Error(err)
+				log.Error("Registry Update failed:", err.Error())
 			}
 			continue
 		}
@@ -118,7 +114,7 @@ func (c *RegistryController) doSync() {
 		if _, exists := cloudCacheByID[u.Name]; !exists {
 			err = c.Delete(u.Namespace, u.Name)
 			if err != nil {
-				log.Error(err)
+				log.Error("Registry Delete failed:", err.Error())
 			}
 		}
 	}
@@ -154,7 +150,7 @@ func (c *RegistryController) Delete(namespace, name string) error {
 func (c *RegistryController) Update(r containershipv3.RegistrySpec, obj interface{}) error {
 	registry, ok := obj.(*containershipv3.Registry)
 	if !ok {
-		return fmt.Errorf("Error tying to use a non Registry CRD object to update a Registry CRD")
+		return fmt.Errorf("Error trying to use a non Registry CRD object to update a Registry CRD")
 	}
 
 	token, err := c.cloudResource.GetAuthToken(r)

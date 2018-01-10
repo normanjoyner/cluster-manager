@@ -32,6 +32,7 @@ func main() {
 	stopCh := make(chan struct{})
 	csInformerFactory.Start(stopCh)
 
+	// Run controller until error
 	// Each controller is pretty lightweight so one worker should be fine
 	if err := controller.Run(1, stopCh); err != nil {
 		log.Fatal("Error running controller:", err.Error())

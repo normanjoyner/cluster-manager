@@ -15,9 +15,6 @@ import (
 func main() {
 	log.Info("Starting Containership coordinator...")
 
-	// Kick off CS-->k8s synchronization
-	stopCh := make(chan struct{})
-
 	// Create Informer factories. All Informers should be created from these
 	// factories in order to share the same underlying caches.
 	kubeInformerFactory := k8sutil.API().NewKubeSharedInformerFactory(time.Second * 10)
@@ -38,10 +35,13 @@ func main() {
 		k8sutil.CSAPI().Client(),
 	)
 
+	stopCh := make(chan struct{})
+
 	// Kick off the informer factories
 	kubeInformerFactory.Start(stopCh)
 	csInformerFactory.Start(stopCh)
 
+	// Kick off cloud sync routines
 	go userCRDcontroller.SyncWithCloud(stopCh)
 	go registryCRDcontroller.SyncWithCloud(stopCh)
 
@@ -49,6 +49,7 @@ func main() {
 	s := server.New()
 	go s.Run()
 
+	// Run controller until error
 	if err := controller.Run(2, stopCh); err != nil {
 		log.Fatal("Error running controller:", err.Error())
 	}
