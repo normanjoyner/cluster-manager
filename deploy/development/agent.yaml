@@ -1,5 +1,6 @@
 ---
-apiVersion: extensions/v1beta1
+# Note: Only Kubernetes v1.8+ clusters supported
+apiVersion: apps/v1beta2
 kind: DaemonSet
 metadata:
   namespace: containership-core
@@ -9,6 +10,9 @@ metadata:
     tier: cloud-synchronize
     version: v1
 spec:
+  selector:
+    matchLabels:
+      app: containership-agent
   template:
     metadata:
       labels:
