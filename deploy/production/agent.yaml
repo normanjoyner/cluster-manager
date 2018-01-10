@@ -6,7 +6,6 @@ metadata:
   name: containership-agent
   labels:
     app: containership-agent
-    tier: cloud-synchronize
     version: v1
 spec:
   template:
@@ -16,56 +15,27 @@ spec:
         name: containership
     spec:
       tolerations:
-        -
-          key: "node-role.kubernetes.io/master" #kubernetes.io/role=master
+        - key: "node-role.kubernetes.io/master" #kubernetes.io/role=master
           effect: "NoSchedule"
       containers:
-        - env:
-            -
-              name: CONTAINERSHIP_CLOUD_ENVIRONMENT
-              value: "production"
-            -
-              name: CONTAINERSHIP_CLOUD_CLUSTER_API_KEY
-              valueFrom:
-                secretKeyRef:
-                    name: containershipCloudClusterAPIKey
-                    key: token
-            -
-              name: CONTAINERSHIP_CLOUD_ORGANIZATION_ID
-              value: ""
-            -
-              name: CONTAINERSHIP_CLOUD_CLUSTER_ID
-              value: ""
-            -
-              name: CONTAINERSHIP_HOME
-              value: ""
-            -
-              name: NODE_PRIVATE_IP
+        - name: containership-agent
+          envFrom:
+            - configMapRef:
+              name: containership-env-configmap
+          env:
+            - name: NODE_PRIVATE_IP
               valueFrom:
                 fieldRef:
                   fieldPath: status.hostIP
-            -
-              name: NODE_NAME
+            - name: NODE_NAME
               valueFrom:
                 fieldRef:
                   fieldPath: spec.nodeName
           image: ashleyschuett/cloud-agent:debug
           command: ["/app/containership", "agent"]
           imagePullPolicy: Always
-          name: containership-agent
           resources:
             requests:
               cpu: 0.15
           securityContext:
             privileged: true
----
-apiVersion: v1
-kind: Service
-metadata:
-    name: containership-agent
-spec:
-    ports:
-    - port: 8000
-    type: NodePort
-    selector:
-        app: containership-agent

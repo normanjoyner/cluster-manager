@@ -1,13 +1,13 @@
 package main
 
 import (
+	"runtime"
 	"time"
 
 	"github.com/containership/cloud-agent/internal/agent"
 	"github.com/containership/cloud-agent/internal/k8sutil"
 	"github.com/containership/cloud-agent/internal/log"
 	"github.com/containership/cloud-agent/internal/resources/sysuser"
-	"github.com/containership/cloud-agent/internal/server"
 )
 
 func main() {
@@ -36,7 +36,5 @@ func main() {
 		log.Fatal("Error running controller:", err.Error())
 	}
 
-	// Run the http server
-	s := server.New()
-	s.Run()
+	runtime.Goexit()
 }

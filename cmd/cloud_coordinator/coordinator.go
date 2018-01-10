@@ -7,6 +7,7 @@ import (
 	"github.com/containership/cloud-agent/internal/coordinator"
 	"github.com/containership/cloud-agent/internal/k8sutil"
 	"github.com/containership/cloud-agent/internal/log"
+	"github.com/containership/cloud-agent/internal/server"
 
 	crdcontrollers "github.com/containership/cloud-agent/internal/resources/controller"
 )
@@ -42,6 +43,10 @@ func main() {
 
 	go userCRDcontroller.SyncWithCloud(stopCh)
 	go registryCRDcontroller.SyncWithCloud(stopCh)
+
+	// Run the http server
+	s := server.New()
+	go s.Run()
 
 	if err := controller.Run(2, stopCh); err != nil {
 		log.Fatal("Error running controller:", err.Error())
