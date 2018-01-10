@@ -20,60 +20,60 @@ import (
 	"github.com/containership/cloud-agent/internal/resources"
 )
 
-// UserController is the implementation for syncing User CRDs
-type UserController struct {
+// RegistryController is the implementation for syncing Registry CRDs
+type RegistryController struct {
 	// clientset is a clientset for our own API group
 	clientset csclientset.Interface
 
-	lister   cslisters.UserLister
+	lister   cslisters.RegistryLister
 	synced   cache.InformerSynced
 	informer cache.SharedIndexInformer
 
-	cloudResource *resources.CsUsers
+	cloudResource *resources.CsRegistries
 }
 
-// NewUser returns a UserController that will be in control of pulling from cloud
+// NewRegistry returns a RegistryController that will be in control of pulling from cloud
 // comparing to the CRD cach and modifying based on those compares
-func NewUser(csInformerFactory csinformers.SharedInformerFactory, clientset csclientset.Interface) *UserController {
-	userInformer := csInformerFactory.Containership().V3().Users()
+func NewRegistry(csInformerFactory csinformers.SharedInformerFactory, clientset csclientset.Interface) *RegistryController {
+	registryInformer := csInformerFactory.Containership().V3().Registries()
 
-	userInformer.Informer().AddIndexers(indexByIDKeyFun())
+	registryInformer.Informer().AddIndexers(indexByIDKeyFun())
 
-	return &UserController{
+	return &RegistryController{
 		clientset:     clientset,
-		lister:        userInformer.Lister(),
-		synced:        userInformer.Informer().HasSynced,
-		informer:      userInformer.Informer(),
-		cloudResource: resources.NewCsUsers(),
+		lister:        registryInformer.Lister(),
+		synced:        registryInformer.Informer().HasSynced,
+		informer:      registryInformer.Informer(),
+		cloudResource: resources.NewCsRegistries(),
 	}
 }
 
 // SyncWithCloud kicks of the Sync() function, should be started only after
 // Informer caches we are about to use are synced
-func (c *UserController) SyncWithCloud(stopCh <-chan struct{}) error {
-	log.Info("Starting User resource controller")
+func (c *RegistryController) SyncWithCloud(stopCh <-chan struct{}) error {
+	log.Info("Starting Registry resource controller")
 
-	log.Info("Waiting for user informer caches to sync")
+	log.Info("Waiting for registry informer caches to sync")
 	if ok := cache.WaitForCacheSync(stopCh, c.synced); !ok {
 		return fmt.Errorf("Failed to wait for caches to sync")
 	}
 
-	log.Info("Starting user workers")
+	log.Info("Starting registry workers")
 	numWorkers := 1
-	// Launch two workers to process User resources
+	// Launch two workers to process Registry resources
 	for i := 0; i < numWorkers; i++ {
 		go wait.Until(c.doSync, time.Second*envvars.GetAgentSyncIntervalInSeconds(), stopCh)
 	}
 
-	log.Info("Started user workers")
+	log.Info("Started registry workers")
 	<-stopCh
-	log.Info("Shutting down user workers")
+	log.Info("Shutting down registry workers")
 
 	return nil
 }
 
-func (c *UserController) doSync() {
-	log.Info("Starting user controller doSync()")
+func (c *RegistryController) doSync() {
+	log.Info("Starting registry controller doSync()")
 	// makes a request to containership api and write results to the resouce's cache
 	err := resources.Sync(c.cloudResource)
 
@@ -108,13 +108,13 @@ func (c *UserController) doSync() {
 		}
 	}
 
-	allUserCRDS, err := c.lister.List(labels.NewSelector())
+	allRegistryCRDS, err := c.lister.List(labels.NewSelector())
 	if err != nil {
 		log.Error(err)
 		return
 	}
 
-	for _, u := range allUserCRDS {
+	for _, u := range allRegistryCRDS {
 		if _, exists := cloudCacheByID[u.Name]; !exists {
 			err = c.Delete(u.Namespace, u.Name)
 			if err != nil {
@@ -125,9 +125,16 @@ func (c *UserController) doSync() {
 
 }
 
-// Create takes a user spec in cache and creates the CRD
-func (c *UserController) Create(u containershipv3.UserSpec) error {
-	_, err := c.clientset.ContainershipV3().Users(constants.ContainershipNamespace).Create(&containershipv3.User{
+// Create takes a registry spec in cache and creates the CRD
+func (c *RegistryController) Create(u containershipv3.RegistrySpec) error {
+	// TODO :// add job for regreshing
+	token, err := c.cloudResource.GetAuthToken(u)
+	if err != nil {
+		return err
+	}
+
+	u.AuthToken = token
+	_, err = c.clientset.ContainershipV3().Registries(constants.ContainershipNamespace).Create(&containershipv3.Registry{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: u.ID,
 		},
@@ -138,22 +145,28 @@ func (c *UserController) Create(u containershipv3.UserSpec) error {
 }
 
 // Delete takes a name or the CRD and deletes it
-func (c *UserController) Delete(namespace, name string) error {
-	return c.clientset.ContainershipV3().Users(namespace).Delete(name, &metav1.DeleteOptions{})
+func (c *RegistryController) Delete(namespace, name string) error {
+	return c.clientset.ContainershipV3().Registries(namespace).Delete(name, &metav1.DeleteOptions{})
 }
 
-// Update takes a user spec in cache and updates a User CRD spec with the same
+// Update takes a registry spec in cache and updates a Registry CRD spec with the same
 // ID with that value
-func (c *UserController) Update(u containershipv3.UserSpec, obj interface{}) error {
-	user, ok := obj.(*containershipv3.User)
+func (c *RegistryController) Update(r containershipv3.RegistrySpec, obj interface{}) error {
+	registry, ok := obj.(*containershipv3.Registry)
 	if !ok {
-		return fmt.Errorf("Error tying to use a non User CRD object to update a User CRD")
+		return fmt.Errorf("Error tying to use a non Registry CRD object to update a Registry CRD")
 	}
 
-	uCopy := user.DeepCopy()
-	uCopy.Spec = u
+	token, err := c.cloudResource.GetAuthToken(r)
+	if err != nil {
+		return err
+	}
 
-	_, err := c.clientset.ContainershipV3().Users(constants.ContainershipNamespace).Update(uCopy)
+	r.AuthToken = token
+	rCopy := registry.DeepCopy()
+	rCopy.Spec = r
+
+	_, err = c.clientset.ContainershipV3().Registries(constants.ContainershipNamespace).Update(rCopy)
 
 	return err
 }

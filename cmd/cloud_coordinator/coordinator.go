@@ -27,7 +27,12 @@ func main() {
 
 	// CRD controllers need to be created before any jobs start so that all
 	// needed index functions can be added to the informers
-	userCRDcontroller := crdcontrollers.New(
+	userCRDcontroller := crdcontrollers.NewUser(
+		csInformerFactory,
+		k8sutil.CSAPI().Client(),
+	)
+
+	registryCRDcontroller := crdcontrollers.NewRegistry(
 		csInformerFactory,
 		k8sutil.CSAPI().Client(),
 	)
@@ -36,6 +41,7 @@ func main() {
 	go csInformerFactory.Start(stopCh)
 
 	go userCRDcontroller.SyncWithCloud(stopCh)
+	go registryCRDcontroller.SyncWithCloud(stopCh)
 
 	if err := controller.Run(2, stopCh); err != nil {
 		log.Fatal("Error running controller:", err.Error())
