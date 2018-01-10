@@ -29,7 +29,8 @@ type RegistryController struct {
 	synced   cache.InformerSynced
 	informer cache.SharedIndexInformer
 
-	cloudResource *resources.CsRegistries
+	cloudResource         *resources.CsRegistries
+	tokenRegenerationByID map[string]chan bool
 }
 
 // NewRegistry returns a RegistryController that will be in control of pulling from cloud
@@ -40,11 +41,12 @@ func NewRegistry(csInformerFactory csinformers.SharedInformerFactory, clientset 
 	registryInformer.Informer().AddIndexers(indexByIDKeyFun())
 
 	return &RegistryController{
-		clientset:     clientset,
-		lister:        registryInformer.Lister(),
-		synced:        registryInformer.Informer().HasSynced,
-		informer:      registryInformer.Informer(),
-		cloudResource: resources.NewCsRegistries(),
+		clientset:             clientset,
+		lister:                registryInformer.Lister(),
+		synced:                registryInformer.Informer().HasSynced,
+		informer:              registryInformer.Informer(),
+		cloudResource:         resources.NewCsRegistries(),
+		tokenRegenerationByID: make(map[string]chan bool, 0),
 	}
 }
 
@@ -123,26 +125,45 @@ func (c *RegistryController) doSync() {
 
 // Create takes a registry spec in cache and creates the CRD
 func (c *RegistryController) Create(u containershipv3.RegistrySpec) error {
-	// TODO :// add job for regreshing
 	token, err := c.cloudResource.GetAuthToken(u)
 	if err != nil {
 		return err
 	}
 
 	u.AuthToken = token
-	_, err = c.clientset.ContainershipV3().Registries(constants.ContainershipNamespace).Create(&containershipv3.Registry{
+	newReg, err := c.clientset.ContainershipV3().Registries(constants.ContainershipNamespace).Create(&containershipv3.Registry{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: u.ID,
 		},
 		Spec: u,
 	})
 
-	return err
+	if err != nil {
+		return err
+	}
+
+	if newReg.Spec.Provider == constants.EC2Registry {
+		c.tokenRegenerationByID[newReg.Name] = c.watchToken(newReg)
+	}
+
+	return nil
 }
 
 // Delete takes a name or the CRD and deletes it
 func (c *RegistryController) Delete(namespace, name string) error {
-	return c.clientset.ContainershipV3().Registries(namespace).Delete(name, &metav1.DeleteOptions{})
+	err := c.clientset.ContainershipV3().Registries(namespace).Delete(name, &metav1.DeleteOptions{})
+
+	if err != nil {
+		return err
+	}
+
+	// If there was not an issue deleting the registry, if there is a routine to
+	// sync auth token, stop it
+	if t, ok := c.tokenRegenerationByID[name]; ok {
+		safeClose(t)
+	}
+
+	return nil
 }
 
 // Update takes a registry spec in cache and updates a Registry CRD spec with the same
@@ -153,6 +174,10 @@ func (c *RegistryController) Update(r containershipv3.RegistrySpec, obj interfac
 		return fmt.Errorf("Error trying to use a non Registry CRD object to update a Registry CRD")
 	}
 
+	if t, ok := c.tokenRegenerationByID[r.ID]; ok {
+		safeClose(t)
+	}
+
 	token, err := c.cloudResource.GetAuthToken(r)
 	if err != nil {
 		return err
@@ -161,8 +186,66 @@ func (c *RegistryController) Update(r containershipv3.RegistrySpec, obj interfac
 	r.AuthToken = token
 	rCopy := registry.DeepCopy()
 	rCopy.Spec = r
+	newReg, err := c.clientset.ContainershipV3().Registries(constants.ContainershipNamespace).Update(rCopy)
 
-	_, err = c.clientset.ContainershipV3().Registries(constants.ContainershipNamespace).Update(rCopy)
+	if err != nil {
+		return err
+	}
 
-	return err
+	if newReg.Spec.Provider == constants.EC2Registry {
+		c.tokenRegenerationByID[r.ID] = c.watchToken(newReg)
+	}
+
+	return nil
+}
+
+// Takes a channel of type bool, if it's open it closes it, otherwise it ignores
+// the channel. Trying to close a channel that is already closed results in a panic
+func safeClose(t chan bool) {
+	select {
+	case _, ok := <-t:
+		if ok {
+			close(t)
+		} else {
+			fmt.Println("Channel closed!")
+		}
+	default:
+		close(t)
+	}
+}
+
+// watchToken takes a registry, waits 11 hours, make a request to get the registry
+// then passes it to update so it can get a new AuthToken assigned to it
+func (c *RegistryController) watchToken(r *containershipv3.Registry) chan bool {
+	stop := make(chan bool)
+
+	go func() {
+		t := time.NewTicker(time.Second * 11)
+		for {
+			select {
+			case <-t.C:
+				rObj, err := c.lister.Registries(r.Namespace).Get(r.Name)
+				if err != nil {
+					log.Error("Could not get the registry, to update auth token: ", err.Error())
+					safeClose(stop)
+					return
+				}
+
+				err = c.Update(rObj.Spec, rObj)
+				if err != nil {
+					log.Error("Could not update the registry auth token: ", err.Error())
+					safeClose(stop)
+					return
+				}
+
+				safeClose(stop)
+			case <-stop:
+				t.Stop()
+				safeClose(stop)
+				return
+			}
+		}
+	}()
+
+	return stop
 }
