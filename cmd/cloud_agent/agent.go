@@ -28,8 +28,9 @@ func main() {
 	// Firewalls too eventually)
 	controller := agent.NewController(k8sutil.CSAPI().Client(), csInformerFactory)
 
+	// Kick off the informer factory
 	stopCh := make(chan struct{})
-	go csInformerFactory.Start(stopCh)
+	csInformerFactory.Start(stopCh)
 
 	// Each controller is pretty lightweight so one worker should be fine
 	if err := controller.Run(1, stopCh); err != nil {

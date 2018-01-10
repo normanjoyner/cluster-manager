@@ -38,8 +38,9 @@ func main() {
 		k8sutil.CSAPI().Client(),
 	)
 
-	go kubeInformerFactory.Start(stopCh)
-	go csInformerFactory.Start(stopCh)
+	// Kick off the informer factories
+	kubeInformerFactory.Start(stopCh)
+	csInformerFactory.Start(stopCh)
 
 	go userCRDcontroller.SyncWithCloud(stopCh)
 	go registryCRDcontroller.SyncWithCloud(stopCh)
