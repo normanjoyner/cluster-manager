@@ -57,16 +57,17 @@ func sshKeyAreEqual(ukey containershipv3.SSHKeySpec, key containershipv3.SSHKeyS
 }
 
 func sshKeysEqualCompare(specSSHKeys []containershipv3.SSHKeySpec, userSSHKeysByID map[string]containershipv3.SSHKeySpec) bool {
-	for _, key := range specSSHKeys {
-		ukey, ok := userSSHKeysByID[key.ID]
-		if !ok {
-			return false
-		}
+	if len(specSSHKeys) != len(userSSHKeysByID) {
+		return false
+	}
 
-		equal := sshKeyAreEqual(ukey, key)
-		// If two keys are not equal return false and short circuit, no reason
-		// to compare the rest
-		if !equal {
+	specSSHKeysByID := make(map[string]containershipv3.SSHKeySpec, 0)
+	for _, key := range specSSHKeys {
+		specSSHKeysByID[key.ID] = key
+	}
+
+	for id, key := range userSSHKeysByID {
+		if !sshKeyAreEqual(key, specSSHKeysByID[id]) {
 			return false
 		}
 	}
