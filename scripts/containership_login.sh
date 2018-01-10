@@ -1,7 +1,7 @@
 #!/bin/bash
 
 USER=$1
-USER_HOME=/opt/containership/home/$USER
+USER_HOME=/etc/containership/home/$USER
 
 if [ ! -d $USER_HOME ]; then
     echo "Creating user home at $USER_HOME"

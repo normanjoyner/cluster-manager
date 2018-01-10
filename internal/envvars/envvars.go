@@ -37,7 +37,7 @@ func init() {
 
 	csHome = os.Getenv("CONTAINERSHIP_HOME")
 	if csHome == "" {
-		csHome = "/opt/containership/home"
+		csHome = "/etc/containership/home"
 		log.Info("CONTAINERSHIP_HOME env var not specified, defaulting to", csHome)
 	}
 

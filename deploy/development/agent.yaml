@@ -25,7 +25,7 @@ spec:
               path: /Users/.minikube-mounts/internal
         - name: containership-volume
           hostPath:
-              path: /opt/containership
+              path: /etc/containership
               type: DirectoryOrCreate
       containers:
         - name: containership-agent
@@ -45,7 +45,7 @@ spec:
           imagePullPolicy: IfNotPresent
           volumeMounts:
             - name: containership-volume
-              mountPath: /opt/containership
+              mountPath: /etc/containership
           resources:
             requests:
               cpu: 0.15
