@@ -22,7 +22,7 @@ spec:
         - name: containership-volume
           hostPath:
               path: /opt/containership
-              type: Directory
+              type: DirectoryOrCreate
       containers:
         - name: containership-agent
           envFrom:
