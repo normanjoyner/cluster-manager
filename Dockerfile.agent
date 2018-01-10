@@ -1,10 +1,13 @@
-# iron/go:dev is the alpine image with the go tools added
-FROM iron/go:dev
+FROM golang:1.8-alpine as builder
+
+RUN apk add --no-cache git gcc musl-dev
 
 # add tools for debug and development purposes
-RUN apk update && apk add vim && apk add iptables && apk add glide
+RUN apk update && \
+    apk add vim && \
+    apk add glide
 
-ENV SRC_DIR=/gocode/src/github.com/containership/cloud-agent/
+ENV SRC_DIR=/go/src/github.com/containership/cloud-agent/
 
 WORKDIR /app
 
@@ -21,4 +24,9 @@ RUN cd $SRC_DIR && \
     go build -o agent cmd/cloud_agent/agent.go && \
     cp agent /app/
 
+
+# Create Docker image of just the binary
+FROM scratch as runner
+COPY --from=builder ./scripts /scripts
+COPY --from=builder ./app/agent /app/agent
 ENTRYPOINT /app/agent

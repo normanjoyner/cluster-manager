@@ -1,17 +1,18 @@
 # This dockerfile is only for Jenkins tests
-FROM golang:alpine
+FROM iron/go:dev
 
-RUN apk add --no-cache git gcc musl-dev
 # add tools for debug and development purposes
 RUN apk update && apk add vim && apk add iptables && apk add glide
+
+ENV SRC_DIR=/gocode/src/github.com/containership/cloud-agent/
 
 WORKDIR /app
 
 # Add the source code:
-ADD . /go/src/github.com/containership/cloud-agent/
+ADD . $SRC_DIR
 
 # Build it:
-RUN cd /go/src/github.com/containership/cloud-agent/ && \
+RUN cd $SRC_DIR && \
     glide install && \
     go build -o coordinator cmd/cloud_coordinator/coordinator.go && \
     cp coordinator /app/
