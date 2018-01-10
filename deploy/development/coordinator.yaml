@@ -19,10 +19,6 @@ spec:
         app: containership-coordinator
         name: cloud-coordinator
     spec:
-      volumes:
-        - name: code
-          hostPath:
-              path: /Users/.minikube-mounts/internal
       containers:
         - name: containership-coordinator
           envFrom:
@@ -37,8 +33,7 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: spec.nodeName
-          image: coordinator:debug
-          imagePullPolicy: IfNotPresent
+          image: containership/cloud-agent-coordinator
           resources:
             requests:
               cpu: 0.15
