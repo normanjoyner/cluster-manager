@@ -34,14 +34,14 @@ func (us *CsUsers) Endpoint() string {
 // and writes it to CsUsers cache
 func (us *CsUsers) UnmarshalToCache(bytes []byte) error {
 	// Clear cache before updating it
-	log.Info("CsUsers UnmarshallToCache...")
+	log.Debug("CsUsers UnmarshallToCache...")
 
 	err := json.Unmarshal(bytes, &us.cache)
 	if err != nil {
-		log.Debugf("Cloud returned user response: %s", string(bytes))
+		log.Error("Cloud returned user response:", string(bytes))
 	}
 
-	log.Info("CsUsers cache updated: %v", us.cache)
+	log.Debugf("CsUsers cache updated: %v", us.cache)
 	return err
 }
 

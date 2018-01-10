@@ -34,14 +34,14 @@ func (rs *CsRegistries) Endpoint() string {
 // UnmarshalToCache take the json returned from containership api
 // and writes it to CsRegistries cache
 func (rs *CsRegistries) UnmarshalToCache(bytes []byte) error {
-	log.Info("CsRegistries UnmarshallToCache...")
+	log.Debug("CsRegistries UnmarshallToCache...")
 
 	err := json.Unmarshal(bytes, &rs.cache)
 	if err != nil {
-		log.Debug(err)
+		log.Error("Cloud returned registries response:", string(bytes))
 	}
 
-	log.Infof("CsRegistries cache updated: %+v", rs.cache)
+	log.Debugf("CsRegistries cache updated: %+v", rs.cache)
 	return err
 }
 
