@@ -39,7 +39,7 @@ type Controller struct {
 	usersSynced cache.InformerSynced
 	workqueue   workqueue.RateLimitingInterface
 
-	requestWriteCh chan string
+	requestWriteCh chan bool
 	fileWatchCmdCh chan int
 }
 
@@ -57,7 +57,7 @@ func NewController(
 		usersLister:    userInformer.Lister(),
 		usersSynced:    userInformer.Informer().HasSynced,
 		workqueue:      workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), "Users"),
-		requestWriteCh: make(chan string),
+		requestWriteCh: make(chan bool),
 		fileWatchCmdCh: make(chan int),
 	}
 
@@ -179,7 +179,7 @@ func (c *Controller) enqueueUser(obj interface{}) {
 // as we want here and it will collapse to periodic writes of the latest cache
 func (c *Controller) syncHandler(key string) error {
 	log.Debugf("User updated: key=%s\n", key)
-	c.requestWriteCh <- key
+	c.requestWriteCh <- true
 	return nil
 }
 
@@ -209,6 +209,7 @@ func (c *Controller) handleWriteRequests(stopCh <-chan struct{}) {
 			writeRequested = true
 
 		case <-stopCh:
+			log.Info("Write request handler stopping")
 			ticker.Stop()
 			return
 		}
@@ -270,7 +271,7 @@ func (c *Controller) authorizedKeysWatcher() {
 		case event := <-fileWatcher.Events:
 			// We don't care what kind of event - always request a write
 			log.Info("Unexpected authorized_key file event detected:", event)
-			c.requestWriteCh <- "write please"
+			c.requestWriteCh <- true
 
 		case err := <-fileWatcher.Errors:
 			log.Error("File watcher error:", err)
