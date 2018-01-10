@@ -18,13 +18,13 @@ var testUserNoKeys = *v3test.NewFakeUserSpec(0)
 var testUserNoKeysExpected = ""
 
 var testUserOneKey = *v3test.NewFakeUserSpec(1)
-var testUserOneKeyExpected = `command="/etc/containership/home/containership_login.sh 00000000111122223333000000000001" ssh-rsa ABCDEF
+var testUserOneKeyExpected = `command="/etc/containership/scripts/containership_login.sh 00000000111122223333000000000001" ssh-rsa ABCDEF
 `
 
 var testUserManyKeys = *v3test.NewFakeUserSpec(3)
-var testUserManyKeysExpected = `command="/etc/containership/home/containership_login.sh 00000000111122223333000000000002" ssh-rsa ABCDEF
-command="/etc/containership/home/containership_login.sh 00000000111122223333000000000002" ssh-rsa ABCDEF
-command="/etc/containership/home/containership_login.sh 00000000111122223333000000000002" ssh-rsa ABCDEF
+var testUserManyKeysExpected = `command="/etc/containership/scripts/containership_login.sh 00000000111122223333000000000002" ssh-rsa ABCDEF
+command="/etc/containership/scripts/containership_login.sh 00000000111122223333000000000002" ssh-rsa ABCDEF
+command="/etc/containership/scripts/containership_login.sh 00000000111122223333000000000002" ssh-rsa ABCDEF
 `
 
 var allUsers = []v3.UserSpec{

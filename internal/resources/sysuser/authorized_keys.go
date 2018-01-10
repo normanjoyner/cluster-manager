@@ -2,6 +2,7 @@ package sysuser
 
 import (
 	"fmt"
+	"io"
 	"os"
 	"path"
 	"sync"
@@ -14,11 +15,12 @@ import (
 )
 
 const (
-	// TODO where does this stuff actually belong?
-	loginScriptFilename       = "containership_login.sh"
+	loginScriptContainerPath  = "/scripts/containership_login.sh"
+	loginScriptHostPath       = "/etc/containership/scripts/containership_login.sh"
 	authorizedKeysFilename    = "authorized_keys"
 	authorizedKeysPermissions = 0600
 	sshDirPermissions         = 0700
+	scriptPermissions         = 0755
 )
 
 // This is a no-op and always references the same underlying OS filesystem, so
@@ -46,6 +48,7 @@ func GetAuthorizedKeysFullPath() string {
 // file, (to simplify e.g. file watching), and puts the login script in place.
 // This assumes that CONTAINERSHIP_HOME already exists and its parent directory
 // is bind mounted.
+// This is not thread-safe and is expected to only be called on initialization.
 func InitializeAuthorizedKeysFileStructure() error {
 	// Create the ssh dir if needed
 	sshDir := getSSHDir()
@@ -66,7 +69,7 @@ func InitializeAuthorizedKeysFileStructure() error {
 	akFile := GetAuthorizedKeysFullPath()
 	if !fileExists(akFile) {
 		log.Info("authorized_keys file didn't exist so we're creating it")
-		f, err := osFs.OpenFile(akFile, os.O_CREATE|os.O_TRUNC,
+		f, err := osFs.OpenFile(akFile, os.O_CREATE|os.O_WRONLY|os.O_TRUNC,
 			authorizedKeysPermissions)
 		if err != nil {
 			return err
@@ -79,7 +82,36 @@ func InitializeAuthorizedKeysFileStructure() error {
 		}
 	}
 
+	// Copy login script into place
+	err := copyFileForcefully(loginScriptHostPath, loginScriptContainerPath)
+	if err != nil {
+		return err
+	}
+
 	return nil
+}
+
+// copyFileForcefully copies src to dst, overwriting dst if it exists.
+func copyFileForcefully(dst string, src string) error {
+	// Open dst
+	dstFile, err := osFs.OpenFile(dst, os.O_CREATE|os.O_WRONLY|os.O_TRUNC,
+		scriptPermissions)
+	if err != nil {
+		return err
+	}
+	defer dstFile.Close()
+
+	// Open src (don't care about flags here)
+	srcFile, err := osFs.Open(src)
+	if err != nil {
+		return err
+	}
+	defer srcFile.Close()
+
+	// Copy it
+	_, err = io.Copy(dstFile, srcFile)
+
+	return err
 }
 
 // dirExists returns true if dir exists and is a directory, else false
@@ -133,14 +165,13 @@ func writeAuthorizedKeys(fs afero.Fs, users []v3.UserSpec) error {
 // buildKeysStringForUser builds a string containing all authorized_keys lines
 // for a single user
 func buildKeysStringForUser(user v3.UserSpec) string {
-	loginScriptFullPath := path.Join(envvars.GetCSHome(), loginScriptFilename)
 	username := UsernameFromContainershipUID(user.ID)
 
 	// TODO concatenation using + is terribly inefficient
 	s := ""
 	for _, k := range user.SSHKeys {
 		s += fmt.Sprintf("command=\"%s %s\" %s\n",
-			loginScriptFullPath, username, k.Key)
+			loginScriptHostPath, username, k.Key)
 	}
 
 	return s

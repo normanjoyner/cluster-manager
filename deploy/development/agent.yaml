@@ -27,6 +27,14 @@ spec:
           hostPath:
               path: /etc/containership
               type: DirectoryOrCreate
+        - name: containership-home
+          hostPath:
+              path: /etc/containership/home
+              type: DirectoryOrCreate
+        - name: containership-scripts
+          hostPath:
+              path: /etc/containership/scripts
+              type: DirectoryOrCreate
       containers:
         - name: containership-agent
           envFrom:
@@ -46,6 +54,10 @@ spec:
           volumeMounts:
             - name: containership-volume
               mountPath: /etc/containership
+            - name: containership-home
+              mountPath: /etc/containership/home
+            - name: containership-scripts
+              mountPath: /etc/containership/scripts
           resources:
             requests:
               cpu: 0.15

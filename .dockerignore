@@ -9,5 +9,4 @@
 Vagrantfile
 
 # misc
-/scripts
 *.log

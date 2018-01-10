@@ -11,6 +11,10 @@ WORKDIR /app
 # Add the source code:
 ADD . $SRC_DIR
 
+# Place login script in known location:
+RUN mkdir -p /scripts && \
+    cp $SRC_DIR/scripts/containership_login.sh /scripts
+
 # Build it:
 RUN cd $SRC_DIR && \
     glide install && \
