@@ -1,0 +1,11 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: containership-env-configmap
+  namespace: containership-core
+data:
+  CONTAINERSHIP_CLOUD_CLUSTER_API_KEY: ""
+  CONTAINERSHIP_CLOUD_ORGANIZATION_ID: ""
+  CONTAINERSHIP_CLOUD_CLUSTER_ID: ""
+  CONTAINERSHIP_HOME: ""

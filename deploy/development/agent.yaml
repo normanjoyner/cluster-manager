@@ -24,32 +24,21 @@ spec:
               path: /opt/containership
               type: Directory
       containers:
-        - env:
-            -
-              name: CONTAINERSHIP_CLOUD_CLUSTER_API_KEY
-              value: ""
-            -
-              name: CONTAINERSHIP_CLOUD_ORGANIZATION_ID
-              value: ""
-            -
-              name: CONTAINERSHIP_CLOUD_CLUSTER_ID
-              value: ""
-            -
-              name: CONTAINERSHIP_HOME
-              value: ""
-            -
-              name: NODE_PRIVATE_IP
+        - name: containership-agent
+          envFrom:
+            - configMapRef:
+                name: containership-env-configmap
+          env:
+            - name: NODE_PRIVATE_IP
               valueFrom:
                 fieldRef:
                   fieldPath: status.hostIP
-            -
-              name: NODE_NAME
+            - name: NODE_NAME
               valueFrom:
                 fieldRef:
                   fieldPath: spec.nodeName
           image: agent:debug
           imagePullPolicy: IfNotPresent
-          name: containership-agent
           volumeMounts:
             - name: containership-volume
               mountPath: /opt/containership

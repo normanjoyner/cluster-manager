@@ -64,6 +64,7 @@ build-agent:
 
 deploy-agent:
 	kubectl apply -f deploy/common/containership-core-namespace.yaml
+	kubectl apply -f deploy/development/containership-env-configmap.yaml
 	kubectl apply -f deploy/development/agent.yaml
 
 agent: build-agent deploy-agent
@@ -74,6 +75,7 @@ build-coordinator:
 
 deploy-coordinator:
 	kubectl apply -f deploy/common/containership-core-namespace.yaml
+	kubectl apply -f deploy/development/containership-env-configmap.yaml
 	kubectl apply -f deploy/development/coordinator.yaml
 
 coordinator: build-coordinator deploy-coordinator
