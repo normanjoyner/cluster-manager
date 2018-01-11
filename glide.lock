@@ -1,8 +1,8 @@
-hash: 6ca8c54291a2eec356296059361ab18d5aa55d9c95ade22f2c9624f8e9bdda72
-updated: 2018-01-09T08:38:38.387485-05:00
+hash: 415d6db7084efac8ab3496aec5f5b74ea02c4671c0c178e32da057869b680854
+updated: 2018-01-11T13:19:43.670152-05:00
 imports:
 - name: github.com/aws/aws-sdk-go
-  version: 5177d71d80f123f6d82aaf762387e39b88c5ba23
+  version: 3c754f1d340244540350f0a00b940781bae9c905
   subpackages:
   - aws
   - aws/awserr
@@ -209,6 +209,14 @@ imports:
   - storage/v1
   - storage/v1alpha1
   - storage/v1beta1
+- name: k8s.io/apiextensions-apiserver
+  version: 7e4e2b92d43db1cb2233b17bc6d6a19db6db1126
+  subpackages:
+  - pkg/apis/apiextensions
+  - pkg/apis/apiextensions/v1beta1
+  - pkg/client/clientset/clientset
+  - pkg/client/clientset/clientset/scheme
+  - pkg/client/clientset/clientset/typed/apiextensions/v1beta1
 - name: k8s.io/apimachinery
   version: 180eddb345a5be3a157cea1c624700ad5bd27b8f
   subpackages:
