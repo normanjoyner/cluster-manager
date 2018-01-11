@@ -7,7 +7,6 @@ metadata:
   name: containership-coordinator
   labels:
     app: containership-coordinator
-    tier: cloud-synchronize
     version: v1
 spec:
   selector:

@@ -7,7 +7,6 @@ metadata:
   name: containership-agent
   labels:
     app: containership-agent
-    tier: cloud-synchronize
     version: v1
 spec:
   selector:
@@ -20,9 +19,6 @@ spec:
         name: cloud-agent
     spec:
       volumes:
-        - name: code
-          hostPath:
-              path: /Users/.minikube-mounts/internal
         - name: containership-volume
           hostPath:
               path: /etc/containership
