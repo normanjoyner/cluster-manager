@@ -58,24 +58,30 @@ mount:
 	$(shell sudo ln -s ${PWD}/internal/ /Users/.minikube-mounts/internal)
 	@echo $(shell ls /Users/.minikube-mounts)
 
+deploy-crds:
+	kubectl apply -f deploy/common/containership-users-crd.yaml
+	kubectl apply -f deploy/common/containership-registries-crd.yaml
+
+deploy-common: deploy-crds
+	kubectl apply -f deploy/common/containership-core-namespace.yaml
+	kubectl apply -f deploy/common/containership-env-configmap.yaml
+
+deploy-agent: deploy-common
+	kubectl apply -f deploy/development/agent.yaml
+
+deploy-coordinator: deploy-common
+	kubectl apply -f deploy/development/coordinator.yaml
+
+deploy: deploy-agent deploy-coordinator
+
 build-agent:
 	@eval $$(minikube docker-env) ;\
-	docker image build -t agent:debug -f Dockerfile.agent .
-
-deploy-agent:
-	kubectl apply -f deploy/common/containership-core-namespace.yaml
-	kubectl apply -f deploy/development/containership-env-configmap.yaml
-	kubectl apply -f deploy/development/agent.yaml
+	docker image build -t containership/cloud-agent -f Dockerfile.agent .
 
 agent: build-agent deploy-agent
 
 build-coordinator:
 	@eval $$(minikube docker-env) ;\
-	docker image build -t coordinator:debug -f Dockerfile.coordinator .
-
-deploy-coordinator:
-	kubectl apply -f deploy/common/containership-core-namespace.yaml
-	kubectl apply -f deploy/development/containership-env-configmap.yaml
-	kubectl apply -f deploy/development/coordinator.yaml
+	docker image build -t containership/cloud-agent-coordinator -f Dockerfile.coordinator .
 
 coordinator: build-coordinator deploy-coordinator
