@@ -33,6 +33,7 @@ spec:
                 fieldRef:
                   fieldPath: spec.nodeName
           image: containership/cloud-agent-coordinator
+          imagePullPolicy: IfNotPresent
           resources:
             requests:
               cpu: 0.15

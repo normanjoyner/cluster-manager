@@ -46,6 +46,7 @@ spec:
                 fieldRef:
                   fieldPath: spec.nodeName
           image: containership/cloud-agent
+          imagePullPolicy: IfNotPresent
           volumeMounts:
             - name: containership-volume
               mountPath: /etc/containership
