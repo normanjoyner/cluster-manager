@@ -95,11 +95,11 @@ def runStages() {
 
                 buildInfo.image.'calculated-name' = "${buildInfo.image.name}:${buildInfo.image.tag}"
 
-                if(!fileExists(buildInfo.config.docker?.dockerfile ?: 'Dockerfile.coordinator')) {
+                if(!fileExists(buildInfo.config.docker?.dockerfile ?: 'Dockerfile')) {
                     throw new Exception("Dockerfile not found")
                 }
 
-                utils.buildDockerfile(buildInfo.config.docker?.dockerfile ?: 'Dockerfile.coordinator', "${buildInfo.image.'calculated-name'}", buildInfo.config.docker?.'build-args')
+                utils.buildDockerfile(buildInfo.config.docker?.dockerfile ?: 'Dockerfile', "${buildInfo.image.'calculated-name'}", buildInfo.config.docker?.'build-args')
             }
 
             parallel(
