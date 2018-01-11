@@ -74,7 +74,6 @@ func (c *RegistryController) SyncWithCloud(stopCh <-chan struct{}) error {
 func (c *RegistryController) doSync() {
 	// makes a request to containership api and write results to the resource's cache
 	err := resources.Sync(c.cloudResource)
-
 	if err != nil {
 		log.Error("Registries failed to sync:", err.Error())
 	}

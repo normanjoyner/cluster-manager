@@ -24,3 +24,15 @@ const (
 	// Quay is the name of a quay registry in containership cloud
 	Quay = "quay"
 )
+
+// BaseContainershipManagedLabel is a label for containership type resources
+// easy filtering
+// Unfortunately there's no const maps in go...please don't modify this.
+var BaseContainershipManagedLabel = map[string]string{
+	"containershio.io": "managed",
+}
+
+// BaseContainershipManagedLabelString is the containership
+// managed label as a string
+// TODO this is gross
+const BaseContainershipManagedLabelString = "containership.io=managed"

@@ -25,6 +25,10 @@ type cloudResource struct {
 	endpoint string
 }
 
+func (cr cloudResource) Endpoint() string {
+	return cr.endpoint
+}
+
 // Sync makes a request to cloud api for a resource and then writes the response
 // to the resources cache
 func Sync(cr CloudResource) error {

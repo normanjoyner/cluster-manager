@@ -25,11 +25,6 @@ func NewCsUsers() *CsUsers {
 	}
 }
 
-// Endpoint returns the Endpoint
-func (us *CsUsers) Endpoint() string {
-	return us.endpoint
-}
-
 // UnmarshalToCache take the json returned from containership api
 // and writes it to CsUsers cache
 func (us *CsUsers) UnmarshalToCache(bytes []byte) error {

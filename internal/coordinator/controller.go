@@ -31,12 +31,6 @@ import (
 	"k8s.io/client-go/util/workqueue"
 )
 
-// baseContainershipManagedLabel is a label for containership type resources
-// easy filtering
-var baseContainershipManagedLabel = map[string]string{
-	"containership.io": "managed",
-}
-
 const (
 	// Type of agent that runs this controller
 	controllerAgentName = "coordinator"
@@ -716,7 +710,7 @@ func newServiceAccount(namespace string, imagePullSecrets []corev1.LocalObjectRe
 	labels := make(map[string]string, 0)
 
 	// Copy from containership base labels to the labels for the secret
-	for key, value := range baseContainershipManagedLabel {
+	for key, value := range constants.BaseContainershipManagedLabel {
 		labels[key] = value
 	}
 
@@ -740,7 +734,7 @@ func newSecret(registry *containershipv3.Registry) *corev1.Secret {
 	labels := make(map[string]string)
 
 	// Copy from containership base labels to the labels for the secret
-	for key, value := range baseContainershipManagedLabel {
+	for key, value := range constants.BaseContainershipManagedLabel {
 		labels[key] = value
 	}
 	// add controller label for secret

@@ -10,6 +10,7 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 
+	"github.com/containership/cloud-agent/internal/constants"
 	"github.com/containership/cloud-agent/internal/envvars"
 	"github.com/containership/cloud-agent/internal/log"
 )
@@ -42,8 +43,14 @@ func init() {
 		log.Error(err.Error())
 	}
 
+	extclientset, err := newKubeExtensionsAPI(config)
+	if err != nil {
+		log.Error(err.Error())
+	}
+
 	kubeAPI = &KubeAPI{clientset, config}
 	csAPI = &CSKubeAPI{csclientset, config}
+	kubeExtensionsAPI = &KubeExtensionsAPI{extclientset, config}
 }
 
 // determineConfig determines if we are running in a cluster or out side
@@ -119,4 +126,23 @@ func (k KubeAPI) GetNamespaces() (*corev1.NamespaceList, error) {
 	}
 
 	return namespaces, nil
+}
+
+// GetContainershipNamespaces returns all Containership namespaces
+func (k KubeAPI) GetContainershipNamespaces() (*corev1.NamespaceList, error) {
+	namespaces, err := k.Client().CoreV1().
+		Namespaces().List(metav1.ListOptions{
+		LabelSelector: constants.BaseContainershipManagedLabelString,
+	})
+	if err != nil {
+		log.Error("Error getting namespaces: ", err)
+		return nil, err
+	}
+
+	return namespaces, nil
+}
+
+// DeleteNamespace deletes the namespace with the given name
+func (k KubeAPI) DeleteNamespace(name string) error {
+	return k.Client().CoreV1().Namespaces().Delete(name, &metav1.DeleteOptions{})
 }

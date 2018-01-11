@@ -88,7 +88,7 @@ func (r *Requester) MakeRequest() (*http.Response, error) {
 	addHeaders(req)
 
 	if err == nil {
-		log.Infof("Request %+v\n", req)
+		log.Debugf("Request %+v\n", *req)
 	}
 
 	client := createClient()

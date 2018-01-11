@@ -8,8 +8,8 @@ import (
 // Metadata is exported for access to handler methods
 type Metadata struct{}
 
-// Sync is exported for access to handler methods
-type Sync struct{}
+// Terminate is exported for access to handler methods
+type Terminate struct{}
 
 // respondWithError is a shared function to have handler respond with error
 func respondWithError(w http.ResponseWriter, code int, message string) {

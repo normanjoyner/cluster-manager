@@ -26,11 +26,6 @@ func NewCsRegistries() *CsRegistries {
 	}
 }
 
-// Endpoint returns the Endpoint
-func (rs *CsRegistries) Endpoint() string {
-	return rs.endpoint
-}
-
 // UnmarshalToCache take the json returned from containership api
 // and writes it to CsRegistries cache
 func (rs *CsRegistries) UnmarshalToCache(bytes []byte) error {

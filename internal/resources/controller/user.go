@@ -72,7 +72,6 @@ func (c *UserController) SyncWithCloud(stopCh <-chan struct{}) error {
 func (c *UserController) doSync() {
 	// makes a request to containership api and write results to the resource's cache
 	err := resources.Sync(c.cloudResource)
-
 	if err != nil {
 		log.Error("Users failed to sync:", err.Error())
 	}

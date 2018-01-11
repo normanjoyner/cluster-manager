@@ -44,7 +44,7 @@ func (meta *Metadata) Get(w http.ResponseWriter, r *http.Request) {
 	nodes, err := getNodes()
 
 	if err != nil {
-		respondWithError(w, 500, err.Error())
+		respondWithError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
