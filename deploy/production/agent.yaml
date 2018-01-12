@@ -1,39 +1,49 @@
 ---
-apiVersion: extensions/v1beta1
+apiVersion: apps/v1beta2
 kind: DaemonSet
 metadata:
   namespace: containership-core
   name: containership-agent
   labels:
     app: containership-agent
-    version: v1
+    containership.io: managed
 spec:
+  selector:
+    matchLabels:
+      app: containership-agent
   template:
     metadata:
       labels:
         app: containership-agent
-        name: containership
+        name: cloud-agent
     spec:
-      tolerations:
-        - key: "node-role.kubernetes.io/master" #kubernetes.io/role=master
-          effect: "NoSchedule"
+      volumes:
+        - name: containership-volume
+          hostPath:
+              path: /etc/containership
+              type: DirectoryOrCreate
+        - name: containership-home
+          hostPath:
+              path: /etc/containership/home
+              type: DirectoryOrCreate
+        - name: containership-scripts
+          hostPath:
+              path: /etc/containership/scripts
+              type: DirectoryOrCreate
       containers:
         - name: containership-agent
           envFrom:
             - configMapRef:
-              name: containership-env-configmap
-          env:
-            - name: NODE_PRIVATE_IP
-              valueFrom:
-                fieldRef:
-                  fieldPath: status.hostIP
-            - name: NODE_NAME
-              valueFrom:
-                fieldRef:
-                  fieldPath: spec.nodeName
-          image: ashleyschuett/cloud-agent:debug
-          command: ["/app/containership", "agent"]
+                name: containership-env-configmap
+          image: containership/cloud-agent
           imagePullPolicy: Always
+          volumeMounts:
+            - name: containership-volume
+              mountPath: /etc/containership
+            - name: containership-home
+              mountPath: /etc/containership/home
+            - name: containership-scripts
+              mountPath: /etc/containership/scripts
           resources:
             requests:
               cpu: 0.15

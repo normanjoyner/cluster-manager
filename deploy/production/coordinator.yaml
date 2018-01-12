@@ -1,13 +1,16 @@
 ---
-apiVersion: extensions/v1beta1
+apiVersion: apps/v1beta2
 kind: Deployment
 metadata:
   namespace: containership-core
   name: containership-coordinator
   labels:
     app: containership-coordinator
-    version: v1
+    containership.io: managed
 spec:
+  selector:
+    matchLabels:
+      app: containership-coordinator
   template:
     metadata:
       labels:
@@ -18,18 +21,8 @@ spec:
         - name: containership-coordinator
           envFrom:
             - configMapRef:
-              name: containership-env-configmap
-          env:
-            - name: NODE_PRIVATE_IP
-              valueFrom:
-                fieldRef:
-                  fieldPath: status.hostIP
-            - name: NODE_NAME
-              valueFrom:
-                fieldRef:
-                  fieldPath: spec.nodeName
-          image: ashleyschuett/cloud-agent:debug
-          command: ["/app/containership", "coordinator"]
+                name: containership-env-configmap
+          image: containership/cloud-agent-coordinator
           imagePullPolicy: Always
           resources:
             requests:

@@ -7,7 +7,7 @@ metadata:
   name: containership-agent
   labels:
     app: containership-agent
-    version: v1
+    containership.io: managed
 spec:
   selector:
     matchLabels:
@@ -36,15 +36,6 @@ spec:
           envFrom:
             - configMapRef:
                 name: containership-env-configmap
-          env:
-            - name: NODE_PRIVATE_IP
-              valueFrom:
-                fieldRef:
-                  fieldPath: status.hostIP
-            - name: NODE_NAME
-              valueFrom:
-                fieldRef:
-                  fieldPath: spec.nodeName
           image: containership/cloud-agent
           imagePullPolicy: IfNotPresent
           volumeMounts:

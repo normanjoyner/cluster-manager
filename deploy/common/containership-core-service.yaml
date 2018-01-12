@@ -3,6 +3,8 @@ kind: Service
 metadata:
     name: containership-coordinator
     namespace: containership-core
+    labels:
+        containership.io: managed
 spec:
     ports:
     - port: 8000
