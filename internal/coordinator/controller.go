@@ -707,18 +707,11 @@ func (c *Controller) queueSecretOwnerRegistryIfApplicable(obj interface{}) {
 // newServiceAccount creates a new Service Account for a Namespace resource if
 // the namespace does not currently contain a containership service account
 func newServiceAccount(namespace string, imagePullSecrets []corev1.LocalObjectReference) *corev1.ServiceAccount {
-	labels := make(map[string]string, 0)
-
-	// Copy from containership base labels to the labels for the secret
-	for key, value := range constants.BaseContainershipManagedLabel {
-		labels[key] = value
-	}
-
 	return &corev1.ServiceAccount{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      constants.ContainershipServiceAccountName,
 			Namespace: namespace,
-			Labels:    labels,
+			Labels:    constants.BuildContainershipLabelMap(nil),
 		},
 		ImagePullSecrets: imagePullSecrets,
 	}
@@ -731,14 +724,9 @@ func newSecret(registry *containershipv3.Registry) *corev1.Secret {
 	rs := registry.Spec
 	rdt := rs.AuthToken.Type
 
-	labels := make(map[string]string)
-
-	// Copy from containership base labels to the labels for the secret
-	for key, value := range constants.BaseContainershipManagedLabel {
-		labels[key] = value
-	}
-	// add controller label for secret
-	labels["controller"] = registry.Name
+	labels := constants.BuildContainershipLabelMap(map[string]string{
+		"controller": registry.Name,
+	})
 
 	data := make(map[string][]byte, 0)
 	// Default tempate and type to be that of docker config

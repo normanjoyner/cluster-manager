@@ -1,5 +1,9 @@
 package constants
 
+import (
+	"strings"
+)
+
 const (
 	// ContainershipNamespace is that namespace in which all containership
 	// resources will live
@@ -25,14 +29,23 @@ const (
 	Quay = "quay"
 )
 
-// BaseContainershipManagedLabel is a label for containership type resources
-// easy filtering
-// Unfortunately there's no const maps in go...please don't modify this.
-var BaseContainershipManagedLabel = map[string]string{
-	"containershio.io": "managed",
-}
-
 // BaseContainershipManagedLabelString is the containership
 // managed label as a string
-// TODO this is gross
 const BaseContainershipManagedLabelString = "containership.io=managed"
+
+// BuildContainershipLabelMap builds a map of labels that should be attached to
+// any Containership-managed resources. If additionalLabels is non-nil, they
+// will be included in the returned map.
+func BuildContainershipLabelMap(additionalLabels map[string]string) map[string]string {
+	m := make(map[string]string)
+
+	// Add required base label
+	pair := strings.Split(BaseContainershipManagedLabelString, "=")
+	m[pair[0]] = pair[1]
+
+	for k, v := range additionalLabels {
+		m[k] = v
+	}
+
+	return m
+}
