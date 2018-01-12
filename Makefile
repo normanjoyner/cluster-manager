@@ -1,7 +1,7 @@
 PROJECT_NAME := "cloud-agent"
 PKG := "github.com/containership/$(PROJECT_NAME)"
 PKG_LIST := $(shell glide novendor)
-GO_FILES := $(shell find . -type f -not -path './vendor/*' -name '*.go' | grep -v _test.go)
+GO_FILES := $(shell find . -type f -not -path './vendor/*' -name '*.go')
 
 # TODO golint has no way to ignore specific files or directories, so we have to
 # manually build a lint list. This workaround can go away and we can use
@@ -14,7 +14,7 @@ LINT_LIST := $(shell go list ./... | grep -v '/pkg/client')
 all: build
 
 fmt-check: ## Check the file format
-	@gofmt -e -d ${GO_FILES}
+	@gofmt -s -e -d ${GO_FILES}
 
 lint: ## Lint the files
 	@golint -set_exit_status ${LINT_LIST}
