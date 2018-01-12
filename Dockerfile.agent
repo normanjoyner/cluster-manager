@@ -21,12 +21,12 @@ RUN mkdir -p /scripts && \
 # Build it:
 RUN cd $SRC_DIR && \
     glide install && \
-    go build -o agent cmd/cloud_agent/agent.go && \
+    CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o agent cmd/cloud_agent/agent.go && \
     cp agent /app/
 
 
 # Create Docker image of just the binary
 FROM scratch as runner
 COPY --from=builder ./scripts /scripts
-COPY --from=builder ./app/agent /app/agent
-ENTRYPOINT /app/agent
+COPY --from=builder ./app/agent .
+CMD ["./agent"]

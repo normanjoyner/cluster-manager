@@ -17,11 +17,11 @@ ADD . $SRC_DIR
 # Build it:
 RUN cd $SRC_DIR && \
     glide install && \
-    go build -o coordinator cmd/cloud_coordinator/coordinator.go && \
+    CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o coordinator cmd/cloud_coordinator/coordinator.go && \
     cp coordinator /app/
 
 
 # Create Docker image of just the binary
 FROM scratch as runner
-COPY --from=builder ./app/coordinator /app/coordinator
-ENTRYPOINT /app/coordinator
+COPY --from=builder /app/coordinator .
+CMD ["./coordinator"]
