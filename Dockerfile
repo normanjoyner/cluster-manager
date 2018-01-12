@@ -13,7 +13,7 @@ ADD . $SRC_DIR
 
 # Build it:
 RUN cd $SRC_DIR && \
-    glide install && \
+    glide install -v && \
     go build -o coordinator cmd/cloud_coordinator/coordinator.go && \
     cp coordinator /app/
 
