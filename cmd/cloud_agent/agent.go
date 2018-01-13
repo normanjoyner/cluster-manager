@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"runtime"
 	"time"
 
@@ -12,6 +13,11 @@ import (
 
 func main() {
 	log.Info("Starting Containership agent...")
+
+	// We don't have any of our own flags to parse, but k8s packages want to
+	// use glog and we have to pass flags to that to configure it to behave
+	// in a sane way.
+	flag.Parse()
 
 	// Failure to initialize what we need for SSH to work is not a fatal error
 	// because the user may not have performed the manual steps required to

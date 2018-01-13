@@ -30,4 +30,5 @@ FROM scratch as runner
 COPY --from=builder ./scripts /scripts
 COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
 COPY --from=builder ./app/agent .
-CMD ["./agent"]
+# TODO glog wants to log to a file by default. Don't use glog. See issue #36.
+CMD ["./agent", "-logtostderr=true"]

@@ -25,4 +25,5 @@ RUN cd $SRC_DIR && \
 FROM scratch as runner
 COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
 COPY --from=builder /app/coordinator .
-CMD ["./coordinator"]
+# TODO glog wants to log to a file by default. Don't use glog. See issue #36.
+CMD ["./coordinator", "-logtostderr=true"]

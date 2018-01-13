@@ -18,3 +18,6 @@ RUN cd $SRC_DIR && \
     cp coordinator /app/
 
 ENTRYPOINT /app/coordinator
+
+# TODO glog wants to log to a file by default. Don't use glog. See issue #36.
+CMD ["-logtostderr=true"]
