@@ -155,7 +155,7 @@ func TestIsEqual(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, differentTest, false)
 
-	// check with differnt keys, differenet lengths
+	// check with different keys, different lengths
 	diffLengths, err := c.IsEqual(user2specDiff, user1)
 	assert.Nil(t, err)
 	assert.Equal(t, diffLengths, false)

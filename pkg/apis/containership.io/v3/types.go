@@ -60,7 +60,7 @@ type RegistrySpec struct {
 	ID            string            `json:"id"`
 	AddedAt       string            `json:"added_at"`
 	Description   string            `json:"description"`
-	Organization  string            `json:"organization"`
+	Organization  string            `json:"organization_id"`
 	Email         string            `json:"email"`
 	Serveraddress string            `json:"serveraddress"`
 	Provider      string            `json:"provider"`

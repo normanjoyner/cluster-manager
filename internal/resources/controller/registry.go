@@ -98,6 +98,7 @@ func (c *RegistryController) doSync() {
 		// We only need to pass in the first index of item since the key by function
 		// is keying by a unique value
 		if equal, err := c.cloudResource.IsEqual(cloudItem, item[0]); err != nil && !equal {
+			log.Debugf("\n\n CACHE DOES NOT EQUAL ITEM: %+v  \n CACHE: %+v \n\n", cloudItem.ID, item[0])
 			err = c.Update(cloudItem, item[0])
 			if err != nil {
 				log.Error("Registry Update failed:", err.Error())

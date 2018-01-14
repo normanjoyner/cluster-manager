@@ -59,8 +59,6 @@ func (rs *CsRegistries) GetAuthToken(spec containershipv3.RegistrySpec) (contain
 // IsEqual take a Registry Spec and compares it to a Registry to see if they are
 // the same, returns an error if the objects are of the inforect type
 func (rs *CsRegistries) IsEqual(specObj interface{}, parentSpecObj interface{}) (bool, error) {
-	//rs containershipv3.RegistrySpec, crd containershipv3.Registry
-	log.Info("Checking Equality of registry spec to crd")
 	spec, ok := specObj.(containershipv3.RegistrySpec)
 	if !ok {
 		return false, fmt.Errorf("The object is not of type RegistrySpec")
