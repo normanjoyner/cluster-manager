@@ -82,50 +82,50 @@ func getCloudEnvironment() string {
 
 // Fatal implements the fatal logging level
 func Fatal(args ...interface{}) {
-	log.Fatal(args)
+	log.Fatal(args...)
 }
 
 // Fatalf implements the fatal logging level with a format string
 func Fatalf(s string, args ...interface{}) {
-	log.Fatalf(s, args)
+	log.Fatalf(s, args...)
 }
 
 // Error implements the error logging level
 func Error(args ...interface{}) {
-	log.Error(args)
+	log.Error(args...)
 }
 
 // Errorf implements the error logging level with a format string
 func Errorf(s string, args ...interface{}) {
-	log.Errorf(s, args)
+	log.Errorf(s, args...)
 }
 
 // Warn implements the warn logging level
 func Warn(args ...interface{}) {
-	log.Warn(args)
+	log.Warn(args...)
 }
 
 // Warnf implements the warn logging level with a format string
 func Warnf(s string, args ...interface{}) {
-	log.Warnf(s, args)
+	log.Warnf(s, args...)
 }
 
 // Info implements the info logging level
 func Info(args ...interface{}) {
-	log.Info(args)
+	log.Info(args...)
 }
 
 // Infof implements the info logging level with a format string
 func Infof(s string, args ...interface{}) {
-	log.Infof(s, args)
+	log.Infof(s, args...)
 }
 
 // Debug implements the debug logging level
 func Debug(args ...interface{}) {
-	log.Debug(args)
+	log.Debug(args...)
 }
 
 // Debugf implements the debug logging level with a format string
 func Debugf(s string, args ...interface{}) {
-	log.Debugf(s, args)
+	log.Debugf(s, args...)
 }
