@@ -9,11 +9,9 @@ metadata:
     containership.io: managed
 subjects:
   - kind: ServiceAccount
-  # Reference to upper's `metadata.name`
     name: default
-    # Reference to upper's `metadata.namespace`
     namespace: containership-core
 roleRef:
   kind: ClusterRole
-  name: containership-rbac
+  name: cluster-admin
   apiGroup: rbac.authorization.k8s.io
