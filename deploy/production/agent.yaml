@@ -1,5 +1,5 @@
 ---
-apiVersion: apps/v1beta2
+apiVersion: extensions/v1beta1
 kind: DaemonSet
 metadata:
   namespace: containership-core
@@ -18,18 +18,12 @@ spec:
         name: cloud-agent
     spec:
       volumes:
-        - name: containership-volume
-          hostPath:
-              path: /etc/containership
-              type: DirectoryOrCreate
         - name: containership-home
           hostPath:
               path: /etc/containership/home
-              type: DirectoryOrCreate
         - name: containership-scripts
           hostPath:
               path: /etc/containership/scripts
-              type: DirectoryOrCreate
       containers:
         - name: containership-agent
           envFrom:
@@ -38,8 +32,6 @@ spec:
           image: containership/cloud-agent
           imagePullPolicy: Always
           volumeMounts:
-            - name: containership-volume
-              mountPath: /etc/containership
             - name: containership-home
               mountPath: /etc/containership/home
             - name: containership-scripts

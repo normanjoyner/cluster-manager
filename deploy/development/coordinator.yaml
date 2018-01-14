@@ -1,6 +1,5 @@
 ---
-# Note: Only Kubernetes v1.8+ clusters supported
-apiVersion: apps/v1beta2
+apiVersion: apps/v1beta1
 kind: Deployment
 metadata:
   namespace: containership-core
