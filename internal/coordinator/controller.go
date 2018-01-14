@@ -34,7 +34,7 @@ import (
 // baseContainershipManagedLabel is a label for containership type resources
 // easy filtering
 var baseContainershipManagedLabel = map[string]string{
-	"containershio.io": "managed",
+	"containership.io": "managed",
 }
 
 const (
@@ -211,11 +211,11 @@ func isContainershipManaged(obj interface{}) bool {
 	meta, err := meta.Accessor(obj)
 
 	if err != nil {
+		log.Error("isContainershipManaged Error: ", err)
 		return false
 	}
 
 	l := meta.GetLabels()
-
 	if cs, ok := l["containership.io"]; ok && cs == "managed" {
 		return true
 	}
