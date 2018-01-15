@@ -3,13 +3,13 @@
 USER=$1
 USER_HOME=/etc/containership/home/$USER
 
-if [[ $# -eq 0 ]]; then
+if [ $# -eq 0 ]; then
     exit 1
 fi
 
 if ! id $USER > /dev/null 2>&1; then
     if command -v useradd > /dev/null 2>&1; then
-        sudo useradd -d $USER_HOME -s /bin/bash $USER
+        sudo useradd -m -d $USER_HOME $USER
     elif command -v adduser > /dev/null 2>&1; then
         sudo adduser -h $USER_HOME -D $USER > /dev/null 2>&1
         sudo passwd -u $USER > /dev/null 2>&1
