@@ -18,12 +18,9 @@ spec:
         name: cloud-agent
     spec:
       volumes:
-        - name: containership-home
+        - name: containership-mount
           hostPath:
-              path: /etc/containership/home
-        - name: containership-scripts
-          hostPath:
-              path: /etc/containership/scripts
+              path: /etc/containership
       containers:
         - name: containership-agent
           envFrom:
@@ -32,10 +29,8 @@ spec:
           image: containership/cloud-agent
           imagePullPolicy: IfNotPresent
           volumeMounts:
-            - name: containership-home
-              mountPath: /etc/containership/home
-            - name: containership-scripts
-              mountPath: /etc/containership/scripts
+            - name: containership-mount
+              mountPath: /etc/containership
           resources:
             requests:
               cpu: 0.15

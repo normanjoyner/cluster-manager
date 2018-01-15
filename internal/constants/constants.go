@@ -13,6 +13,11 @@ const (
 	ContainershipServiceAccountName = "containership"
 )
 
+const (
+	// ContainershipMount is the base Containership mount
+	ContainershipMount = "/etc/containership"
+)
+
 // Containership provider registry names
 const (
 	// EC2Registry is the name of an amazon registry in containership cloud

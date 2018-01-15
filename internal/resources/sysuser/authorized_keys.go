@@ -9,17 +9,21 @@ import (
 
 	"github.com/spf13/afero"
 
-	"github.com/containership/cloud-agent/internal/envvars"
+	"github.com/containership/cloud-agent/internal/constants"
 	"github.com/containership/cloud-agent/internal/log"
 	v3 "github.com/containership/cloud-agent/pkg/apis/containership.io/v3"
 )
 
 const (
-	loginScriptContainerPath  = "/scripts/containership_login.sh"
-	loginScriptHostPath       = "/etc/containership/scripts/containership_login.sh"
+	// Container
+	loginScriptContainerPath = "/scripts/containership_login.sh"
+
+	// Host
+	loginScriptFilename       = "containership_login.sh"
 	authorizedKeysFilename    = "authorized_keys"
 	authorizedKeysPermissions = 0600
 	sshDirPermissions         = 0700
+	scriptsDirPermissions     = 0700
 	scriptPermissions         = 0755
 )
 
@@ -46,22 +50,18 @@ func GetAuthorizedKeysFullPath() string {
 // InitializeAuthorizedKeysFileStructure does everything required to make SSH
 // work on host: creates the SSH directory, initializes a blank authorized_keys
 // file, (to simplify e.g. file watching), and puts the login script in place.
-// This assumes that CONTAINERSHIP_HOME already exists and its parent directory
-// is bind mounted.
+// Assumes that ContainershipMount is mounted as a hostPath.
 // This is not thread-safe and is expected to only be called on initialization.
 func InitializeAuthorizedKeysFileStructure() error {
-	// Create the ssh dir if needed
-	sshDir := getSSHDir()
-	if !dirExists(sshDir) {
-		log.Info("SSH dir didn't exist so we're creating it")
-		if err := osFs.Mkdir(sshDir, sshDirPermissions); err != nil {
-			return err
-		}
-	} else {
-		// Ensure permissions of existing dir are correct
-		if err := osFs.Chmod(sshDir, sshDirPermissions); err != nil {
-			return err
-		}
+	// Create directories / fix permissions if needed
+	err := ensureDirExistsWithCorrectPermissions(getSSHDir(), sshDirPermissions)
+	if err != nil {
+		return err
+	}
+
+	err = ensureDirExistsWithCorrectPermissions(getScriptsDir(), scriptsDirPermissions)
+	if err != nil {
+		return err
 	}
 
 	// Create empty authorized_keys if needed (this is just to simplify other
@@ -83,9 +83,25 @@ func InitializeAuthorizedKeysFileStructure() error {
 	}
 
 	// Copy login script into place
-	err := copyFileForcefully(loginScriptHostPath, loginScriptContainerPath)
+	err = copyFileForcefully(getLoginScriptFullPath(), loginScriptContainerPath)
 	if err != nil {
 		return err
+	}
+
+	return nil
+}
+
+func ensureDirExistsWithCorrectPermissions(dir string, perms os.FileMode) error {
+	if !dirExists(dir) {
+		log.Infof("Directory %s didn't exist so we're creating it", dir)
+		if err := osFs.MkdirAll(dir, perms); err != nil {
+			return err
+		}
+	} else {
+		// Ensure permissions of existing dir are correct
+		if err := osFs.Chmod(dir, perms); err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -136,7 +152,17 @@ func fileExists(file string) bool {
 
 // getSSHDir returns the SSH directory built from the environment
 func getSSHDir() string {
-	return path.Join(envvars.GetCSHome(), ".ssh")
+	return path.Join(constants.ContainershipMount, "home", ".ssh")
+}
+
+// getScriptsDir returns the full path to the scripts dir
+func getScriptsDir() string {
+	return path.Join(constants.ContainershipMount, "scripts")
+}
+
+// getLoginScriptFullPath returns the full path to the login script
+func getLoginScriptFullPath() string {
+	return path.Join(getScriptsDir(), loginScriptFilename)
 }
 
 // writeAuthorizedKeys is the same as WriteAuthorizedKeys but takes a
@@ -171,7 +197,7 @@ func buildKeysStringForUser(user v3.UserSpec) string {
 	s := ""
 	for _, k := range user.SSHKeys {
 		s += fmt.Sprintf("command=\"%s %s\" %s\n",
-			loginScriptHostPath, username, k.Key)
+			getLoginScriptFullPath(), username, k.Key)
 	}
 
 	return s
