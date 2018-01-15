@@ -72,10 +72,11 @@ func (c *RegistryController) SyncWithCloud(stopCh <-chan struct{}) error {
 }
 
 func (c *RegistryController) doSync() {
+	log.Debug("Sync Registries")
 	// makes a request to containership api and write results to the resource's cache
 	err := resources.Sync(c.cloudResource)
 	if err != nil {
-		log.Error("Registries failed to sync:", err.Error())
+		log.Error("Registries failed to sync: ", err.Error())
 	}
 
 	// write the cloud items by ID so we can easily see if anything needs

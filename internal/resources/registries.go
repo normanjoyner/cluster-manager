@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/containership/cloud-agent/internal/log"
 	"github.com/containership/cloud-agent/internal/resources/registry"
 
 	containershipv3 "github.com/containership/cloud-agent/pkg/apis/containership.io/v3"
@@ -29,15 +28,7 @@ func NewCsRegistries() *CsRegistries {
 // UnmarshalToCache take the json returned from containership api
 // and writes it to CsRegistries cache
 func (rs *CsRegistries) UnmarshalToCache(bytes []byte) error {
-	log.Debug("CsRegistries UnmarshallToCache...")
-
-	err := json.Unmarshal(bytes, &rs.cache)
-	if err != nil {
-		log.Error("Cloud returned registries response:", string(bytes))
-	}
-
-	log.Debugf("CsRegistries cache updated: %+v", rs.cache)
-	return err
+	return json.Unmarshal(bytes, &rs.cache)
 }
 
 // Cache returns CsRegistries cache

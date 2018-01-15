@@ -87,15 +87,11 @@ func (r *Requester) MakeRequest() (*http.Response, error) {
 	)
 	addHeaders(req)
 
-	if err == nil {
-		log.Debugf("Request %+v\n", *req)
-	}
-
 	client := createClient()
 
 	res, err := client.Do(req)
-
 	if err != nil {
+		log.Debugf("Failed request: %+v\n", *req)
 		return res, err
 	}
 

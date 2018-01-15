@@ -4,8 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/containership/cloud-agent/internal/log"
-
 	containershipv3 "github.com/containership/cloud-agent/pkg/apis/containership.io/v3"
 )
 
@@ -28,16 +26,7 @@ func NewCsUsers() *CsUsers {
 // UnmarshalToCache take the json returned from containership api
 // and writes it to CsUsers cache
 func (us *CsUsers) UnmarshalToCache(bytes []byte) error {
-	// Clear cache before updating it
-	log.Debug("CsUsers UnmarshallToCache...")
-
-	err := json.Unmarshal(bytes, &us.cache)
-	if err != nil {
-		log.Error("Cloud returned user response:", string(bytes))
-	}
-
-	log.Debugf("CsUsers cache updated: %v", us.cache)
-	return err
+	return json.Unmarshal(bytes, &us.cache)
 }
 
 // Cache return the containership users cache
