@@ -13,7 +13,8 @@ import (
 var (
 	kubeInformerFactory kubeinformers.SharedInformerFactory
 	csInformerFactory   csinformers.SharedInformerFactory
-	controller          *Controller
+	regController       *RegistryController
+	csController        *ContainershipController
 	cloudSynchronizer   *CloudSynchronizer
 )
 
@@ -24,8 +25,11 @@ func Initialize() {
 	kubeInformerFactory = k8sutil.API().NewKubeSharedInformerFactory(time.Second * 10)
 	csInformerFactory = k8sutil.CSAPI().NewCSSharedInformerFactory(time.Second * 10)
 
-	controller = NewController(
+	regController = NewRegistryController(
 		k8sutil.API().Client(), k8sutil.CSAPI().Client(), kubeInformerFactory, csInformerFactory)
+
+	csController = NewContainershipController(
+		k8sutil.API().Client(), kubeInformerFactory)
 
 	// Synchronizer needs to be created before any jobs start so
 	// that all needed index functions can be added to the
@@ -42,10 +46,12 @@ func Run() {
 
 	cloudSynchronizer.Run()
 
-	// Run controller until error
-	if err := controller.Run(2, stopCh); err != nil {
-		log.Fatal("Error running controller:", err.Error())
-	}
+	go regController.Run(2, stopCh)
+	go csController.Run(2, stopCh)
+
+	// if stopCh is closed something went wrong
+	<-stopCh
+	log.Fatal("There was an error while running the coordinator's controllers")
 }
 
 // RequestTerminate requests to stop syncing, clean up, and terminate

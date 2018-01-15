@@ -67,11 +67,12 @@ func (s *CloudSynchronizer) stopAllSyncRoutines() {
 }
 
 // cleanupAllContainershipManagedResources performs a best-effort attempt to
-// clean up all CS resources by deleting all CS CRDs and then deleting the core
-// Containership namespace after a delay, which should result in the agent and
-// coordinator being killed.
+// clean up all CS resources by deleting all CS CRDs, cleaning up Containership
+// service accouns, and then deleting the core Containership namespace after a
+// delay, which should result in the agent and coordinator being killed.
 func cleanupAllContainershipManagedResources() {
 	tryDeleteAllContainershipCRDs()
+	tryDeleteAllContainershipServiceAccounts()
 
 	// TODO it would be great if we could avoid this arbitrary heuristic here.
 	// Sleep for a little to give k8s enough time to attempt to delete all
@@ -96,6 +97,24 @@ func tryDeleteAllContainershipCRDs() {
 		err := k8sutil.ExtensionsAPI().DeleteCRD(crd.Name)
 		if err != nil {
 			log.Errorf("Could not delete CRD %s: %s", crd.Name, err.Error())
+		}
+	}
+}
+
+// tryDeleteAllContainershipServiceAccounts tries to delete all
+// service accounts in each namespace that are containership managed
+func tryDeleteAllContainershipServiceAccounts() {
+	nsList, err := k8sutil.API().GetNamespaces()
+	if err != nil {
+		log.Error("Could not list namespaces for cleanup:", err.Error())
+		return
+	}
+
+	for _, ns := range nsList.Items {
+		log.Info("Deleting managed Service Accounts in ", ns.Name)
+		err := k8sutil.API().DeleteContainershipServiceAccounts(ns.Name)
+		if err != nil {
+			log.Errorf("Could not delete service accounts in namespace %s: %s", ns.Name, err.Error())
 		}
 	}
 }

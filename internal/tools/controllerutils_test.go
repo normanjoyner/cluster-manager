@@ -1,4 +1,4 @@
-package coordinator
+package tools
 
 import (
 	"testing"

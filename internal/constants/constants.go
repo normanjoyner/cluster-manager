@@ -2,6 +2,10 @@ package constants
 
 import (
 	"strings"
+
+	"k8s.io/apimachinery/pkg/api/meta"
+
+	"github.com/containership/cloud-agent/internal/log"
 )
 
 const (
@@ -53,4 +57,22 @@ func BuildContainershipLabelMap(additionalLabels map[string]string) map[string]s
 	}
 
 	return m
+}
+
+// IsContainershipManaged takes in a resource and looks to see if it
+// is being managed by containership
+func IsContainershipManaged(obj interface{}) bool {
+	meta, err := meta.Accessor(obj)
+
+	if err != nil {
+		log.Error("isContainershipManaged Error: ", err)
+		return false
+	}
+
+	l := meta.GetLabels()
+	if cs, ok := l["containership.io/managed"]; ok && cs == "true" {
+		return true
+	}
+
+	return false
 }

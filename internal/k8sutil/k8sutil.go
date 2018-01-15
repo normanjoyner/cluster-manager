@@ -142,6 +142,21 @@ func (k KubeAPI) GetContainershipNamespaces() (*corev1.NamespaceList, error) {
 	return namespaces, nil
 }
 
+// DeleteContainershipServiceAccounts returns all service accounts with the
+// containership managed label
+func (k KubeAPI) DeleteContainershipServiceAccounts(namespace string) error {
+	err := k.Client().CoreV1().
+		ServiceAccounts(namespace).DeleteCollection(&metav1.DeleteOptions{}, metav1.ListOptions{
+		LabelSelector: constants.BaseContainershipManagedLabelString,
+	})
+	if err != nil {
+		log.Error("Error deleting containership collection of service accounts: ", err)
+		return err
+	}
+
+	return nil
+}
+
 // DeleteNamespace deletes the namespace with the given name
 func (k KubeAPI) DeleteNamespace(name string) error {
 	return k.Client().CoreV1().Namespaces().Delete(name, &metav1.DeleteOptions{})
