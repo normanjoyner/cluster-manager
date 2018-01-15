@@ -84,37 +84,44 @@ func (c *UserController) doSync() {
 	for _, cloudItem := range c.cloudResource.Cache() {
 		cloudCacheByID[cloudItem.ID] = cloudItem
 
+		// Try to find cloud item in CR cache
 		item, err := c.informer.GetIndexer().ByIndex("byID", cloudItem.ID)
 		if err == nil && len(item) == 0 {
+			log.Debugf("Cloud User %s does not exist as CR - creating", cloudItem.ID)
 			err = c.Create(cloudItem)
 			if err != nil {
-				log.Error("User Create failed:", err.Error())
+				log.Error("User Create failed: ", err.Error())
 			}
 			continue
 		}
 
 		// We only need to pass in the first index of item since the key by function
 		// is keying by a unique value
-		if equal, err := c.cloudResource.IsEqual(cloudItem, item[0]); err != nil && !equal {
+		// Only update if err == nil because if err != nil then the types are
+		// incorrect somehow and we shouldn't update.
+		if equal, err := c.cloudResource.IsEqual(cloudItem, item[0]); err == nil && !equal {
+			log.Debugf("Cloud User %s does not match CR - updating", cloudItem.ID)
 			err = c.Update(cloudItem, item[0])
 			if err != nil {
-				log.Error("User Update failed:", err.Error())
+				log.Error("User Update failed: ", err.Error())
 			}
 			continue
 		}
 	}
 
-	allUserCRDS, err := c.lister.List(labels.NewSelector())
+	allCRs, err := c.lister.List(labels.NewSelector())
 	if err != nil {
 		log.Error(err)
 		return
 	}
 
-	for _, u := range allUserCRDS {
+	// Find CRs that do not exist in cloud
+	for _, u := range allCRs {
 		if _, exists := cloudCacheByID[u.Name]; !exists {
+			log.Debugf("CR User %s does not exist in cloud - deleting", u.Name)
 			err = c.Delete(u.Namespace, u.Name)
 			if err != nil {
-				log.Error("User Delete failed:", err.Error())
+				log.Error("User Delete failed: ", err.Error())
 			}
 		}
 	}

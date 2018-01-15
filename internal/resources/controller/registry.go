@@ -86,38 +86,44 @@ func (c *RegistryController) doSync() {
 	for _, cloudItem := range c.cloudResource.Cache() {
 		cloudCacheByID[cloudItem.ID] = cloudItem
 
+		// Try to find cloud item in CR cache
 		item, err := c.informer.GetIndexer().ByIndex("byID", cloudItem.ID)
 		if err == nil && len(item) == 0 {
+			log.Debugf("Cloud Registry %s does not exist as CR - creating", cloudItem.ID)
 			err = c.Create(cloudItem)
 			if err != nil {
-				log.Error("Registry Create failed:", err.Error())
+				log.Error("Registry Create failed: ", err.Error())
 			}
 			continue
 		}
 
 		// We only need to pass in the first index of item since the key by function
 		// is keying by a unique value
-		if equal, err := c.cloudResource.IsEqual(cloudItem, item[0]); err != nil && !equal {
-			log.Debugf("\n\n CACHE DOES NOT EQUAL ITEM: %+v  \n CACHE: %+v \n\n", cloudItem.ID, item[0])
+		// Only update if err == nil because if err != nil then the types are
+		// incorrect somehow and we shouldn't update.
+		if equal, err := c.cloudResource.IsEqual(cloudItem, item[0]); err == nil && !equal {
+			log.Debugf("Cloud Registry %s does not match CR - updating", cloudItem.ID)
 			err = c.Update(cloudItem, item[0])
 			if err != nil {
-				log.Error("Registry Update failed:", err.Error())
+				log.Error("Registry Update failed: ", err.Error())
 			}
 			continue
 		}
 	}
 
-	allRegistryCRDS, err := c.lister.List(labels.NewSelector())
+	allCRs, err := c.lister.List(labels.NewSelector())
 	if err != nil {
 		log.Error(err)
 		return
 	}
 
-	for _, u := range allRegistryCRDS {
+	// Find CRs that do not exist in cloud
+	for _, u := range allCRs {
 		if _, exists := cloudCacheByID[u.Name]; !exists {
+			log.Debugf("CR Registry %s does not exist in cloud - deleting", u.Name)
 			err = c.Delete(u.Namespace, u.Name)
 			if err != nil {
-				log.Error("Registry Delete failed:", err.Error())
+				log.Error("Registry Delete failed: ", err.Error())
 			}
 		}
 	}
