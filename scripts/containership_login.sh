@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 
 USER=$1
 USER_HOME=/etc/containership/home/$USER
@@ -10,12 +10,19 @@ if [[ $# -eq 0 ]]; then
 fi
 
 # Create user if it doesn't exist
-if ! getent passwd $USER > /dev/null 2>&1; then
-    echo "Creating user $USER"
-    sudo useradd -d $USER_HOME -s /bin/bash $USER
+if ! id $USER > /dev/null 2>&1; then
+    if command -v useradd > /dev/null 2>&1; then
+        echo "Creating user via useradd: $USER"
+        sudo useradd -d $USER_HOME -s /bin/bash $USER
+    elif command -v adduser > /dev/null 2>&1; then
+        sudo adduser -h $USER_HOME -D $USER > /dev/null 2>&1
+        sudo passwd -u $USER > /dev/null 2>&1
+    else
+        echo "No way to create user. Exiting."
+        exit 1
+    fi
 
-    echo "Adding passwordless sudo for $USER"
-    sudo sh -c "echo '$USER ALL=(ALL) NOPASSWD:ALL' > /etc/sudoers.d/$USER"
+    echo "$USER ALL=(ALL) NOPASSWD:ALL" | sudo EDITOR="tee -a" visudo > /dev/null 2>&1
 fi
 
 echo "Dropping into user shell"
