@@ -82,6 +82,6 @@ agent: build-agent deploy-agent
 
 build-coordinator:
 	@eval $$(minikube docker-env) ;\
-	docker image build -t containership/cloud-agent-coordinator -f Dockerfile.coordinator .
+	docker image build -t containership/cloud-coordinator -f Dockerfile.coordinator .
 
 coordinator: build-coordinator deploy-coordinator
