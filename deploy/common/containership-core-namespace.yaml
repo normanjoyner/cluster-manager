@@ -4,4 +4,4 @@ kind: Namespace
 metadata:
   name: containership-core
   labels:
-      containership.io/managed: true
+      containership.io/managed: "true"
