@@ -3,26 +3,28 @@ apiVersion: apps/v1beta1
 kind: Deployment
 metadata:
   namespace: containership-core
-  name: containership-coordinator
+  name: cloud-coordinator
   labels:
-    app: containership-coordinator
+    containership.io/app: cloud-coordinator
     containership.io/managed: "true"
 spec:
   selector:
     matchLabels:
-      app: containership-coordinator
+      containership.io/app: cloud-coordinator
+      containership.io/managed: "true"
   template:
     metadata:
       labels:
-        app: containership-coordinator
         name: cloud-coordinator
+        containership.io/app: cloud-coordinator
+        containership.io/managed: "true"
     spec:
       containers:
-        - name: containership-coordinator
+        - name: cloud-coordinator
           envFrom:
             - configMapRef:
                 name: containership-env-configmap
-          image: containership/cloud-agent-coordinator
+          image: containership/cloud-coordinator
           imagePullPolicy: Always
           resources:
             requests:

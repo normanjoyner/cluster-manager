@@ -3,26 +3,28 @@ apiVersion: extensions/v1beta1
 kind: DaemonSet
 metadata:
   namespace: containership-core
-  name: containership-agent
+  name: cloud-agent
   labels:
-    app: containership-agent
+    containership.io/app: cloud-agent
     containership.io/managed: "true"
 spec:
   selector:
     matchLabels:
-      app: containership-agent
+      containership.io/app: cloud-agent
+      containership.io/managed: "true"
   template:
     metadata:
       labels:
-        app: containership-agent
         name: cloud-agent
+        containership.io/app: cloud-agent
+        containership.io/managed: "true"
     spec:
       volumes:
         - name: containership-mount
           hostPath:
               path: /etc/containership
       containers:
-        - name: containership-agent
+        - name: cloud-agent
           envFrom:
             - configMapRef:
                 name: containership-env-configmap
