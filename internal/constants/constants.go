@@ -36,7 +36,7 @@ const (
 
 // BaseContainershipManagedLabelString is the containership
 // managed label as a string
-const BaseContainershipManagedLabelString = "containership.io=managed"
+const BaseContainershipManagedLabelString = "containership.io/managed=true"
 
 // BuildContainershipLabelMap builds a map of labels that should be attached to
 // any Containership-managed resources. If additionalLabels is non-nil, they

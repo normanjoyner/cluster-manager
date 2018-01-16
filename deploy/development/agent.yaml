@@ -6,7 +6,7 @@ metadata:
   name: containership-agent
   labels:
     app: containership-agent
-    containership.io: managed
+    containership.io/managed: true
 spec:
   selector:
     matchLabels:

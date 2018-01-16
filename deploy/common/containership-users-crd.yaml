@@ -3,7 +3,7 @@ kind: CustomResourceDefinition
 metadata:
   name: users.containership.io
   labels:
-    containership.io: managed
+    containership.io/managed: true
 spec:
   group: containership.io
   # Version should match Containership Cloud API version

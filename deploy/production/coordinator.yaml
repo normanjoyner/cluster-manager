@@ -6,7 +6,7 @@ metadata:
   name: containership-coordinator
   labels:
     app: containership-coordinator
-    containership.io: managed
+    containership.io/managed: true
 spec:
   selector:
     matchLabels:

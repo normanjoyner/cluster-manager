@@ -210,7 +210,7 @@ func isContainershipManaged(obj interface{}) bool {
 	}
 
 	l := meta.GetLabels()
-	if cs, ok := l["containership.io"]; ok && cs == "managed" {
+	if cs, ok := l["containership.io/managed"]; ok && cs == "true" {
 		return true
 	}
 

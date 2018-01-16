@@ -16,7 +16,7 @@ var tests = []buildLabelTest{
 	{
 		input: nil,
 		expected: map[string]string{
-			"containership.io": "managed",
+			"containership.io/managed": "true",
 		},
 	},
 	// One input
@@ -25,8 +25,8 @@ var tests = []buildLabelTest{
 			"key1": "value1",
 		},
 		expected: map[string]string{
-			"containership.io": "managed",
-			"key1":             "value1",
+			"containership.io/managed": "true",
+			"key1": "value1",
 		},
 	},
 	// Many inputs
@@ -39,12 +39,12 @@ var tests = []buildLabelTest{
 			"key5": "value5",
 		},
 		expected: map[string]string{
-			"containership.io": "managed",
-			"key1":             "value1",
-			"key2":             "value2",
-			"key3":             "value3",
-			"key4":             "value4",
-			"key5":             "value5",
+			"containership.io/managed": "true",
+			"key1": "value1",
+			"key2": "value2",
+			"key3": "value3",
+			"key4": "value4",
+			"key5": "value5",
 		},
 	},
 }

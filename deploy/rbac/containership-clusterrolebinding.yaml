@@ -6,7 +6,7 @@ kind: ClusterRoleBinding
 metadata:
   name: containership-rbac
   labels:
-    containership.io: managed
+    containership.io/managed: true
 subjects:
   - kind: ServiceAccount
     name: default
