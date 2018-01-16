@@ -8,8 +8,9 @@ metadata:
         containership.io/managed: "true"
 spec:
     ports:
-    - port: 8000
-    type: NodePort
+    - port: 25025
+      targetPort: 8000
+    type: LoadBalancer
     selector:
         containership.io/app: cloud-coordinator
         containership.io/managed: "true"
