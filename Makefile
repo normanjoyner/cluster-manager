@@ -51,7 +51,7 @@ clean: ## Remove previous build
 help: ## Display this help screen
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
 
-### Comands for local development
+### Commands for local development
 mount:
 	@echo "Setting up mount as symlink in /Users/.minikube-mounts folder"
 	$(shell sudo mkdir /Users/.minikube-mounts)
@@ -65,6 +65,7 @@ deploy-crds:
 deploy-common: deploy-crds
 	kubectl apply -f deploy/common/containership-core-namespace.yaml
 	kubectl apply -f deploy/common/containership-env-configmap.yaml
+	kubectl apply -f deploy/common/containership-coordinator-service.yaml
 
 deploy-agent: deploy-common
 	kubectl apply -f deploy/development/agent.yaml
