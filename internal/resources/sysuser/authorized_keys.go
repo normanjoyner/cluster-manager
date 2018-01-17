@@ -22,8 +22,8 @@ const (
 	loginScriptFilename       = "containership_login.sh"
 	authorizedKeysFilename    = "authorized_keys"
 	authorizedKeysPermissions = 0600
-	sshDirPermissions         = 0700
-	scriptsDirPermissions     = 0700
+	sshDirPermissions         = 0755
+	scriptsDirPermissions     = 0755
 	scriptPermissions         = 0755
 )
 
