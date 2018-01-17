@@ -46,7 +46,7 @@ const (
 
 const (
 	// DockerConfigStringFormat is used for Docker tokens, using endpoint, and auth token as password
-	DockerConfigStringFormat = `{"%s":{"username":"oauth2accesstoken","password":"%s","email":"none"}}`
+	DockerConfigStringFormat = `{"%s":{"username":"_json_key","password":"%s","email":"none"}}`
 	// DockerJSONStringFormat is used for JSON tokens, endpoint is used under auths,
 	// while auth is the token generated
 	DockerJSONStringFormat = `{"auths":{"%s":{"auth":"%s","email":"none"}}}`
@@ -744,7 +744,6 @@ func newSecret(registry *containershipv3.Registry) *corev1.Secret {
 	// using the docker template chosen, and set the correct data type
 	// according to the authtoken type.
 	data[fmt.Sprintf(".%s", rdt)] = []byte(fmt.Sprintf(template, rs.AuthToken.Endpoint, rs.AuthToken.Token))
-
 	return &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:   registry.Name,

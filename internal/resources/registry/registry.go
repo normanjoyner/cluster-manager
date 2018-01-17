@@ -35,9 +35,12 @@ type Default struct {
 func New(provider, endpoint string, credentials map[string]string) Generator {
 	var g Generator
 
-	if provider == constants.EC2Registry {
+	switch provider {
+	case constants.EC2Registry:
 		g = ECR{credentials}
-	} else {
+	case constants.GCR:
+		g = GCR{Default{credentials, endpoint}}
+	default:
 		g = Default{credentials, endpoint}
 	}
 

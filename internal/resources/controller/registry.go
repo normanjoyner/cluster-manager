@@ -103,6 +103,7 @@ func (c *RegistryController) doSync() {
 		// incorrect somehow and we shouldn't update.
 		if equal, err := c.cloudResource.IsEqual(cloudItem, item[0]); err == nil && !equal {
 			log.Debugf("Cloud Registry %s does not match CR - updating", cloudItem.ID)
+			log.Debugf("Cloud: %+v, Cache: %+v", cloudItem, item[0])
 			err = c.Update(cloudItem, item[0])
 			if err != nil {
 				log.Error("Registry Update failed: ", err.Error())
