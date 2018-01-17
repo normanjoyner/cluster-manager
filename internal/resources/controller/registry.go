@@ -182,26 +182,12 @@ func (c *RegistryController) Update(r containershipv3.RegistrySpec, obj interfac
 		return fmt.Errorf("Error trying to use a non Registry CRD object to update a Registry CRD")
 	}
 
-	if t, ok := c.tokenRegenerationByID[r.ID]; ok {
-		safeClose(t)
-	}
-
-	token, err := c.cloudResource.GetAuthToken(r)
-	if err != nil {
-		return err
-	}
-
-	r.AuthToken = token
 	rCopy := registry.DeepCopy()
 	rCopy.Spec = r
-	newReg, err := c.clientset.ContainershipV3().Registries(constants.ContainershipNamespace).Update(rCopy)
+	_, err := c.clientset.ContainershipV3().Registries(constants.ContainershipNamespace).Update(rCopy)
 
 	if err != nil {
 		return err
-	}
-
-	if newReg.Spec.Provider == constants.EC2Registry {
-		c.tokenRegenerationByID[r.ID] = c.watchToken(newReg)
 	}
 
 	return nil
@@ -222,26 +208,20 @@ func safeClose(t chan bool) {
 	}
 }
 
-// watchToken takes a registry, waits 11 hours, make a request to get the registry
-// then passes it to update so it can get a new AuthToken assigned to it
+// watchToken takes a registry and waits, before the token on a registry becomes
+// invalid it deletes the registry. Once deleted it will be recreated on the
+// next sync with a new AuthToken
 func (c *RegistryController) watchToken(r *containershipv3.Registry) chan bool {
 	stop := make(chan bool)
 
 	go func() {
-		t := time.NewTicker(time.Second * 11)
+		t := time.NewTicker(time.Hour * 11)
 		for {
 			select {
 			case <-t.C:
-				rObj, err := c.lister.Registries(r.Namespace).Get(r.Name)
+				err := c.clientset.ContainershipV3().Registries(r.Namespace).Delete(r.Name, &metav1.DeleteOptions{})
 				if err != nil {
-					log.Error("Could not get the registry, to update auth token: ", err.Error())
-					safeClose(stop)
-					return
-				}
-
-				err = c.Update(rObj.Spec, rObj)
-				if err != nil {
-					log.Error("Could not update the registry auth token: ", err.Error())
+					log.Error("Could not delete the registry, to update auth token: ", err.Error())
 					safeClose(stop)
 					return
 				}
