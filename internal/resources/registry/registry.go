@@ -64,6 +64,6 @@ func (d Default) CreateAuthToken() (containershipv3.AuthTokenDef, error) {
 	return containershipv3.AuthTokenDef{
 		Token:    base64.StdEncoding.EncodeToString([]byte(strings.Join([]string{d.Username(), d.Password()}, ":"))),
 		Endpoint: d.Endpoint(),
-		Type:     DockerCFG,
+		Type:     DockerJSON,
 	}, nil
 }
