@@ -125,7 +125,6 @@ func (c *UserController) doSync() {
 			}
 		}
 	}
-
 }
 
 // Create takes a user spec in cache and creates the CRD
