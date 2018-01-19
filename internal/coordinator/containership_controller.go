@@ -26,7 +26,7 @@ import (
 
 const (
 	// Type of agent that runs this controller
-	controllerName = "containership"
+	controllerName = "ContainershipController"
 )
 
 // ContainershipController is the controller implementation for the containership
@@ -142,7 +142,7 @@ func (c *ContainershipController) runWorker() {
 }
 
 // processNextWorkItem will read a single work item off the workqueue and
-// attempt to process it, by calling the registrySyncHandler.
+// attempt to process it, by calling the appropriate syncHandler.
 func (c *ContainershipController) processNextWorkItem() bool {
 	obj, shutdown := c.workqueue.Get()
 
@@ -237,7 +237,7 @@ func (c *ContainershipController) namespaceSyncHandler(key string) error {
 
 	namespace, err := c.namespacesLister.Get(name)
 	if err != nil {
-		// If the namesace is not found it was deleted before the workqueue
+		// If the namespace is not found it was deleted before the workqueue
 		// got to processing it and we should ignore it
 		if errors.IsNotFound(err) {
 			return nil
@@ -250,12 +250,16 @@ func (c *ContainershipController) namespaceSyncHandler(key string) error {
 		return nil
 	}
 
+	c.recorder.Event(namespace, corev1.EventTypeNormal, "CreateServiceAccount",
+		"Detected namespace change")
+
 	_, err = c.kubeclientset.CoreV1().ServiceAccounts(name).Create(newServiceAccount(name))
 
-	// If the error is that the secret already exists, we want to clear the
+	// If the error is that the SA already exists, we want to clear the
 	// error so that it will be ignored
 	if err != nil && errors.IsAlreadyExists(err) == false {
-		log.Info(controllerName, ": Error: ", err)
+		c.recorder.Eventf(namespace, corev1.EventTypeWarning, "CreateServiceAccountError",
+			"Error creating ServiceAccount: %s", err.Error())
 		return err
 	}
 
@@ -266,21 +270,37 @@ func (c *ContainershipController) namespaceSyncHandler(key string) error {
 // is deleted and the namespace is not being deleted. This will then create a
 // service account in the namespace with the containership managed label
 func (c *ContainershipController) serviceAccountSyncHandler(key string) error {
-	_, namespace, _, _ := tools.SplitMetaResourceNamespaceKeyFunc(key)
+	_, nsName, _, _ := tools.SplitMetaResourceNamespaceKeyFunc(key)
 
 	_, err := c.kubeclientset.CoreV1().
-		ServiceAccounts(namespace).
+		ServiceAccounts(nsName).
 		Get(constants.ContainershipServiceAccountName, metav1.GetOptions{})
-	// If there is no error that means it already exists and we dont need to do
+	// If there is no error that means it already exists and we don't need to do
 	// anything
 	if err == nil {
 		return nil
 	}
 
+	// We only explicitly need the namespace for recording, but if we can't get it
+	// then that's still a problem.
+	// TODO this breaks the convention of only recording on the object that the
+	// syncHandler concerns (we're recording on the Namespace here, not the SA
+	// as one would expect). Maybe we can do this better.
+	ns, err := c.namespacesLister.Get(nsName)
+	if err != nil {
+		return err
+	}
+
 	if errors.IsNotFound(err) {
+		c.recorder.Event(ns, corev1.EventTypeNormal, "RecreateServiceAccount",
+			"Detected namespace deletion")
 		_, err = c.kubeclientset.CoreV1().
-			ServiceAccounts(namespace).
+			ServiceAccounts(nsName).
 			Create(newServiceAccount(constants.ContainershipServiceAccountName))
+	}
+	if err != nil {
+		c.recorder.Eventf(ns, corev1.EventTypeWarning, "RecreateServiceAccountError",
+			"Error recreating ServiceAccount: %s", err.Error())
 	}
 
 	return err
