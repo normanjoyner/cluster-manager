@@ -19,6 +19,8 @@ limitations under the License.
 package v3
 
 import (
+	time "time"
+
 	containership_io_v3 "github.com/containership/cloud-agent/pkg/apis/containership.io/v3"
 	versioned "github.com/containership/cloud-agent/pkg/client/clientset/versioned"
 	internalinterfaces "github.com/containership/cloud-agent/pkg/client/informers/externalversions/internalinterfaces"
@@ -27,7 +29,6 @@ import (
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	watch "k8s.io/apimachinery/pkg/watch"
 	cache "k8s.io/client-go/tools/cache"
-	time "time"
 )
 
 // RegistryInformer provides access to a shared informer and lister for

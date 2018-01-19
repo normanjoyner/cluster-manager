@@ -20,6 +20,7 @@ package externalversions
 
 import (
 	"fmt"
+
 	v3 "github.com/containership/cloud-agent/pkg/apis/containership.io/v3"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	cache "k8s.io/client-go/tools/cache"
@@ -52,6 +53,8 @@ func (f *genericInformer) Lister() cache.GenericLister {
 func (f *sharedInformerFactory) ForResource(resource schema.GroupVersionResource) (GenericInformer, error) {
 	switch resource {
 	// Group=containership.io, Version=v3
+	case v3.SchemeGroupVersion.WithResource("plugins"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Containership().V3().Plugins().Informer()}, nil
 	case v3.SchemeGroupVersion.WithResource("registries"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Containership().V3().Registries().Informer()}, nil
 	case v3.SchemeGroupVersion.WithResource("users"):

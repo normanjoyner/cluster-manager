@@ -85,3 +85,47 @@ type RegistryList struct {
 
 	Items []Registry `json:"items"`
 }
+
+// +genclient
+// +genclient:noStatus
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+
+// Plugin describes a plugin added by Containership Cloud.
+type Plugin struct {
+	metav1.TypeMeta   `json:",inline"`
+	metav1.ObjectMeta `json:"metadata,omitempty"`
+
+	Spec PluginSpec `json:"spec"`
+}
+
+// PluginSpec is the spec for a Containership Cloud Plugin.
+type PluginSpec struct {
+	ID             string     `json:"id"`
+	AddedAt        string     `json:"added_at"`
+	Description    string     `json:"description"`
+	Type           PluginType `json:"type"`
+	Version        string     `json:"version"`
+	Implementation string     `json:"implementation"`
+}
+
+// PluginType lets us group together plugins of different implentations
+type PluginType string
+
+const (
+	// Logs is a generic type of supported plugin
+	Logs PluginType = "logs"
+	// Metrics is a generic type of supported plugin
+	Metrics PluginType = "metrics"
+	// Events is a generic type of event supported plugin
+	Events PluginType = "events"
+)
+
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+
+// PluginList is a list of Plugins.
+type PluginList struct {
+	metav1.TypeMeta `json:",inline"`
+	metav1.ListMeta `json:"metadata"`
+
+	Items []Plugin `json:"items"`
+}

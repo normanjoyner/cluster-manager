@@ -26,6 +26,10 @@ type FakeContainershipV3 struct {
 	*testing.Fake
 }
 
+func (c *FakeContainershipV3) Plugins(namespace string) v3.PluginInterface {
+	return &FakePlugins{c, namespace}
+}
+
 func (c *FakeContainershipV3) Registries(namespace string) v3.RegistryInterface {
 	return &FakeRegistries{c, namespace}
 }

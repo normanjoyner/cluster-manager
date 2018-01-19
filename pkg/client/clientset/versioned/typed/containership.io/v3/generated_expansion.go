@@ -16,6 +16,8 @@ limitations under the License.
 
 package v3
 
+type PluginExpansion interface{}
+
 type RegistryExpansion interface{}
 
 type UserExpansion interface{}

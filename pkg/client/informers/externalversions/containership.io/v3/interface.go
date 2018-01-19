@@ -24,6 +24,8 @@ import (
 
 // Interface provides access to all the informers in this group version.
 type Interface interface {
+	// Plugins returns a PluginInformer.
+	Plugins() PluginInformer
 	// Registries returns a RegistryInformer.
 	Registries() RegistryInformer
 	// Users returns a UserInformer.
@@ -39,6 +41,11 @@ type version struct {
 // New returns a new Interface.
 func New(f internalinterfaces.SharedInformerFactory, namespace string, tweakListOptions internalinterfaces.TweakListOptionsFunc) Interface {
 	return &version{factory: f, namespace: namespace, tweakListOptions: tweakListOptions}
+}
+
+// Plugins returns a PluginInformer.
+func (v *version) Plugins() PluginInformer {
+	return &pluginInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
 }
 
 // Registries returns a RegistryInformer.

@@ -18,6 +18,14 @@ limitations under the License.
 
 package v3
 
+// PluginListerExpansion allows custom methods to be added to
+// PluginLister.
+type PluginListerExpansion interface{}
+
+// PluginNamespaceListerExpansion allows custom methods to be added to
+// PluginNamespaceLister.
+type PluginNamespaceListerExpansion interface{}
+
 // RegistryListerExpansion allows custom methods to be added to
 // RegistryLister.
 type RegistryListerExpansion interface{}
