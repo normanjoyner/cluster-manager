@@ -20,6 +20,11 @@ func init() {
 	logLevel := getLogLevelFromEnvironment()
 	cfg.Level = zap.NewAtomicLevelAt(logLevel)
 
+	// Disable some logging features for production
+	if !isDevelopmentEnvironment() {
+		cfg.DisableStacktrace = true
+	}
+
 	logger, err := cfg.Build()
 	if err != nil {
 		// This should be a programming error
@@ -55,9 +60,8 @@ func stringToLogLevel(s string) zapcore.Level {
 // without a circular dependency.
 func getLogLevelFromEnvironment() zapcore.Level {
 	logLevel := strings.ToLower(os.Getenv("LOG_LEVEL"))
-	cloudEnv := strings.ToLower(os.Getenv("CONTAINERSHIP_CLOUD_ENVIRONMENT"))
 	if logLevel == "" {
-		if cloudEnv == "development" {
+		if isDevelopmentEnvironment() {
 			// Default more verbose logging for dev environment
 			logLevel = "debug"
 		} else {
@@ -67,6 +71,12 @@ func getLogLevelFromEnvironment() zapcore.Level {
 	}
 
 	return stringToLogLevel(logLevel)
+}
+
+// isDevelopmentEnvironment returns true if we're in a dev environment, else false
+func isDevelopmentEnvironment() bool {
+	cloudEnv := strings.ToLower(os.Getenv("CONTAINERSHIP_CLOUD_ENVIRONMENT"))
+	return cloudEnv == "development"
 }
 
 // Fatal implements the fatal logging level
