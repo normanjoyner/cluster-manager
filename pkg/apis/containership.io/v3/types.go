@@ -74,6 +74,7 @@ type AuthTokenDef struct {
 	Token    string `json:"token"`
 	Endpoint string `json:"endpoint"`
 	Type     string `json:"type"`
+	Expires  string `json:"expires"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

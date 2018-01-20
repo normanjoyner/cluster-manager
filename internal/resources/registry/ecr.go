@@ -1,12 +1,12 @@
 package registry
 
 import (
-	containershipv3 "github.com/containership/cloud-agent/pkg/apis/containership.io/v3"
-
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/ecr"
+
+	containershipv3 "github.com/containership/cloud-agent/pkg/apis/containership.io/v3"
 )
 
 // ECR defines a registry on AWS
@@ -46,23 +46,19 @@ func (e ECR) newEcrClient() *ecr.ECR {
 // with AWS registries
 func (e ECR) CreateAuthToken() (containershipv3.AuthTokenDef, error) {
 	c := e.newEcrClient()
-	params := &ecr.GetAuthorizationTokenInput{
-	//RegistryIds: []*string{
-	//aws.String(awsAccountID),
-	//},
-	}
+	params := &ecr.GetAuthorizationTokenInput{}
 
 	resp, err := c.GetAuthorizationToken(params)
-
 	if err != nil {
 		return containershipv3.AuthTokenDef{}, err
 	}
 
 	token := resp.AuthorizationData[0]
-
+	expires := *token.ExpiresAt
 	return containershipv3.AuthTokenDef{
 		Token:    *token.AuthorizationToken,
 		Endpoint: *token.ProxyEndpoint,
 		Type:     DockerJSON,
+		Expires:  expires.String(),
 	}, nil
 }

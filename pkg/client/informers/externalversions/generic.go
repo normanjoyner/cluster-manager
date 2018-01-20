@@ -20,7 +20,6 @@ package externalversions
 
 import (
 	"fmt"
-
 	v3 "github.com/containership/cloud-agent/pkg/apis/containership.io/v3"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	cache "k8s.io/client-go/tools/cache"

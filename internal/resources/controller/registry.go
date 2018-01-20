@@ -58,7 +58,8 @@ func NewRegistry(csInformerFactory csinformers.SharedInformerFactory, clientset 
 	eventBroadcaster.StartLogging(log.Infof)
 	recorder := eventBroadcaster.NewRecorder(scheme.Scheme, corev1.EventSource{Component: registrySyncControllerName})
 
-	return &RegistrySyncController{
+	// Create the registry controller
+	c := &RegistrySyncController{
 		clientset:             clientset,
 		lister:                registryInformer.Lister(),
 		synced:                registryInformer.Informer().HasSynced,
@@ -67,6 +68,20 @@ func NewRegistry(csInformerFactory csinformers.SharedInformerFactory, clientset 
 		tokenRegenerationByID: make(map[string]chan bool, 0),
 		recorder:              recorder,
 	}
+
+	registryInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
+		UpdateFunc: func(old, new interface{}) {
+			newReg := new.(*containershipv3.Registry)
+			// check to make sure that there is a watch on the
+			// registries token if needed
+			if _, ok := c.tokenRegenerationByID[newReg.Name]; !ok && newReg.Spec.Provider == constants.EC2Registry {
+				c.tokenRegenerationByID[newReg.Name] = c.watchToken(newReg)
+			}
+			return
+		},
+	})
+
+	return c
 }
 
 // SyncWithCloud kicks of the Sync() function, should be started only after
@@ -128,10 +143,9 @@ func (c *RegistrySyncController) doSync() {
 		if equal, err := c.cloudResource.IsEqual(cloudItem, item[0]); err == nil && !equal {
 			log.Debugf("Cloud Registry %s does not match CR - updating", cloudItem.ID)
 			log.Debugf("Cloud: %+v, Cache: %+v", cloudItem, item[0])
-			err = c.Update(cloudItem, item[0])
-			if err != nil {
-				log.Error("Registry Update failed: ", err.Error())
-			}
+			// Delete the registry so that all secrets get deleted and regenerated.
+			// This is because the data property of a secret is not allowed to be updated/edited
+			c.Delete(constants.ContainershipNamespace, cloudItem.ID)
 			continue
 		}
 	}
@@ -198,28 +212,6 @@ func (c *RegistrySyncController) Delete(namespace, name string) error {
 	return nil
 }
 
-// Update takes a registry spec in cache and updates a Registry CRD spec with the same
-// ID with that value
-func (c *RegistrySyncController) Update(r containershipv3.RegistrySpec, obj interface{}) error {
-	registry, ok := obj.(*containershipv3.Registry)
-	if !ok {
-		return fmt.Errorf("Error trying to use a non Registry CRD object to update a Registry CRD")
-	}
-
-	c.recorder.Event(registry, corev1.EventTypeNormal, "SyncUpdate",
-		"Detected change in Cloud, updating")
-
-	rCopy := registry.DeepCopy()
-	rCopy.Spec = r
-	_, err := c.clientset.ContainershipV3().Registries(constants.ContainershipNamespace).Update(rCopy)
-	if err != nil {
-		c.recorder.Eventf(registry, corev1.EventTypeNormal, "SyncUpdateError",
-			"Error updating: %s", err.Error())
-	}
-
-	return err
-}
-
 // Takes a channel of type bool, if it's open it closes it, otherwise it ignores
 // the channel. Trying to close a channel that is already closed results in a panic
 func safeClose(t chan bool) {
@@ -242,7 +234,14 @@ func (c *RegistrySyncController) watchToken(r *containershipv3.Registry) chan bo
 	stop := make(chan bool)
 
 	go func() {
-		t := time.NewTicker(time.Hour * 11)
+		layout := "2006-01-02 15:04:05 -0700 MST"
+		expires, _ := time.Parse(layout, r.Spec.AuthToken.Expires)
+		d := time.Until(expires) - time.Hour
+		if d < time.Minute {
+			d = time.Second
+		}
+
+		t := time.NewTicker(d)
 		for {
 			select {
 			case <-t.C:
