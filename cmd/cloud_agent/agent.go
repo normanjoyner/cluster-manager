@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/containership/cloud-agent/internal/agent"
+	"github.com/containership/cloud-agent/internal/envvars"
 	"github.com/containership/cloud-agent/internal/k8sutil"
 	"github.com/containership/cloud-agent/internal/log"
 	"github.com/containership/cloud-agent/internal/resources/sysuser"
@@ -18,6 +19,8 @@ func main() {
 	// use glog and we have to pass flags to that to configure it to behave
 	// in a sane way.
 	flag.Parse()
+
+	envvars.DumpDevelopmentEnvironment()
 
 	// Failure to initialize what we need for SSH to work is not a fatal error
 	// because the user may not have performed the manual steps required to

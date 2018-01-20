@@ -5,6 +5,7 @@ import (
 	"runtime"
 
 	"github.com/containership/cloud-agent/internal/coordinator"
+	"github.com/containership/cloud-agent/internal/envvars"
 	"github.com/containership/cloud-agent/internal/log"
 	"github.com/containership/cloud-agent/internal/server"
 )
@@ -16,6 +17,8 @@ func main() {
 	// use glog and we have to pass flags to that to configure it to behave
 	// in a sane way.
 	flag.Parse()
+
+	envvars.DumpDevelopmentEnvironment()
 
 	coordinator.Initialize()
 	go coordinator.Run()
