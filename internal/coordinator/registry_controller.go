@@ -481,9 +481,7 @@ func (c *RegistryController) registrySyncHandler(key string) error {
 			// deleted using OwnerRefs. This is because the Owner has to be
 			// in the same namespace as its child
 			for _, ns := range namespaces {
-				c.recorder.Eventf(registry, corev1.EventTypeNormal, "QueueServiceAccount",
-					"Detected deleted registry, queueing ServiceAccount in namespace %s", ns.Name)
-
+				// We won't record here because there's no good object to record on
 				// Add service account for each namespace to queue so old secrets get
 				// removed from ImagePullSecrets
 				c.addServiceAccountToWorkqueue(ns.Name)

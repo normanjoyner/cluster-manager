@@ -5,28 +5,28 @@ import (
 
 	"github.com/containership/cloud-agent/internal/k8sutil"
 	"github.com/containership/cloud-agent/internal/log"
-	crdcontrollers "github.com/containership/cloud-agent/internal/resources/controller"
+	synccontrollers "github.com/containership/cloud-agent/internal/resources/controller"
 	csinformers "github.com/containership/cloud-agent/pkg/client/informers/externalversions"
 )
 
 // CloudSynchronizer synchronizes Containership Cloud resources
 // into our Kubernetes CRDs.
 type CloudSynchronizer struct {
-	userCRDController     *crdcontrollers.UserController
-	registryCRDController *crdcontrollers.RegistryController
-	syncStopCh            chan struct{}
-	stopped               bool
+	userSyncController     *synccontrollers.UserSyncController
+	registrySyncController *synccontrollers.RegistrySyncController
+	syncStopCh             chan struct{}
+	stopped                bool
 }
 
 // NewCloudSynchronizer constructs a new CloudSynchronizer.
 func NewCloudSynchronizer(csInformerFactory csinformers.SharedInformerFactory) *CloudSynchronizer {
 	return &CloudSynchronizer{
-		userCRDController: crdcontrollers.NewUser(
+		userSyncController: synccontrollers.NewUser(
 			csInformerFactory,
 			k8sutil.CSAPI().Client(),
 		),
 
-		registryCRDController: crdcontrollers.NewRegistry(
+		registrySyncController: synccontrollers.NewRegistry(
 			csInformerFactory,
 			k8sutil.CSAPI().Client(),
 		),
@@ -39,8 +39,8 @@ func NewCloudSynchronizer(csInformerFactory csinformers.SharedInformerFactory) *
 // Run kicks off cloud sync routines.
 func (s *CloudSynchronizer) Run() {
 	log.Info("Running CloudSynchronizer")
-	go s.userCRDController.SyncWithCloud(s.syncStopCh)
-	go s.registryCRDController.SyncWithCloud(s.syncStopCh)
+	go s.userSyncController.SyncWithCloud(s.syncStopCh)
+	go s.registrySyncController.SyncWithCloud(s.syncStopCh)
 }
 
 // RequestTerminate requests that all Containership resources be deleted from

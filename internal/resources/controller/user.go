@@ -4,13 +4,17 @@ import (
 	"fmt"
 	"time"
 
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/tools/cache"
+	"k8s.io/client-go/tools/record"
 
 	containershipv3 "github.com/containership/cloud-agent/pkg/apis/containership.io/v3"
 	csclientset "github.com/containership/cloud-agent/pkg/client/clientset/versioned"
+	csscheme "github.com/containership/cloud-agent/pkg/client/clientset/versioned/scheme"
 	csinformers "github.com/containership/cloud-agent/pkg/client/informers/externalversions"
 	cslisters "github.com/containership/cloud-agent/pkg/client/listers/containership.io/v3"
 
@@ -20,8 +24,8 @@ import (
 	"github.com/containership/cloud-agent/internal/resources"
 )
 
-// UserController is the implementation for syncing User CRDs
-type UserController struct {
+// UserSyncController is the implementation for syncing User CRDs
+type UserSyncController struct {
 	// clientset is a clientset for our own API group
 	clientset csclientset.Interface
 
@@ -30,27 +34,42 @@ type UserController struct {
 	informer cache.SharedIndexInformer
 
 	cloudResource *resources.CsUsers
+
+	recorder record.EventRecorder
 }
 
-// NewUser returns a UserController that will be in control of pulling from cloud
+const (
+	userSyncControllerName = "UserSyncController"
+)
+
+// NewUser returns a UserSyncController that will be in control of pulling from cloud
 // comparing to the CRD cache and modifying based on those compares
-func NewUser(csInformerFactory csinformers.SharedInformerFactory, clientset csclientset.Interface) *UserController {
+func NewUser(csInformerFactory csinformers.SharedInformerFactory, clientset csclientset.Interface) *UserSyncController {
 	userInformer := csInformerFactory.Containership().V3().Users()
 
 	userInformer.Informer().AddIndexers(indexByIDKeyFun())
 
-	return &UserController{
+	// TODO we should not need to add to scheme everywhere. Pick a place.
+	csscheme.AddToScheme(scheme.Scheme)
+
+	log.Info(registrySyncControllerName, ": Creating event broadcaster")
+	eventBroadcaster := record.NewBroadcaster()
+	eventBroadcaster.StartLogging(log.Infof)
+	recorder := eventBroadcaster.NewRecorder(scheme.Scheme, corev1.EventSource{Component: userSyncControllerName})
+
+	return &UserSyncController{
 		clientset:     clientset,
 		lister:        userInformer.Lister(),
 		synced:        userInformer.Informer().HasSynced,
 		informer:      userInformer.Informer(),
 		cloudResource: resources.NewCsUsers(),
+		recorder:      recorder,
 	}
 }
 
 // SyncWithCloud kicks of the Sync() function, should be started only after
 // Informer caches we are about to use are synced
-func (c *UserController) SyncWithCloud(stopCh <-chan struct{}) error {
+func (c *UserSyncController) SyncWithCloud(stopCh <-chan struct{}) error {
 	log.Info("Starting User resource controller")
 
 	log.Info("Waiting for User informer caches to sync")
@@ -69,7 +88,7 @@ func (c *UserController) SyncWithCloud(stopCh <-chan struct{}) error {
 	return nil
 }
 
-func (c *UserController) doSync() {
+func (c *UserSyncController) doSync() {
 	log.Debug("Sync Users")
 	// makes a request to containership api and write results to the resource's cache
 	err := resources.Sync(c.cloudResource)
@@ -129,7 +148,7 @@ func (c *UserController) doSync() {
 }
 
 // Create takes a user spec in cache and creates the CRD
-func (c *UserController) Create(u containershipv3.UserSpec) error {
+func (c *UserSyncController) Create(u containershipv3.UserSpec) error {
 	_, err := c.clientset.ContainershipV3().Users(constants.ContainershipNamespace).Create(&containershipv3.User{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: u.ID,
@@ -141,22 +160,30 @@ func (c *UserController) Create(u containershipv3.UserSpec) error {
 }
 
 // Delete takes a name or the CRD and deletes it
-func (c *UserController) Delete(namespace, name string) error {
+func (c *UserSyncController) Delete(namespace, name string) error {
 	return c.clientset.ContainershipV3().Users(namespace).Delete(name, &metav1.DeleteOptions{})
 }
 
 // Update takes a user spec in cache and updates a User CRD spec with the same
 // ID with that value
-func (c *UserController) Update(u containershipv3.UserSpec, obj interface{}) error {
+func (c *UserSyncController) Update(u containershipv3.UserSpec, obj interface{}) error {
 	user, ok := obj.(*containershipv3.User)
 	if !ok {
 		return fmt.Errorf("Error trying to use a non User CRD object to update a User CRD")
 	}
 
+	c.recorder.Event(user, corev1.EventTypeNormal, "SyncUpdate",
+		"Detected change in Cloud, updating")
+
 	uCopy := user.DeepCopy()
 	uCopy.Spec = u
 
 	_, err := c.clientset.ContainershipV3().Users(constants.ContainershipNamespace).Update(uCopy)
+
+	if err != nil {
+		c.recorder.Eventf(user, corev1.EventTypeNormal, "SyncUpdateError",
+			"Error updating: %s", err.Error())
+	}
 
 	return err
 }
