@@ -55,7 +55,7 @@ func stringToLogLevel(s string) zapcore.Level {
 // without a circular dependency.
 func getLogLevelFromEnvironment() zapcore.Level {
 	logLevel := strings.ToLower(os.Getenv("LOG_LEVEL"))
-	cloudEnv := getCloudEnvironment()
+	cloudEnv := strings.ToLower(os.Getenv("CONTAINERSHIP_CLOUD_ENVIRONMENT"))
 	if logLevel == "" {
 		if cloudEnv == "development" {
 			// Default more verbose logging for dev environment
@@ -67,17 +67,6 @@ func getLogLevelFromEnvironment() zapcore.Level {
 	}
 
 	return stringToLogLevel(logLevel)
-}
-
-// getCloudEnvironment is an unfortunate artifact of not being able to use the
-// envvars package here.
-func getCloudEnvironment() string {
-	cce := strings.ToLower(os.Getenv("CONTAINERSHIP_CLOUD_ENVIRONMENT"))
-	if cce == "" {
-		return "development"
-	}
-
-	return cce
 }
 
 // Fatal implements the fatal logging level
