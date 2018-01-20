@@ -1,8 +1,8 @@
-hash: 415d6db7084efac8ab3496aec5f5b74ea02c4671c0c178e32da057869b680854
-updated: 2018-01-11T13:19:43.670152-05:00
+hash: 154313e06e46f96f41aace2bf7ee5baf690c107d26819596571b2280d5cd8479
+updated: 2018-01-20T11:51:26.511201-05:00
 imports:
 - name: github.com/aws/aws-sdk-go
-  version: 3c754f1d340244540350f0a00b940781bae9c905
+  version: 9ed0c8de252f04ac45a65358377103d5a1aa2d92
   subpackages:
   - aws
   - aws/awserr
@@ -33,7 +33,7 @@ imports:
 - name: github.com/coreos/go-iptables
   version: 259c8e6a4275d497442c721fa52204d7a58bde8b
 - name: github.com/davecgh/go-spew
-  version: 782f4967f2dc4564575ca782fe2d04090b5faca8
+  version: 346938d642f2ec3594ed81d874461961cd0faa76
   subpackages:
   - spew
 - name: github.com/emicklei/go-restful
@@ -210,7 +210,7 @@ imports:
   - storage/v1alpha1
   - storage/v1beta1
 - name: k8s.io/apiextensions-apiserver
-  version: 7e4e2b92d43db1cb2233b17bc6d6a19db6db1126
+  version: 097c49c1906b3527571b6876c7bf47c4487f6c61
   subpackages:
   - pkg/apis/apiextensions
   - pkg/apis/apiextensions/v1beta1
