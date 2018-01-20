@@ -82,7 +82,11 @@ func (c *RegistrySyncController) SyncWithCloud(stopCh <-chan struct{}) error {
 	// Only run one worker because a resource's underlying
 	// cache is not thread-safe and we don't want to do parallel
 	// requests to the API anyway
-	go wait.Until(c.doSync, time.Second*envvars.GetAgentSyncIntervalInSeconds(), stopCh)
+	go wait.JitterUntil(c.doSync,
+		time.Second*envvars.GetAgentSyncIntervalInSeconds(),
+		constants.SyncJitterFactor,
+		true, // sliding: restart period only after doSync finishes
+		stopCh)
 
 	<-stopCh
 	log.Info("Registry sync stopped")

@@ -22,6 +22,13 @@ const (
 	ContainershipMount = "/etc/containership"
 )
 
+// TODO this const block should be scoped to a sync-specific package after
+// we refactor appropriately
+const (
+	// SyncJitterFactor is used to avoid periodic and simultaneous syncs
+	SyncJitterFactor = 0.2
+)
+
 // Containership provider registry names
 const (
 	// EC2Registry is the name of an amazon registry in containership cloud
