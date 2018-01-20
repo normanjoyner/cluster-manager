@@ -77,6 +77,7 @@ func (c *RegistryController) doSync() {
 	err := resources.Sync(c.cloudResource)
 	if err != nil {
 		log.Error("Registries failed to sync: ", err.Error())
+		return
 	}
 
 	// write the cloud items by ID so we can easily see if anything needs
