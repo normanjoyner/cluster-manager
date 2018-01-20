@@ -2,7 +2,6 @@ package resources
 
 import (
 	"io/ioutil"
-	"net/http"
 
 	"github.com/containership/cloud-agent/internal/log"
 	"github.com/containership/cloud-agent/internal/request"
@@ -55,15 +54,6 @@ func makeRequest(endpoint string) ([]byte, error) {
 		return nil, err
 	}
 	defer resp.Body.Close()
-
-	// Log the error code and request here and we'll log the response body
-	// in Unmarshal
-	if resp.StatusCode < http.StatusOK ||
-		resp.StatusCode >= http.StatusMultipleChoices {
-		log.Debugf("Cloud API responded with %d (%s)\n", resp.StatusCode,
-			http.StatusText(resp.StatusCode))
-		log.Debugf("Request: %+v\n", *req)
-	}
 
 	bytes, err := ioutil.ReadAll(resp.Body)
 	if err != nil {

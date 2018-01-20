@@ -14,6 +14,7 @@ import (
 type CloudSynchronizer struct {
 	userSyncController     *synccontrollers.UserSyncController
 	registrySyncController *synccontrollers.RegistrySyncController
+	pluginSyncController   *synccontrollers.PluginSyncController
 	syncStopCh             chan struct{}
 	stopped                bool
 }
@@ -31,6 +32,11 @@ func NewCloudSynchronizer(csInformerFactory csinformers.SharedInformerFactory) *
 			k8sutil.CSAPI().Client(),
 		),
 
+		pluginSyncController: synccontrollers.NewPlugin(
+			csInformerFactory,
+			k8sutil.CSAPI().Client(),
+		),
+
 		syncStopCh: make(chan struct{}),
 		stopped:    false,
 	}
@@ -41,6 +47,7 @@ func (s *CloudSynchronizer) Run() {
 	log.Info("Running CloudSynchronizer")
 	go s.userSyncController.SyncWithCloud(s.syncStopCh)
 	go s.registrySyncController.SyncWithCloud(s.syncStopCh)
+	go s.pluginSyncController.SyncWithCloud(s.syncStopCh)
 }
 
 // RequestTerminate requests that all Containership resources be deleted from

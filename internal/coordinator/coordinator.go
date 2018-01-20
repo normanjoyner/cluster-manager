@@ -14,6 +14,7 @@ var (
 	csInformerFactory   csinformers.SharedInformerFactory
 	regController       *RegistryController
 	csController        *ContainershipController
+	plgnController      *PluginController
 	cloudSynchronizer   *CloudSynchronizer
 )
 
@@ -31,6 +32,9 @@ func Initialize() {
 	csController = NewContainershipController(
 		k8sutil.API().Client(), kubeInformerFactory)
 
+	plgnController = NewPluginController(
+		k8sutil.API().Client(), k8sutil.CSAPI().Client(), csInformerFactory)
+
 	// Synchronizer needs to be created before any jobs start so
 	// that all needed index functions can be added to the
 	// informers
@@ -46,8 +50,9 @@ func Run() {
 
 	cloudSynchronizer.Run()
 
-	go regController.Run(2, stopCh)
-	go csController.Run(2, stopCh)
+	go regController.Run(1, stopCh)
+	go csController.Run(1, stopCh)
+	go plgnController.Run(1, stopCh)
 
 	// if stopCh is closed something went wrong
 	<-stopCh

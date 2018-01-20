@@ -21,6 +21,7 @@ type environment struct {
 	csServerPort                    string
 	organizationID                  string
 	kubeconfig                      string
+	kubectlPath                     string
 }
 
 const (
@@ -71,6 +72,11 @@ func init() {
 	env.csServerPort = os.Getenv("CONTAINERSHIP_CLOUD_SERVER_PORT")
 	if env.csServerPort == "" {
 		env.csServerPort = "8000"
+	}
+
+	env.kubectlPath = os.Getenv("KUBECTL_PATH")
+	if env.kubectlPath == "" {
+		env.kubectlPath = "kubectl"
 	}
 
 	env.kubeconfig = os.Getenv("KUBECONFIG")
@@ -124,6 +130,11 @@ func CSServerPort() string {
 // Kubeconfig returns kubeconfig file if defined
 func Kubeconfig() string {
 	return env.kubeconfig
+}
+
+// KubectlPath reutrns the path to use the kubectl command
+func KubectlPath() string {
+	return env.kubectlPath
 }
 
 // Dump dumps the environment if we're in development mode

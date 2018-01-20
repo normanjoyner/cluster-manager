@@ -95,5 +95,16 @@ func (r *Requester) MakeRequest() (*http.Response, error) {
 		return res, err
 	}
 
+	// Log the error code and request here and we'll log the response body
+	// in Unmarshal
+	if res.StatusCode < http.StatusOK ||
+		res.StatusCode >= http.StatusMultipleChoices {
+		log.Debugf("Cloud API responded with %d (%s)\n", res.StatusCode,
+			http.StatusText(res.StatusCode))
+		log.Debugf("Request: %+v\n", *req)
+
+		return res, fmt.Errorf("Request returned with status code %d", res.StatusCode)
+	}
+
 	return res, nil
 }

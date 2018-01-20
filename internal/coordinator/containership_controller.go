@@ -201,10 +201,10 @@ func (c *ContainershipController) processNextWorkItem() bool {
 		switch kind {
 		case "namespace":
 			err := c.namespaceSyncHandler(key)
-			c.handleErr(err, key)
+			return c.handleErr(err, key)
 		case "serviceaccount":
 			err := c.serviceAccountSyncHandler(key)
-			c.handleErr(err, key)
+			return c.handleErr(err, key)
 		}
 
 		// Finally, if no error occurs we forget this item so it does not
