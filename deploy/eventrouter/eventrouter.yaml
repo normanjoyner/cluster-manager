@@ -1,0 +1,54 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: eventrouter-cm
+  namespace: containership-core
+  labels:
+      containership.io/managed: "true"
+data:
+  config.json: |-
+    {
+      "sink": "containership_http",
+      "containershipType": "cloud-coordinator",
+      "httpSinkUrl": "https://stage-events.containership.io/v3/organizations/<ORG_ID>/clusters/<CLUSTER_ID>",
+      "resync-interval": "1m",
+      "filter": {
+        "Namespace": ["containership-core"]
+      }
+    }
+---
+apiVersion: apps/v1beta1
+kind: Deployment
+metadata:
+  namespace: containership-core
+  name: eventrouter
+  labels:
+    containership.io/app: eventrouter
+    containership.io/managed: "true"
+spec:
+  selector:
+    matchLabels:
+      containership.io/app: eventrouter
+      containership.io/managed: "true"
+  template:
+    metadata:
+      labels:
+        name: eventrouter
+        containership.io/app: eventrouter
+        containership.io/managed: "true"
+    spec:
+      containers:
+        - name: eventrouter
+          envFrom:
+            - configMapRef:
+                name: containership-env-configmap
+          image: containership/eventrouter
+          imagePullPolicy: IfNotPresent
+          volumeMounts:
+          - name: eventrouter-config-volume
+            mountPath: /etc/eventrouter
+      volumes:
+        - name: eventrouter-config-volume
+          configMap:
+            name: eventrouter-cm

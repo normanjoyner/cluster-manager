@@ -64,6 +64,7 @@ deploy-crds:
 
 deploy-common: deploy-crds
 	kubectl apply -f deploy/common/containership-core-namespace.yaml
+	kubectl apply -f deploy/eventrouter/eventrouter.yaml
 	kubectl apply -f deploy/common/containership-env-configmap.yaml
 	kubectl apply -f deploy/common/containership-coordinator-service.yaml
 
