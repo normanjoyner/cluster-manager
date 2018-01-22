@@ -481,6 +481,11 @@ func (c *RegistryController) registrySyncHandler(key string) error {
 			// deleted using OwnerRefs. This is because the Owner has to be
 			// in the same namespace as its child
 			for _, ns := range namespaces {
+				err = c.kubeclientset.CoreV1().Secrets(ns.Name).Delete(name, &metav1.DeleteOptions{})
+
+				if err != nil {
+					return err
+				}
 				// We won't record here because there's no good object to record on
 				// Add service account for each namespace to queue so old secrets get
 				// removed from ImagePullSecrets
@@ -494,14 +499,10 @@ func (c *RegistryController) registrySyncHandler(key string) error {
 		return err
 	}
 
-	var namespacesThatContainRegistry []*corev1.Namespace
 	for _, ns := range namespaces {
 		log.Debugf("%s: Searching namespace %s, for secret %s", registryControllerName, ns.Name, registry.Name)
 		_, err = c.secretsLister.Secrets(ns.Name).Get(registry.Name)
 
-		// If the secret doesn't exist, we'll create it, if there was
-		// any other kind of error we break so that error can be returned
-		// and the registry can be reprocessed
 		if errors.IsNotFound(err) {
 			c.recorder.Eventf(registry, corev1.EventTypeNormal, "CreateSecret",
 				"Detected missing secret in namespace %s, creating", ns.Name)
@@ -517,25 +518,6 @@ func (c *RegistryController) registrySyncHandler(key string) error {
 			// temporary network failure, or any other transient reason.
 			c.recorder.Eventf(registry, corev1.EventTypeWarning, "ListSecretError",
 				"Error listing secrets in namespace %s: %s", ns.Name, err.Error())
-			return err
-		} else {
-			// keep a list of namespaces that already contain the secret
-			// so that we can iterate on them for updating
-			namespacesThatContainRegistry = append(namespacesThatContainRegistry, ns)
-		}
-	}
-
-	// TODO: according to the Sync() spec we should only be getting an update
-	// registry requests if the registry has changed and no longer equals the secret
-	// shouldn't need to compare here but double check/make sure that is implemented correctly
-	for _, ns := range namespacesThatContainRegistry {
-		c.recorder.Eventf(registry, corev1.EventTypeNormal, "UpdateSecret",
-			"Updating secret in namespace %s", ns.Name)
-		_, err = c.kubeclientset.CoreV1().Secrets(ns.Name).Update(newSecret(registry))
-
-		if err != nil {
-			c.recorder.Eventf(registry, corev1.EventTypeWarning, "UpdateSecretError",
-				"Error updating secret in namespace %s: %s", ns.Name, err.Error())
 			return err
 		}
 	}
