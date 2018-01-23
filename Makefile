@@ -12,7 +12,7 @@ GO_FILES := $(shell find . -type f -not -path './vendor/*' -name '*.go')
 # for generated files. See https://github.com/kubernetes/code-generator/issues/30.
 LINT_LIST := $(shell go list ./... | grep -v '/pkg/client')
 
-.PHONY: all fmt-check lint test vet dep build clean coverage coverhtml
+.PHONY: all fmt-check lint test vet dep build clean coverage coverhtml release
 
 all: build
 
@@ -96,3 +96,6 @@ build-coordinator:
 		-f Dockerfile.coordinator .
 
 coordinator: build-coordinator deploy-coordinator
+
+release:
+	@./scripts/build/release.sh
