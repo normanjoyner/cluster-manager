@@ -270,7 +270,7 @@ func (c *Controller) authorizedKeysWatcher() {
 		select {
 		case event := <-fileWatcher.Events:
 			// We don't care what kind of event - always request a write
-			log.Info("Unexpected authorized_key file event detected:", event)
+			log.Info("Unexpected authorized_key file event detected: ", event)
 			c.requestWriteCh <- true
 
 		case err := <-fileWatcher.Errors:
@@ -281,16 +281,18 @@ func (c *Controller) authorizedKeysWatcher() {
 			case fileWatchStart:
 				log.Debug("Starting file watcher")
 				if err := fileWatcher.Add(filename); err != nil {
-					log.Error("fileWatcher.Add() failed:", err)
-					// TODO how to handle this?
+					// This should be benign and will resolve itself on next
+					// authorized write
+					log.Error("fileWatcher.Add() failed: ", err.Error())
 				}
 				c.fileWatchCmdCh <- fileWatchCmdComplete
 
 			case fileWatchStop:
 				log.Debug("Stopping file watcher")
 				if err := fileWatcher.Remove(filename); err != nil {
-					log.Error("fileWatcher.Remove() failed:", err)
-					// TODO how to handle this?
+					// This should be benign and will resolve itself on next
+					// authorized write
+					log.Error("fileWatcher.Remove() failed: ", err.Error())
 				}
 				c.fileWatchCmdCh <- fileWatchCmdComplete
 			}

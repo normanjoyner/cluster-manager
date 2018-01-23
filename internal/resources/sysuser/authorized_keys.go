@@ -21,10 +21,10 @@ const (
 	// Host
 	loginScriptFilename       = "containership_login.sh"
 	authorizedKeysFilename    = "authorized_keys"
-	authorizedKeysPermissions = 0600
-	sshDirPermissions         = 0755
-	scriptsDirPermissions     = 0755
-	scriptPermissions         = 0755
+	authorizedKeysPermissions = os.FileMode(0600)
+	sshDirPermissions         = os.ModeDir | os.FileMode(0755)
+	scriptsDirPermissions     = os.ModeDir | os.FileMode(0755)
+	scriptPermissions         = os.FileMode(0755)
 )
 
 // This is a no-op and always references the same underlying OS filesystem, so
@@ -53,23 +53,27 @@ func GetAuthorizedKeysFullPath() string {
 // Assumes that ContainershipMount is mounted as a hostPath.
 // This is not thread-safe and is expected to only be called on initialization.
 func InitializeAuthorizedKeysFileStructure() error {
+	return initializeAuthorizedKeysFileStructure(osFs)
+}
+
+func initializeAuthorizedKeysFileStructure(fs afero.Fs) error {
 	// Create directories / fix permissions if needed
-	err := ensureDirExistsWithCorrectPermissions(getSSHDir(), sshDirPermissions)
+	err := ensureDirExistsWithCorrectPermissions(fs, getSSHDir(), sshDirPermissions)
 	if err != nil {
 		return err
 	}
 
-	err = ensureDirExistsWithCorrectPermissions(getScriptsDir(), scriptsDirPermissions)
+	err = ensureDirExistsWithCorrectPermissions(fs, getScriptsDir(), scriptsDirPermissions)
 	if err != nil {
 		return err
 	}
 
 	// Create empty authorized_keys if needed (this is just to simplify other
-	// logic down the line
+	// logic down the line)
 	akFile := GetAuthorizedKeysFullPath()
-	if !fileExists(akFile) {
+	if !fileExists(fs, akFile) {
 		log.Info("authorized_keys file didn't exist so we're creating it")
-		f, err := osFs.OpenFile(akFile, os.O_CREATE|os.O_WRONLY|os.O_TRUNC,
+		f, err := fs.OpenFile(akFile, os.O_CREATE|os.O_WRONLY|os.O_TRUNC,
 			authorizedKeysPermissions)
 		if err != nil {
 			return err
@@ -77,13 +81,13 @@ func InitializeAuthorizedKeysFileStructure() error {
 		defer f.Close()
 	} else {
 		// Ensure permissions of existing file are correct
-		if err := osFs.Chmod(akFile, sshDirPermissions); err != nil {
+		if err := fs.Chmod(akFile, sshDirPermissions); err != nil {
 			return err
 		}
 	}
 
 	// Copy login script into place
-	err = copyFileForcefully(getLoginScriptFullPath(), loginScriptContainerPath)
+	err = copyFileForcefully(fs, getLoginScriptFullPath(), loginScriptContainerPath)
 	if err != nil {
 		return err
 	}
@@ -91,15 +95,15 @@ func InitializeAuthorizedKeysFileStructure() error {
 	return nil
 }
 
-func ensureDirExistsWithCorrectPermissions(dir string, perms os.FileMode) error {
-	if !dirExists(dir) {
+func ensureDirExistsWithCorrectPermissions(fs afero.Fs, dir string, perms os.FileMode) error {
+	if !dirExists(fs, dir) {
 		log.Infof("Directory %s didn't exist so we're creating it", dir)
-		if err := osFs.MkdirAll(dir, perms); err != nil {
+		if err := fs.MkdirAll(dir, perms); err != nil {
 			return err
 		}
 	} else {
 		// Ensure permissions of existing dir are correct
-		if err := osFs.Chmod(dir, perms); err != nil {
+		if err := fs.Chmod(dir, perms); err != nil {
 			return err
 		}
 	}
@@ -108,9 +112,9 @@ func ensureDirExistsWithCorrectPermissions(dir string, perms os.FileMode) error 
 }
 
 // copyFileForcefully copies src to dst, overwriting dst if it exists.
-func copyFileForcefully(dst string, src string) error {
+func copyFileForcefully(fs afero.Fs, dst string, src string) error {
 	// Open dst
-	dstFile, err := osFs.OpenFile(dst, os.O_CREATE|os.O_WRONLY|os.O_TRUNC,
+	dstFile, err := fs.OpenFile(dst, os.O_CREATE|os.O_WRONLY|os.O_TRUNC,
 		scriptPermissions)
 	if err != nil {
 		return err
@@ -118,7 +122,7 @@ func copyFileForcefully(dst string, src string) error {
 	defer dstFile.Close()
 
 	// Open src (don't care about flags here)
-	srcFile, err := osFs.Open(src)
+	srcFile, err := fs.Open(src)
 	if err != nil {
 		return err
 	}
@@ -131,8 +135,8 @@ func copyFileForcefully(dst string, src string) error {
 }
 
 // dirExists returns true if dir exists and is a directory, else false
-func dirExists(dir string) bool {
-	stat, err := osFs.Stat(dir)
+func dirExists(fs afero.Fs, dir string) bool {
+	stat, err := fs.Stat(dir)
 	if err != nil {
 		return false
 	}
@@ -141,8 +145,8 @@ func dirExists(dir string) bool {
 }
 
 // fileExists returns true if file exists and is a regular file, else false
-func fileExists(file string) bool {
-	stat, err := osFs.Stat(file)
+func fileExists(fs afero.Fs, file string) bool {
+	stat, err := fs.Stat(file)
 	if err != nil {
 		return false
 	}
@@ -170,6 +174,12 @@ func getLoginScriptFullPath() string {
 func writeAuthorizedKeys(fs afero.Fs, users []v3.UserSpec) error {
 	filename := GetAuthorizedKeysFullPath()
 
+	// Prevent against ssh dir deletion or permissions changes
+	err := ensureDirExistsWithCorrectPermissions(fs, getSSHDir(), sshDirPermissions)
+	if err != nil {
+		return err
+	}
+
 	s := buildAllKeysString(users)
 
 	writeMutex.Lock()
@@ -184,8 +194,13 @@ func writeAuthorizedKeys(fs afero.Fs, users []v3.UserSpec) error {
 	defer f.Close()
 
 	_, err = f.Write([]byte(s))
+	if err != nil {
+		return err
+	}
 
-	return err
+	// If OpenFile() above didn't create the file, there's a chance the file
+	// existed already but with incorrect permissions - fix them.
+	return fs.Chmod(filename, authorizedKeysPermissions)
 }
 
 // buildKeysStringForUser builds a string containing all authorized_keys lines

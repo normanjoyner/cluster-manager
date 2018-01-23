@@ -1,6 +1,7 @@
 package sysuser
 
 import (
+	"os"
 	"strings"
 	"testing"
 
@@ -71,15 +72,41 @@ func TestBuildAllKeysString(t *testing.T) {
 	assert.Equal(t, allUsersExpected, s)
 }
 
+func TestInitializeAuthorizedKeysFileStructure(t *testing.T) {
+	fs := afero.NewMemMapFs()
+
+	err := writeDummyContainerLoginScript(fs)
+	assert.Nil(t, err)
+
+	err = initializeAuthorizedKeysFileStructure(fs)
+	assert.Nil(t, err)
+
+	// Verify that all files and directories were created as expected
+	exists, err := afero.DirExists(fs, getSSHDir())
+	assert.Nil(t, err)
+	assert.True(t, exists)
+
+	exists, err = afero.Exists(fs, GetAuthorizedKeysFullPath())
+	assert.Nil(t, err)
+	assert.True(t, exists)
+
+	exists, err = afero.Exists(fs, getLoginScriptFullPath())
+	assert.Nil(t, err)
+	assert.True(t, exists)
+
+	verifyAllKnownPermissions(t, fs)
+}
+
 func TestWriteAuthorizedKeys(t *testing.T) {
 	fs := afero.NewMemMapFs()
 
-	filename := GetAuthorizedKeysFullPath()
-
-	// New FS so file should not exist yet
-	exists, err := afero.Exists(fs, filename)
-	assert.False(t, exists)
+	// Init is covered by a different test, assume it works
+	err := writeDummyContainerLoginScript(fs)
 	assert.Nil(t, err)
+	err = initializeAuthorizedKeysFileStructure(fs)
+	assert.Nil(t, err)
+
+	filename := GetAuthorizedKeysFullPath()
 
 	// Verify that we can write a bunch of keys properly
 	err = writeAuthorizedKeys(fs, allUsers)
@@ -107,6 +134,13 @@ func TestWriteAuthorizedKeys(t *testing.T) {
 	assert.True(t, match)
 	assert.Nil(t, err)
 
+	// Mess up permissions and verify that a write fixes them
+	fs.Chmod(getSSHDir(), os.ModeDir|os.FileMode(0777))
+	fs.Chmod(filename, os.FileMode(0777))
+	err = writeAuthorizedKeys(fs, allUsers)
+	assert.Nil(t, err)
+	verifyAllKnownPermissions(t, fs)
+
 	// Verify that file contents are cleared if there are users but no keys to
 	// write
 	oneUserNoKeys := []v3.UserSpec{testUserNoKeys}
@@ -115,4 +149,25 @@ func TestWriteAuthorizedKeys(t *testing.T) {
 	empty, err = afero.IsEmpty(fs, filename)
 	assert.True(t, empty)
 	assert.Nil(t, err)
+}
+
+func verifyAllKnownPermissions(t *testing.T, fs afero.Fs) {
+	// TODO maybe add scripts stuff
+	sshDir := getSSHDir()
+	authKeysFile := GetAuthorizedKeysFullPath()
+
+	dirInfo, err := fs.Stat(sshDir)
+	assert.Nil(t, err)
+	assert.Equal(t, sshDirPermissions.String(), dirInfo.Mode().String(),
+		"SSH dir permissions bad")
+
+	fileInfo, err := fs.Stat(authKeysFile)
+	assert.Nil(t, err)
+	assert.Equal(t, authorizedKeysPermissions.String(), fileInfo.Mode().String(),
+		"authorized_keys permissions bad")
+}
+
+func writeDummyContainerLoginScript(fs afero.Fs) error {
+	return afero.WriteFile(fs, loginScriptContainerPath,
+		[]byte("#!/bin/bash\necho 'hallo'\n"), scriptPermissions)
 }
