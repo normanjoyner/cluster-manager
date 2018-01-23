@@ -33,6 +33,8 @@ import (
 const (
 	// Type of agent that runs this controller
 	registryControllerName = "RegistryController"
+	// number of times an object will be requeued if there is an error
+	maxRetriesRegistryController = 5
 )
 
 const (
@@ -77,11 +79,23 @@ type RegistryController struct {
 // namespace, service accounts, secrets and registries. It's job is to ensure
 // each namespace has a secret for each registry, as well as ensuring that the
 // containership SA in each namespace contains each secret as an image pull secret
-func NewRegistryController(
-	kubeclientset kubernetes.Interface,
-	clientset csclientset.Interface,
-	kubeInformerFactory kubeinformers.SharedInformerFactory,
-	csInformerFactory csinformers.SharedInformerFactory) *RegistryController {
+func NewRegistryController(kubeclientset kubernetes.Interface, clientset csclientset.Interface, kubeInformerFactory kubeinformers.SharedInformerFactory, csInformerFactory csinformers.SharedInformerFactory) *RegistryController {
+
+	// Create event broadcaster
+	// Add coordinator types to the default Kubernetes Scheme so Events can be
+	// logged for coordinator types.
+	csscheme.AddToScheme(scheme.Scheme)
+	log.Info(registryControllerName, ": Creating event broadcaster")
+	eventBroadcaster := record.NewBroadcaster()
+	eventBroadcaster.StartLogging(log.Infof)
+	eventBroadcaster.StartRecordingToSink(&typedcorev1.EventSinkImpl{Interface: kubeclientset.CoreV1().Events("")})
+
+	c := &RegistryController{
+		kubeclientset: kubeclientset,
+		clientset:     clientset,
+		workqueue:     workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), "Registries"),
+		recorder:      eventBroadcaster.NewRecorder(scheme.Scheme, corev1.EventSource{Component: registryControllerName}),
+	}
 
 	// Instantiate resource informers we care about from the factory so they all
 	// share the same underlying cache
@@ -92,51 +106,11 @@ func NewRegistryController(
 	// informers for containership resources
 	registryInformer := csInformerFactory.Containership().V3().Registries()
 
-	// Create event broadcaster
-	// Add coordinator types to the default Kubernetes Scheme so Events can be
-	// logged for coordinator types.
-	csscheme.AddToScheme(scheme.Scheme)
-	log.Info(registryControllerName, ": Creating event broadcaster")
-	eventBroadcaster := record.NewBroadcaster()
-	eventBroadcaster.StartLogging(log.Infof)
-	eventBroadcaster.StartRecordingToSink(&typedcorev1.EventSinkImpl{Interface: kubeclientset.CoreV1().Events("")})
-	recorder := eventBroadcaster.NewRecorder(scheme.Scheme, corev1.EventSource{Component: registryControllerName})
-
-	controller := &RegistryController{
-		kubeclientset: kubeclientset,
-		clientset:     clientset,
-
-		// Listers are used for cache inspection and Synced functions
-		// are used to wait for cache synchronization
-		namespacesLister: namespaceInformer.Lister(),
-		namespacesSynced: namespaceInformer.Informer().HasSynced,
-
-		serviceAccountsLister: serviceAccountInformer.Lister(),
-		serviceAccountsSynced: serviceAccountInformer.Informer().HasSynced,
-
-		registriesLister: registryInformer.Lister(),
-		registriesSynced: registryInformer.Informer().HasSynced,
-
-		secretsLister: secretInformer.Lister(),
-		secretsSynced: secretInformer.Informer().HasSynced,
-
-		workqueue: workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), "Registries"),
-		recorder:  recorder,
-	}
-
 	log.Info(registryControllerName + ": Setting up event handlers")
 	// set up an event handler for when there is any change to a Registry resources
 	registryInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
-		AddFunc: controller.enqueueRegistry,
-		UpdateFunc: func(old, new interface{}) {
-			newReg := new.(*containershipv3.Registry)
-			oldReg := old.(*containershipv3.Registry)
-			if oldReg.ResourceVersion == newReg.ResourceVersion {
-				return
-			}
-			controller.enqueueRegistry(new)
-		},
-		DeleteFunc: controller.enqueueRegistry,
+		AddFunc:    c.enqueueRegistry,
+		DeleteFunc: c.enqueueRegistry,
 	})
 
 	// secret informer to check if the update, or deletion was authorized
@@ -144,58 +118,75 @@ func NewRegistryController(
 	// Registries, but it's not possible to use an actual OwnerRef because a
 	// Secret may be in a different namespace than the owning Registry
 	secretInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
-		UpdateFunc: func(old, new interface{}) {
-			newS := new.(*corev1.Secret)
-			oldS := old.(*corev1.Secret)
-			if newS.ResourceVersion == oldS.ResourceVersion {
-				// Periodic resync will send update events for all known Secrets.
-				// Two different versions of the same Secret will always have different RVs.
-				return
-			}
-
-			if constants.IsContainershipManaged(old) {
-				controller.queueSecretOwnerRegistryIfApplicable(new)
-			}
-
-		},
-		DeleteFunc: func(obj interface{}) {
-			if constants.IsContainershipManaged(obj) {
-				controller.queueSecretOwnerRegistryIfApplicable(obj)
-			}
-		},
+		UpdateFunc: c.secretUpdate,
+		DeleteFunc: c.secretDelete,
 	})
 
 	// namespace informer listen for add so we can create all registry
 	// secrets in the namespace and add a containership service Account
 	// to make containership magic happen
 	namespaceInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
-		AddFunc: controller.enqueueNamespace,
+		AddFunc: c.enqueueNamespace,
 	})
 
 	// set up service account listener to check if update or delete was authorized
 	// on containership SA
 	serviceAccountInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
-		AddFunc: func(obj interface{}) {
-			if constants.IsContainershipManaged(obj) {
-				controller.enqueueServiceAccount(obj)
-			}
-		},
-		UpdateFunc: func(old, new interface{}) {
-			newSA := new.(*corev1.ServiceAccount)
-			oldSA := old.(*corev1.ServiceAccount)
-			if newSA.ResourceVersion == oldSA.ResourceVersion {
-				// Periodic resync will send update events for all known Service Account.
-				// Two different versions of the same Service Account will always have different RVs.
-				return
-			}
-
-			if constants.IsContainershipManaged(old) {
-				controller.enqueueServiceAccount(new)
-			}
-		},
+		AddFunc:    c.serviceAccountAdd,
+		UpdateFunc: c.serviceAccountUpdate,
 	})
 
-	return controller
+	// Listers are used for cache inspection and Synced functions
+	// are used to wait for cache synchronization
+	c.namespacesLister = namespaceInformer.Lister()
+	c.namespacesSynced = namespaceInformer.Informer().HasSynced
+	c.serviceAccountsLister = serviceAccountInformer.Lister()
+	c.serviceAccountsSynced = serviceAccountInformer.Informer().HasSynced
+	c.registriesLister = registryInformer.Lister()
+	c.registriesSynced = registryInformer.Informer().HasSynced
+	c.secretsLister = secretInformer.Lister()
+	c.secretsSynced = secretInformer.Informer().HasSynced
+	return c
+}
+
+func (c *RegistryController) serviceAccountUpdate(old, new interface{}) {
+	newSA := new.(*corev1.ServiceAccount)
+	oldSA := old.(*corev1.ServiceAccount)
+	if newSA.ResourceVersion == oldSA.ResourceVersion {
+		// Periodic resync will send update events for all known Service Account.
+		// Two different versions of the same Service Account will always have different RVs.
+		return
+	}
+
+	if constants.IsContainershipManaged(old) {
+		c.enqueueServiceAccount(new)
+	}
+}
+
+func (c *RegistryController) serviceAccountAdd(obj interface{}) {
+	if constants.IsContainershipManaged(obj) {
+		c.enqueueServiceAccount(obj)
+	}
+}
+
+func (c *RegistryController) secretUpdate(old, new interface{}) {
+	newS := new.(*corev1.Secret)
+	oldS := old.(*corev1.Secret)
+	if newS.ResourceVersion == oldS.ResourceVersion {
+		// Periodic resync will send update events for all known Secrets.
+		// Two different versions of the same Secret will always have different RVs.
+		return
+	}
+
+	if constants.IsContainershipManaged(old) {
+		c.queueSecretOwnerRegistryIfApplicable(new)
+	}
+}
+
+func (c *RegistryController) secretDelete(obj interface{}) {
+	if constants.IsContainershipManaged(obj) {
+		c.queueSecretOwnerRegistryIfApplicable(obj)
+	}
 }
 
 // Run will set up the event handlers for types we are interested in, as well
@@ -305,30 +296,14 @@ func (c *RegistryController) processNextWorkItem() bool {
 		// Run the needed sync handler, passing it the kind from the key string
 		switch kind {
 		case "registry":
-			// If the registry is not being modified in the containership
-			// namespace we don't care about the event (shouldn't happen)
-			if namespace != constants.ContainershipNamespace {
-				return nil
-			}
-
-			if err := c.registrySyncHandler(key); err != nil {
-				return fmt.Errorf("error syncing '%s': %s", key, err.Error())
-			}
+			err := c.registrySyncHandler(key)
+			return c.handleErr(err, key)
 		case "serviceaccount":
-			// Check the name of the SA. We only want to modify the one we own in each
-			// namespace that is named ContainershipServiceAccountName. If it is not a
-			// Service account we own, return nil so it doesn't get added back to the queue
-			if name != constants.ContainershipServiceAccountName {
-				return nil
-			}
-
-			if err := c.serviceAccountSyncHandler(key); err != nil {
-				return fmt.Errorf("error syncing '%s': %s", key, err.Error())
-			}
+			err := c.serviceAccountSyncHandler(key)
+			return c.handleErr(err, key)
 		case "namespace":
-			if err := c.namespaceSyncHandler(key); err != nil {
-				return fmt.Errorf("error syncing '%s': %s", key, err.Error())
-			}
+			err := c.namespaceSyncHandler(key)
+			return c.handleErr(err, key)
 		}
 		// Finally, if no error occurs we forget this item so it does not
 		// get queued again until another change happens.
@@ -343,6 +318,26 @@ func (c *RegistryController) processNextWorkItem() bool {
 	}
 
 	return true
+}
+
+// handleErr looks to see if the resource sync event returned with an error,
+// if it did the resource gets requeued up to as many times as is set for
+// the max retries. If retry count is hit, or the resource is synced successfully
+// the resource is moved of the queue
+func (c *RegistryController) handleErr(err error, key interface{}) error {
+	if err == nil {
+		c.workqueue.Forget(key)
+		return nil
+	}
+
+	if c.workqueue.NumRequeues(key) < maxRetriesRegistryController {
+		c.workqueue.AddRateLimited(key)
+		return fmt.Errorf("error syncing '%v': %s. has been resynced %v times", key, err.Error(), c.workqueue.NumRequeues(key))
+	}
+
+	c.workqueue.Forget(key)
+	log.Infof("Dropping %q out of the queue: %v", key, err)
+	return err
 }
 
 // check for the status of the namespace, to short circuit acting on resource in
@@ -569,6 +564,12 @@ func (c *RegistryController) namespaceSyncHandler(key string) error {
 // string which is then put onto the work queue. This method should *not* be
 // passed resources of any type other than Registry.
 func (c *RegistryController) enqueueRegistry(obj interface{}) {
+	// If the registry is not being modified in the containership
+	// namespace we don't care about the event (shouldn't happen)
+	if registry, ok := obj.(*containershipv3.Registry); !ok || registry.Namespace != constants.ContainershipNamespace {
+		return
+	}
+
 	key, err := tools.MetaResourceNamespaceKeyFunc("registry", obj)
 	if err != nil {
 		runtime.HandleError(err)

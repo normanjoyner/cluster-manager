@@ -27,6 +27,8 @@ import (
 const (
 	// Type of agent that runs this controller
 	controllerName = "ContainershipController"
+	// number of times an object will be requeued if there is an error
+	maxRetriesContrainershipController = 5
 )
 
 // ContainershipController is the controller implementation for the containership
@@ -53,52 +55,45 @@ type ContainershipController struct {
 }
 
 // NewContainershipController returns a new containership controller
-func NewContainershipController(
-	kubeclientset kubernetes.Interface,
-	kubeInformerFactory kubeinformers.SharedInformerFactory) *ContainershipController {
-
-	// Instantiate resource informers
-	namespaceInformer := kubeInformerFactory.Core().V1().Namespaces()
-	serviceAccountInformer := kubeInformerFactory.Core().V1().ServiceAccounts()
-
+func NewContainershipController(kubeclientset kubernetes.Interface, kubeInformerFactory kubeinformers.SharedInformerFactory) *ContainershipController {
 	log.Info(controllerName, ": Creating event broadcaster")
 	eventBroadcaster := record.NewBroadcaster()
 	eventBroadcaster.StartLogging(log.Infof)
 	eventBroadcaster.StartRecordingToSink(&typedcorev1.EventSinkImpl{Interface: kubeclientset.CoreV1().Events("")})
-	recorder := eventBroadcaster.NewRecorder(scheme.Scheme, corev1.EventSource{Component: controllerName})
 
-	controller := &ContainershipController{
+	c := &ContainershipController{
 		kubeclientset: kubeclientset,
-
-		// Listers are used for cache inspection and Synced functions
-		// are used to wait for cache synchronization
-		namespacesLister: namespaceInformer.Lister(),
-		namespacesSynced: namespaceInformer.Informer().HasSynced,
-
-		serviceAccountsLister: serviceAccountInformer.Lister(),
-		serviceAccountsSynced: serviceAccountInformer.Informer().HasSynced,
-
-		workqueue: workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), "Containership"),
-		recorder:  recorder,
+		workqueue:     workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), "Containership"),
+		recorder:      eventBroadcaster.NewRecorder(scheme.Scheme, corev1.EventSource{Component: controllerName}),
 	}
+	// Instantiate resource informers
+	namespaceInformer := kubeInformerFactory.Core().V1().Namespaces()
+	serviceAccountInformer := kubeInformerFactory.Core().V1().ServiceAccounts()
 
 	log.Info(controllerName, ": Setting up event handlers")
 
 	// namespace informer listens for add events an queues the namespace
 	namespaceInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
-		AddFunc: controller.enqueueNamespace,
+		AddFunc: c.enqueueNamespace,
 	})
-
 	// service account informer listens for the delete event and queues the service account
 	serviceAccountInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
-		DeleteFunc: func(obj interface{}) {
-			if constants.IsContainershipManaged(obj) {
-				controller.enqueueServiceAccount(obj)
-			}
-		},
+		DeleteFunc: c.deleteServiceAccount,
 	})
 
-	return controller
+	// Listers are used for cache inspection and Synced functions
+	// are used to wait for cache synchronization
+	c.namespacesLister = namespaceInformer.Lister()
+	c.namespacesSynced = namespaceInformer.Informer().HasSynced
+	c.serviceAccountsLister = serviceAccountInformer.Lister()
+	c.serviceAccountsSynced = serviceAccountInformer.Informer().HasSynced
+	return c
+}
+
+func (c *ContainershipController) deleteServiceAccount(obj interface{}) {
+	if constants.IsContainershipManaged(obj) {
+		c.enqueueServiceAccount(obj)
+	}
 }
 
 // Run will set up the event handlers for types we are interested in, as well
@@ -205,13 +200,11 @@ func (c *ContainershipController) processNextWorkItem() bool {
 		// Run the needed sync handler, passing it the kind from the key string
 		switch kind {
 		case "namespace":
-			if err := c.namespaceSyncHandler(key); err != nil {
-				return fmt.Errorf("error syncing '%s': %s", key, err.Error())
-			}
+			err := c.namespaceSyncHandler(key)
+			c.handleErr(err, key)
 		case "serviceaccount":
-			if err := c.serviceAccountSyncHandler(key); err != nil {
-				return fmt.Errorf("error syncing '%s': %s", key, err.Error())
-			}
+			err := c.serviceAccountSyncHandler(key)
+			c.handleErr(err, key)
 		}
 
 		// Finally, if no error occurs we forget this item so it does not
@@ -227,6 +220,26 @@ func (c *ContainershipController) processNextWorkItem() bool {
 	}
 
 	return true
+}
+
+// handleErr looks to see if the resource sync event returned with an error,
+// if it did the resource gets requeued up to as many times as is set for
+// the max retries. If retry count is hit, or the resource is synced successfully
+// the resource is moved of the queue
+func (c *ContainershipController) handleErr(err error, key interface{}) error {
+	if err == nil {
+		c.workqueue.Forget(key)
+		return nil
+	}
+
+	if c.workqueue.NumRequeues(key) < maxRetriesContrainershipController {
+		c.workqueue.AddRateLimited(key)
+		return fmt.Errorf("error syncing '%v': %s. has been resynced %v times", key, err.Error(), c.workqueue.NumRequeues(key))
+	}
+
+	c.workqueue.Forget(key)
+	log.Infof("Dropping %q out of the queue: %v", key, err)
+	return err
 }
 
 // namespaceSyncHandler is put in the queue to be processed on namespace add.

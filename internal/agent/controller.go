@@ -30,6 +30,10 @@ const (
 	fileWatchCmdComplete
 )
 
+const (
+	maxRetriesUserController = 5
+)
+
 // Controller is the agent controller which watches for CRD changes and reports
 // back when a write to host is needed
 // TODO this needs to be able to be instantiated with a different resource type
@@ -48,22 +52,20 @@ func NewController(
 	clientset csclientset.Interface,
 	csInformerFactory csinformers.SharedInformerFactory) *Controller {
 
-	// Create an informer from the factory so that we share the underlying
-	// cache with other controllers
-	userInformer := csInformerFactory.Containership().V3().Users()
-
-	controller := &Controller{
+	c := &Controller{
 		clientset:      clientset,
-		usersLister:    userInformer.Lister(),
-		usersSynced:    userInformer.Informer().HasSynced,
 		workqueue:      workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), "Users"),
 		requestWriteCh: make(chan bool),
 		fileWatchCmdCh: make(chan int),
 	}
 
+	// Create an informer from the factory so that we share the underlying
+	// cache with other controllers
+	userInformer := csInformerFactory.Containership().V3().Users()
+
 	// All event handlers simply add to a workqueue to be processed by a worker
 	userInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
-		AddFunc: controller.enqueueUser,
+		AddFunc: c.enqueueUser,
 		UpdateFunc: func(old, new interface{}) {
 			newUser := new.(*containershipv3.User)
 			oldUser := old.(*containershipv3.User)
@@ -72,12 +74,15 @@ func NewController(
 				// do nothing
 				return
 			}
-			controller.enqueueUser(new)
+			c.enqueueUser(new)
 		},
-		DeleteFunc: controller.enqueueUser,
+		DeleteFunc: c.enqueueUser,
 	})
 
-	return controller
+	c.usersLister = userInformer.Lister()
+	c.usersSynced = userInformer.Informer().HasSynced
+
+	return c
 }
 
 // Run kicks off the Controller with the given number of workers to process the
@@ -140,16 +145,11 @@ func (c *Controller) processNextWorkItem() bool {
 			runtime.HandleError(fmt.Errorf("expected string in workqueue but got %#v", obj))
 			return nil
 		}
+
 		// Run the syncHandler, passing it the namespace/name string of the
 		// User resource to be synced.
-		if err := c.syncHandler(key); err != nil {
-			return fmt.Errorf("error syncing '%s': %s", key, err.Error())
-		}
-		// Finally, if no error occurs we Forget this item so it does not
-		// get queued again until another change happens.
-		c.workqueue.Forget(obj)
-		log.Debugf("Successfully synced '%s'", key)
-		return nil
+		err := c.syncHandler(key)
+		return c.handleErr(err, key)
 	}(obj)
 
 	if err != nil {
@@ -158,6 +158,26 @@ func (c *Controller) processNextWorkItem() bool {
 	}
 
 	return true
+}
+
+// handleErr looks to see if the resource sync event returned with an error,
+// if it did the resource gets requeued up to as many times as is set for
+// the max retries. If retry count is hit, or the resource is synced successfully
+// the resource is moved of the queue
+func (c *Controller) handleErr(err error, key interface{}) error {
+	if err == nil {
+		c.workqueue.Forget(key)
+		return nil
+	}
+
+	if c.workqueue.NumRequeues(key) < maxRetriesUserController {
+		c.workqueue.AddRateLimited(key)
+		return fmt.Errorf("error syncing '%v': %s. has been resynced %v times", key, err.Error(), c.workqueue.NumRequeues(key))
+	}
+
+	c.workqueue.Forget(key)
+	log.Infof("Dropping %v out of the queue: %v", key, err)
+	return err
 }
 
 // enqueueUser enqueues the key for a given user - it should not be called for
