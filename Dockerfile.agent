@@ -18,10 +18,19 @@ ADD . $SRC_DIR
 RUN mkdir -p /scripts && \
     cp $SRC_DIR/scripts/containership_login.sh /scripts
 
+ARG GIT_DESCRIBE
+ARG GIT_COMMIT
+
 # Build it:
 RUN cd $SRC_DIR && \
     glide install -v && \
-    CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -a -tags netgo -ldflags '-w' -o agent cmd/cloud_agent/agent.go && \
+    CGO_ENABLED=0 GOOS=linux GOARCH=amd64 \
+        go build -ldflags \
+        "-X github.com/containership/cloud-agent/internal/buildinfo.GitDescribe=${GIT_DESCRIBE} \
+        -X github.com/containership/cloud-agent/internal/buildinfo.GitCommit=${GIT_COMMIT}  \
+        -w" \
+        -a -tags netgo \
+        -o agent cmd/cloud_agent/agent.go && \
     cp agent /app/
 
 

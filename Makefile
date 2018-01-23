@@ -1,4 +1,7 @@
+SHELL=/bin/bash
 PROJECT_NAME := "cloud-agent"
+AGENT_IMAGE_TAG ?= "latest"
+COORDINATOR_IMAGE_TAG ?= "latest"
 PKG := "github.com/containership/$(PROJECT_NAME)"
 PKG_LIST := $(shell glide novendor)
 GO_FILES := $(shell find . -type f -not -path './vendor/*' -name '*.go')
@@ -78,12 +81,18 @@ deploy: deploy-agent deploy-coordinator
 
 build-agent:
 	@eval $$(minikube docker-env) ;\
-	docker image build -t containership/cloud-agent -f Dockerfile.agent .
+	docker image build -t containership/cloud-agent:$(AGENT_IMAGE_TAG) \
+		--build-arg GIT_DESCRIBE=`git describe --dirty` \
+		--build-arg GIT_COMMIT=`git rev-parse --short HEAD` \
+		-f Dockerfile.agent .
 
 agent: build-agent deploy-agent
 
 build-coordinator:
 	@eval $$(minikube docker-env) ;\
-	docker image build -t containership/cloud-coordinator -f Dockerfile.coordinator .
+	docker image build -t containership/cloud-coordinator:$(COORDINATOR_IMAGE_TAG) \
+		--build-arg GIT_DESCRIBE=`git describe --dirty` \
+		--build-arg GIT_COMMIT=`git rev-parse --short HEAD` \
+		-f Dockerfile.coordinator .
 
 coordinator: build-coordinator deploy-coordinator
