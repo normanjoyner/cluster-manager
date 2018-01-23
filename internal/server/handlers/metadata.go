@@ -27,7 +27,7 @@ func (meta *Metadata) Get(w http.ResponseWriter, r *http.Request) {
 			OrganizationID: envvars.GetOrganizationID(),
 			BuildInfo:      buildinfo.Get(),
 		},
-		Timestamp: time.Now(),
+		Timestamp: time.Now().UTC(),
 	}
 
 	respondWithJSON(w, http.StatusOK, m)
