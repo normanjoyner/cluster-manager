@@ -13,7 +13,7 @@ import (
 	"k8s.io/client-go/util/workqueue"
 
 	"github.com/containership/cloud-agent/internal/constants"
-	"github.com/containership/cloud-agent/internal/envvars"
+	"github.com/containership/cloud-agent/internal/env"
 	"github.com/containership/cloud-agent/internal/log"
 	"github.com/containership/cloud-agent/internal/resources/sysuser"
 	containershipv3 "github.com/containership/cloud-agent/pkg/apis/containership.io/v3"
@@ -211,7 +211,7 @@ func (c *Controller) handleWriteRequests(stopCh <-chan struct{}) {
 	// Handle write requests faster than the cloud sync interval to ensure
 	// that a user isn't stuck waiting for SSH to work for twice the sync
 	// interval in the worst case.
-	interval := envvars.GetContainershipCloudSyncInterval() / 2
+	interval := env.ContainershipCloudSyncInterval() / 2
 	ticker := time.NewTicker(interval)
 
 	writeRequested := false

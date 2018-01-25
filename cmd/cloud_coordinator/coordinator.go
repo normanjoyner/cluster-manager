@@ -6,7 +6,7 @@ import (
 
 	"github.com/containership/cloud-agent/internal/buildinfo"
 	"github.com/containership/cloud-agent/internal/coordinator"
-	"github.com/containership/cloud-agent/internal/envvars"
+	"github.com/containership/cloud-agent/internal/env"
 	"github.com/containership/cloud-agent/internal/log"
 	"github.com/containership/cloud-agent/internal/server"
 )
@@ -21,7 +21,7 @@ func main() {
 	// in a sane way.
 	flag.Parse()
 
-	envvars.DumpDevelopmentEnvironment()
+	env.Dump()
 
 	coordinator.Initialize()
 	go coordinator.Run()

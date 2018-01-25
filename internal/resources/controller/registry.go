@@ -19,7 +19,7 @@ import (
 	cslisters "github.com/containership/cloud-agent/pkg/client/listers/containership.io/v3"
 
 	"github.com/containership/cloud-agent/internal/constants"
-	"github.com/containership/cloud-agent/internal/envvars"
+	"github.com/containership/cloud-agent/internal/env"
 	"github.com/containership/cloud-agent/internal/log"
 	"github.com/containership/cloud-agent/internal/resources"
 )
@@ -98,7 +98,7 @@ func (c *RegistrySyncController) SyncWithCloud(stopCh <-chan struct{}) error {
 	// cache is not thread-safe and we don't want to do parallel
 	// requests to the API anyway
 	go wait.JitterUntil(c.doSync,
-		envvars.GetContainershipCloudSyncInterval(),
+		env.ContainershipCloudSyncInterval(),
 		constants.SyncJitterFactor,
 		true, // sliding: restart period only after doSync finishes
 		stopCh)

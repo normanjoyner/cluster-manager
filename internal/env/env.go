@@ -1,4 +1,4 @@
-package envvars
+package env
 
 import (
 	"os"
@@ -74,58 +74,58 @@ func init() {
 	env.kubeconfig = os.Getenv("KUBECONFIG")
 }
 
-// GetOrganizationID returns Containership Cloud organization id
-func GetOrganizationID() string {
+// OrganizationID returns Containership Cloud organization id
+func OrganizationID() string {
 	return env.organizationID
 }
 
-// GetClusterID returns Containership Cloud cluster id
-func GetClusterID() string {
+// ClusterID returns Containership Cloud cluster id
+func ClusterID() string {
 	return env.clusterID
 }
 
-// GetCloudClusterAPIKey returns Containership Cloud cluster api key
-func GetCloudClusterAPIKey() string {
+// CloudClusterAPIKey returns Containership Cloud cluster api key
+func CloudClusterAPIKey() string {
 	return env.cloudClusterAPIKey
 }
 
-// GetBaseURL returns Containership Cloud API url
-func GetBaseURL() string {
+// BaseURL returns Containership Cloud API url
+func BaseURL() string {
 	return env.baseURL
 }
 
-// GetContainershipCloudSyncInterval returns the cloud sync interval
-func GetContainershipCloudSyncInterval() time.Duration {
+// ContainershipCloudSyncInterval returns the cloud sync interval
+func ContainershipCloudSyncInterval() time.Duration {
 	return env.csCloudSyncInterval
 }
 
-// GetAgentInformerSyncInterval returns the agent informer sync interval
-func GetAgentInformerSyncInterval() time.Duration {
+// AgentInformerSyncInterval returns the agent informer sync interval
+func AgentInformerSyncInterval() time.Duration {
 	return env.agentInformerSyncInterval
 }
 
-// GetCoordinatorInformerSyncInterval returns the coordinator informer sync interval
-func GetCoordinatorInformerSyncInterval() time.Duration {
+// CoordinatorInformerSyncInterval returns the coordinator informer sync interval
+func CoordinatorInformerSyncInterval() time.Duration {
 	return env.coordinatorInformerSyncInterval
 }
 
-// GetCSCloudEnvironment returns Containership Cloud environment
-func GetCSCloudEnvironment() string {
+// CSCloudEnvironment returns Containership Cloud environment
+func CSCloudEnvironment() string {
 	return env.csCloudEnvironment
 }
 
-// GetCSServerPort returns cloud-agent http server port
-func GetCSServerPort() string {
+// CSServerPort returns cloud-agent http server port
+func CSServerPort() string {
 	return env.csServerPort
 }
 
-// GetKubeconfig returns kubeconfig file if defined
-func GetKubeconfig() string {
+// Kubeconfig returns kubeconfig file if defined
+func Kubeconfig() string {
 	return env.kubeconfig
 }
 
-// DumpDevelopmentEnvironment dumps the environment if we're in development mode
-func DumpDevelopmentEnvironment() {
+// Dump dumps the environment if we're in development mode
+func Dump() {
 	if env.csCloudEnvironment == "development" {
 		dump := spew.Sdump(env)
 		log.Debug(dump)

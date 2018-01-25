@@ -56,7 +56,7 @@ func stringToLogLevel(s string) zapcore.Level {
 
 // getLogLevelFromEnvironment gets the log level from the environment with sane
 // defaulting if no value or an invalid value is specified. Note that we call
-// "os" directly here because we want to be able to log in the envvars package
+// "os" directly here because we want to be able to log in the env package
 // without a circular dependency.
 func getLogLevelFromEnvironment() zapcore.Level {
 	logLevel := strings.ToLower(os.Getenv("LOG_LEVEL"))

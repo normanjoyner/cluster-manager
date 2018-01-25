@@ -6,7 +6,7 @@ import (
 
 	"github.com/gorilla/mux"
 
-	"github.com/containership/cloud-agent/internal/envvars"
+	"github.com/containership/cloud-agent/internal/env"
 	"github.com/containership/cloud-agent/internal/log"
 )
 
@@ -26,7 +26,7 @@ func New() *CSServer {
 // Run is exported for main agent to start server,
 // which is what containership uses to talk with the cluster
 func (cs *CSServer) Run() {
-	port := envvars.GetCSServerPort()
+	port := env.CSServerPort()
 
 	cs.run(fmt.Sprintf(":%s", port))
 }

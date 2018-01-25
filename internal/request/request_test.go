@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/containership/cloud-agent/internal/envvars"
+	"github.com/containership/cloud-agent/internal/env"
 )
 
 func TestNew(t *testing.T) {
@@ -39,7 +39,7 @@ func TestAppendToBaseURL(t *testing.T) {
 
 	path := "/metadata"
 	url := appendToBaseURL(path)
-	expected := fmt.Sprintf("%s/v3/metadata", envvars.GetBaseURL())
+	expected := fmt.Sprintf("%s/v3/metadata", env.BaseURL())
 
 	if url != expected {
 		t.Errorf("appendToBaseURL(%q) == %q, expected %q", path, url, expected)

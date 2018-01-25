@@ -11,7 +11,7 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 
 	"github.com/containership/cloud-agent/internal/constants"
-	"github.com/containership/cloud-agent/internal/envvars"
+	"github.com/containership/cloud-agent/internal/env"
 	"github.com/containership/cloud-agent/internal/log"
 )
 
@@ -56,7 +56,7 @@ func init() {
 // determineConfig determines if we are running in a cluster or out side
 // and gets the appropriate configuration to talk with kubernetes
 func determineConfig() (*rest.Config, error) {
-	kubeconfigPath := envvars.GetKubeconfig()
+	kubeconfigPath := env.Kubeconfig()
 	var config *rest.Config
 	var err error
 

@@ -7,7 +7,7 @@ import (
 	"text/template"
 	"time"
 
-	"github.com/containership/cloud-agent/internal/envvars"
+	"github.com/containership/cloud-agent/internal/env"
 	"github.com/containership/cloud-agent/internal/log"
 )
 
@@ -20,8 +20,8 @@ type Requester struct {
 }
 
 var urlParams = map[string]string{
-	"OrganizationID": envvars.GetOrganizationID(),
-	"ClusterID":      envvars.GetClusterID(),
+	"OrganizationID": env.OrganizationID(),
+	"ClusterID":      env.ClusterID(),
 }
 
 // New returns a Requester with the endpoint and type or request set that is
@@ -65,11 +65,11 @@ func (r *Requester) Body() []byte {
 }
 
 func appendToBaseURL(path string) string {
-	return fmt.Sprintf("%s/v3%s", envvars.GetBaseURL(), path)
+	return fmt.Sprintf("%s/v3%s", env.BaseURL(), path)
 }
 
 func addHeaders(req *http.Request) {
-	req.Header.Set("Authorization", fmt.Sprintf("JWT %v", envvars.GetCloudClusterAPIKey()))
+	req.Header.Set("Authorization", fmt.Sprintf("JWT %v", env.CloudClusterAPIKey()))
 }
 
 func createClient() *http.Client {

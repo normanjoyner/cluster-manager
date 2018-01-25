@@ -6,7 +6,7 @@ import (
 
 	"github.com/containership/cloud-agent/internal/agent"
 	"github.com/containership/cloud-agent/internal/buildinfo"
-	"github.com/containership/cloud-agent/internal/envvars"
+	"github.com/containership/cloud-agent/internal/env"
 	"github.com/containership/cloud-agent/internal/k8sutil"
 	"github.com/containership/cloud-agent/internal/log"
 	"github.com/containership/cloud-agent/internal/resources/sysuser"
@@ -22,7 +22,7 @@ func main() {
 	// in a sane way.
 	flag.Parse()
 
-	envvars.DumpDevelopmentEnvironment()
+	env.Dump()
 
 	// Failure to initialize what we need for SSH to work is not a fatal error
 	// because the user may not have performed the manual steps required to
@@ -33,7 +33,7 @@ func main() {
 		log.Info("SSH feature will not work without manual intervention")
 	}
 
-	interval := envvars.GetAgentInformerSyncInterval()
+	interval := env.AgentInformerSyncInterval()
 	csInformerFactory := k8sutil.CSAPI().NewCSSharedInformerFactory(interval)
 
 	// TODO change NewController to allow for different types (we need

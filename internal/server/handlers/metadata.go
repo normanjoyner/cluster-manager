@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/containership/cloud-agent/internal/buildinfo"
-	"github.com/containership/cloud-agent/internal/envvars"
+	"github.com/containership/cloud-agent/internal/env"
 )
 
 type containershipClusterMetadata struct {
@@ -23,8 +23,8 @@ type metadata struct {
 func (meta *Metadata) Get(w http.ResponseWriter, r *http.Request) {
 	m := &metadata{
 		Containership: containershipClusterMetadata{
-			ClusterID:      envvars.GetClusterID(),
-			OrganizationID: envvars.GetOrganizationID(),
+			ClusterID:      env.ClusterID(),
+			OrganizationID: env.OrganizationID(),
 			BuildInfo:      buildinfo.Get(),
 		},
 		Timestamp: time.Now().UTC(),
