@@ -1,10 +1,9 @@
 package coordinator
 
 import (
-	"time"
-
 	kubeinformers "k8s.io/client-go/informers"
 
+	"github.com/containership/cloud-agent/internal/envvars"
 	"github.com/containership/cloud-agent/internal/k8sutil"
 	"github.com/containership/cloud-agent/internal/log"
 	csinformers "github.com/containership/cloud-agent/pkg/client/informers/externalversions"
@@ -22,8 +21,9 @@ var (
 func Initialize() {
 	// Create Informer factories. All Informers should be created from these
 	// factories in order to share the same underlying caches.
-	kubeInformerFactory = k8sutil.API().NewKubeSharedInformerFactory(time.Second * 10)
-	csInformerFactory = k8sutil.CSAPI().NewCSSharedInformerFactory(time.Second * 10)
+	interval := envvars.GetCoordinatorInformerSyncInterval()
+	kubeInformerFactory = k8sutil.API().NewKubeSharedInformerFactory(interval)
+	csInformerFactory = k8sutil.CSAPI().NewCSSharedInformerFactory(interval)
 
 	regController = NewRegistryController(
 		k8sutil.API().Client(), k8sutil.CSAPI().Client(), kubeInformerFactory, csInformerFactory)

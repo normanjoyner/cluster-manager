@@ -26,7 +26,7 @@ const (
 // we refactor appropriately
 const (
 	// SyncJitterFactor is used to avoid periodic and simultaneous syncs
-	SyncJitterFactor = 0.2
+	SyncJitterFactor = 0.1
 )
 
 // Containership provider registry names

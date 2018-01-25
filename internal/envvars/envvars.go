@@ -2,7 +2,6 @@ package envvars
 
 import (
 	"os"
-	"strconv"
 	"strings"
 	"time"
 
@@ -12,15 +11,23 @@ import (
 )
 
 type environment struct {
-	agentSyncIntervalInSeconds int
-	cloudClusterAPIKey         string
-	baseURL                    string
-	clusterID                  string
-	csCloudEnvironment         string
-	csServerPort               string
-	organizationID             string
-	kubeconfig                 string
+	csCloudSyncInterval             time.Duration
+	agentInformerSyncInterval       time.Duration
+	coordinatorInformerSyncInterval time.Duration
+	cloudClusterAPIKey              string
+	baseURL                         string
+	clusterID                       string
+	csCloudEnvironment              string
+	csServerPort                    string
+	organizationID                  string
+	kubeconfig                      string
 }
+
+const (
+	defaultAgentInformerSyncInterval       = time.Minute
+	defaultCoordinatorInformerSyncInterval = time.Minute
+	defaultContainershipCloudSyncInterval  = time.Second * 30
+)
 
 var env environment
 
@@ -50,11 +57,14 @@ func init() {
 		env.baseURL = "https://api.containership.io"
 	}
 
-	var err error
-	env.agentSyncIntervalInSeconds, err = strconv.Atoi((os.Getenv("AGENT_SYNC_INTERVAL_IN_SECONDS")))
-	if err != nil || env.agentSyncIntervalInSeconds == 0 {
-		env.agentSyncIntervalInSeconds = 12
-	}
+	env.csCloudSyncInterval = getDurationEnvOrDefault("CONTAINERSHIP_CLOUD_SYNC_INTERVAL_SEC",
+		defaultContainershipCloudSyncInterval)
+
+	env.agentInformerSyncInterval = getDurationEnvOrDefault("AGENT_INFORMER_SYNC_INTERVAL_SEC",
+		defaultAgentInformerSyncInterval)
+
+	env.coordinatorInformerSyncInterval = getDurationEnvOrDefault("COORDINATOR_INFORMER_SYNC_INTERVAL_SEC",
+		defaultCoordinatorInformerSyncInterval)
 
 	env.csServerPort = os.Getenv("CONTAINERSHIP_CLOUD_SERVER_PORT")
 	if env.csServerPort == "" {
@@ -84,9 +94,19 @@ func GetBaseURL() string {
 	return env.baseURL
 }
 
-// GetAgentSyncIntervalInSeconds returns agent sync interval in seconds
-func GetAgentSyncIntervalInSeconds() time.Duration {
-	return time.Duration(env.agentSyncIntervalInSeconds)
+// GetContainershipCloudSyncInterval returns the cloud sync interval
+func GetContainershipCloudSyncInterval() time.Duration {
+	return env.csCloudSyncInterval
+}
+
+// GetAgentInformerSyncInterval returns the agent informer sync interval
+func GetAgentInformerSyncInterval() time.Duration {
+	return env.agentInformerSyncInterval
+}
+
+// GetCoordinatorInformerSyncInterval returns the coordinator informer sync interval
+func GetCoordinatorInformerSyncInterval() time.Duration {
+	return env.coordinatorInformerSyncInterval
 }
 
 // GetCSCloudEnvironment returns Containership Cloud environment
@@ -110,4 +130,12 @@ func DumpDevelopmentEnvironment() {
 		dump := spew.Sdump(env)
 		log.Debug(dump)
 	}
+}
+
+func getDurationEnvOrDefault(key string, defaultVal time.Duration) time.Duration {
+	val, err := time.ParseDuration(os.Getenv(key))
+	if err != nil || val <= 0 {
+		val = defaultVal
+	}
+	return val
 }

@@ -208,8 +208,11 @@ func (c *Controller) syncHandler(key string) error {
 // TODO add support for multiple resource types, either by modifying this or
 // using a different structure
 func (c *Controller) handleWriteRequests(stopCh <-chan struct{}) {
-	interval := envvars.GetAgentSyncIntervalInSeconds()
-	ticker := time.NewTicker(time.Duration(interval) * time.Second)
+	// Handle write requests faster than the cloud sync interval to ensure
+	// that a user isn't stuck waiting for SSH to work for twice the sync
+	// interval in the worst case.
+	interval := envvars.GetContainershipCloudSyncInterval() / 2
+	ticker := time.NewTicker(interval)
 
 	writeRequested := false
 

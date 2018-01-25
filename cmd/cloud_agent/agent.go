@@ -3,7 +3,6 @@ package main
 import (
 	"flag"
 	"runtime"
-	"time"
 
 	"github.com/containership/cloud-agent/internal/agent"
 	"github.com/containership/cloud-agent/internal/buildinfo"
@@ -34,7 +33,8 @@ func main() {
 		log.Info("SSH feature will not work without manual intervention")
 	}
 
-	csInformerFactory := k8sutil.CSAPI().NewCSSharedInformerFactory(time.Second * 10)
+	interval := envvars.GetAgentInformerSyncInterval()
+	csInformerFactory := k8sutil.CSAPI().NewCSSharedInformerFactory(interval)
 
 	// TODO change NewController to allow for different types (we need
 	// Firewalls too eventually)

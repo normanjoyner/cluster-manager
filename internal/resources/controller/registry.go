@@ -98,7 +98,7 @@ func (c *RegistrySyncController) SyncWithCloud(stopCh <-chan struct{}) error {
 	// cache is not thread-safe and we don't want to do parallel
 	// requests to the API anyway
 	go wait.JitterUntil(c.doSync,
-		time.Second*envvars.GetAgentSyncIntervalInSeconds(),
+		envvars.GetContainershipCloudSyncInterval(),
 		constants.SyncJitterFactor,
 		true, // sliding: restart period only after doSync finishes
 		stopCh)
