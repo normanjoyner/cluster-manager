@@ -1,5 +1,5 @@
-hash: fda5145118631a834a6fec21387d8baa609cb1781948c1431632fbf845a25cf5
-updated: 2018-01-26T09:33:18.74019-05:00
+hash: 6f9edc8ccb2e0996f49c37db6dfaafeb88491b928a80f47400a9a8ec76036600
+updated: 2018-01-26T09:34:58.062238-05:00
 imports:
 - name: github.com/aws/aws-sdk-go
   version: 9ed0c8de252f04ac45a65358377103d5a1aa2d92
@@ -7,8 +7,6 @@ imports:
   version: 346938d642f2ec3594ed81d874461961cd0faa76
 - name: github.com/fsnotify/fsnotify
   version: 629574ca2a5df945712d3079857300b5e4da0236
-- name: github.com/golang/groupcache
-  version: 02826c3e79038b59d737d3b1c0a1d937f71a4433
 - name: github.com/gorilla/mux
   version: 7f08801859139f86dfafd1c296e2cba9a80d292e
 - name: github.com/spf13/afero
