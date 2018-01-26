@@ -10,5 +10,5 @@ func (a *CSServer) initializeRoutes() {
 	c := &handlers.Terminate{}
 
 	a.Router.HandleFunc("/metadata", m.Get).Methods("GET")
-	a.Router.HandleFunc("/terminate", c.Post).Methods("POST")
+	a.Router.HandleFunc("/terminate", c.Delete).Methods("DELETE")
 }

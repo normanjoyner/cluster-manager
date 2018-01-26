@@ -7,8 +7,8 @@ import (
 	"github.com/containership/cloud-agent/internal/log"
 )
 
-// Post stops cloud synchronization and requests cleanup and termination
-func (terminate *Terminate) Post(w http.ResponseWriter, r *http.Request) {
+// Delete stops cloud synchronization and requests cleanup and termination
+func (terminate *Terminate) Delete(w http.ResponseWriter, r *http.Request) {
 	log.Info("Terminate request received")
 
 	coordinator.RequestTerminate()
