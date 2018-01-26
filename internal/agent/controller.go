@@ -100,7 +100,8 @@ func (c *Controller) Run(numWorkers int, stopCh <-chan struct{}) error {
 	}
 
 	log.Info("Starting write request handler")
-	go c.handleWriteRequests(stopCh)
+	stopWriteCh := make(chan struct{})
+	go c.handleWriteRequests(stopWriteCh)
 
 	go c.authorizedKeysWatcher()
 	c.sendCmdToFileWatcher(fileWatchStart)
@@ -113,7 +114,10 @@ func (c *Controller) Run(numWorkers int, stopCh <-chan struct{}) error {
 
 	log.Info("Started workers")
 	<-stopCh
-	log.Info("Shutting down workers")
+	log.Info("Shutting down controller")
+	c.sendCmdToFileWatcher(fileWatchStop)
+	close(c.fileWatchCmdCh)
+	close(stopWriteCh)
 
 	return nil
 }
@@ -198,7 +202,7 @@ func (c *Controller) enqueueUser(obj interface{}) {
 // requests are rate limited on the other side, so we can request as many times
 // as we want here and it will collapse to periodic writes of the latest cache
 func (c *Controller) syncHandler(key string) error {
-	log.Debugf("User updated: key=%s\n", key)
+	log.Debugf("User updated: key=%s", key)
 	c.requestWriteCh <- true
 	return nil
 }
@@ -234,6 +238,12 @@ func (c *Controller) handleWriteRequests(stopCh <-chan struct{}) {
 		case <-stopCh:
 			log.Info("Write request handler stopping")
 			ticker.Stop()
+			// Everything else should be shut down by this point, so just
+			// call sysuser package directly to clear out authorized_keys
+			err := sysuser.WriteAuthorizedKeys(nil)
+			if err != nil {
+				log.Error("Error cleaning up authorized keys: ", err.Error())
+			}
 			return
 		}
 	}
@@ -254,7 +264,7 @@ func (c *Controller) writeAuthorizedUsers() error {
 		users = append(users, u.Spec)
 	}
 
-	log.Debugf("Users: %+v\n", users)
+	log.Debugf("Users: %+v", users)
 
 	// Stop file notifications while we write
 	c.sendCmdToFileWatcher(fileWatchStop)
@@ -299,7 +309,14 @@ func (c *Controller) authorizedKeysWatcher() {
 		case err := <-fileWatcher.Errors:
 			log.Error("File watcher error:", err)
 
-		case cmd := <-c.fileWatchCmdCh:
+		case cmd, ok := <-c.fileWatchCmdCh:
+			if !ok {
+				// Channel was closed. Remove the file watch, ignoring any
+				// errors, and shut down.
+				fileWatcher.Remove(filename)
+				return
+			}
+
 			switch cmd {
 			case fileWatchStart:
 				log.Debug("Starting file watcher")

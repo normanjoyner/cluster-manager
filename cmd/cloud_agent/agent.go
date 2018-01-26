@@ -2,7 +2,10 @@ package main
 
 import (
 	"flag"
+	"os"
+	"os/signal"
 	"runtime"
+	"syscall"
 
 	"github.com/containership/cloud-agent/internal/agent"
 	"github.com/containership/cloud-agent/internal/buildinfo"
@@ -44,11 +47,37 @@ func main() {
 	stopCh := make(chan struct{})
 	csInformerFactory.Start(stopCh)
 
-	// Run controller until error
+	// SIGTERM is sent when a pod is deleted in Kubernetes. The agent needs to
+	// clean up host-level resources within the grace period before the
+	// follow-up SIGKILL arrives (default grace period being 30s).
+	signals := make(chan os.Signal)
+	signal.Notify(signals, syscall.SIGTERM)
+	go signalHandler(signals, stopCh)
+
+	// Run controller until error or requested to stop
 	// Each controller is pretty lightweight so one worker should be fine
 	if err := controller.Run(1, stopCh); err != nil {
-		log.Fatal("Error running controller:", err.Error())
+		log.Fatal("Error running controller: ", err.Error())
 	}
 
+	// Note that we'll never actually exit because some goroutines out of our
+	// control (e.g. the glog flush daemon) will continue to run).
 	runtime.Goexit()
+}
+
+func signalHandler(signals chan os.Signal, stopCh chan struct{}) {
+	for {
+		sig := <-signals
+		switch sig {
+		case syscall.SIGTERM:
+			log.Infof("SIGTERM received - attempting to shut down gracefully")
+			close(stopCh)
+			signal.Stop(signals)
+			return
+		default:
+			// It should be impossible to get here since we're only listening
+			// on SIGTERM, but let's log it just for fun
+			log.Infof("Signal %v received", sig)
+		}
+	}
 }
