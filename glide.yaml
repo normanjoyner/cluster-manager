@@ -6,8 +6,6 @@ import:
   version: kubernetes-1.9.0
 - package: github.com/gorilla/mux
   version: v1.6.0
-- package: github.com/coreos/go-iptables
-  version: v0.2.0
 - package: github.com/stretchr/testify
   version: v1.2.0
 - package: github.com/spf13/afero
