@@ -50,10 +50,12 @@ func init() {
 	}
 
 	env.csCloudEnvironment = strings.ToLower(os.Getenv("CONTAINERSHIP_CLOUD_ENVIRONMENT"))
-	if env.csCloudEnvironment == "development" {
-		env.baseURL = "https://stage-api.containership.io"
-	} else {
-		// Default to production
+	if env.csCloudEnvironment == "" {
+		env.csCloudEnvironment = "production"
+	}
+
+	env.baseURL = os.Getenv("CONTAINERSHIP_CLOUD_API_BASE_URL")
+	if env.baseURL == "" {
 		env.baseURL = "https://api.containership.io"
 	}
 
