@@ -261,7 +261,7 @@ type jsonPluginsResponse struct {
 }
 
 // getAndFormatPlugin makes a request to get the plugin manifests from containership
-// cloud, then takes them and splits them up to be writen to files
+// cloud, then takes them and splits them up to be written to files
 // under the plugins/:plugin_id
 func (c *PluginController) getAndFormatPlugin(ID string) error {
 	path := makePluginManifestPath(ID)
@@ -297,7 +297,7 @@ func (c *PluginController) getAndFormatPlugin(ID string) error {
 }
 
 func getPluginPath(id string) string {
-	return path.Join("plugins", id)
+	return path.Join("/plugins", id)
 }
 
 func getPluginFilename(id string, index int) string {
@@ -327,7 +327,7 @@ func cleanUpPluginManifests(name string) {
 	}
 }
 
-// applyPlugin takes the manifests under the plugins id and runs them thorugh
+// applyPlugin takes the manifests under the plugins id and runs them through
 // kubectl apply
 func (c *PluginController) applyPlugin(plugin *containershipv3.Plugin) error {
 	err := c.getAndFormatPlugin(plugin.Spec.ID)
