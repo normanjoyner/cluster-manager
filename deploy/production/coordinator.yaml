@@ -32,8 +32,3 @@ spec:
           volumeMounts:
             - mountPath: /plugins
               name: plugins-volume
-          resources:
-            requests:
-              cpu: 0.15
-          securityContext:
-            privileged: true
