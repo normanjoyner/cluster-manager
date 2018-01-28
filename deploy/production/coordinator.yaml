@@ -19,6 +19,9 @@ spec:
         containership.io/app: cloud-coordinator
         containership.io/managed: "true"
     spec:
+      volumes:
+        - name: plugins-volume
+          emptyDir: {}
       containers:
         - name: cloud-coordinator
           envFrom:
@@ -26,6 +29,9 @@ spec:
                 name: containership-env-configmap
           image: containership/cloud-coordinator
           imagePullPolicy: Always
+          volumeMounts:
+            - mountPath: /plugins
+              name: plugins-volume
           resources:
             requests:
               cpu: 0.15
