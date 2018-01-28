@@ -238,16 +238,36 @@ func makeRequest(path string) ([]byte, error) {
 	return bytes, nil
 }
 
-func (c *PluginController) deletePlugin(name string) error {
-	kc := kubectl.NewDeleteCmd(getPluginPath(name))
+func runAndLogFromKubectl(kc *kubectl.Kubectl) error {
 	err := kc.Run()
 
-	log.Debug("Delete plugin output: ", string(kc.Output))
+	log.Debug("Kubectl output: ", string(kc.Output))
 	if err != nil || len(kc.Error) != 0 {
 		e := string(kc.Error)
 
-		log.Error("Delete plugin error: ", e)
-		return fmt.Errorf("Error deleting plugin: %s", e)
+		log.Error("Kubectl error: ", e)
+		return fmt.Errorf("Kubectl error: %s", e)
+	}
+
+	return nil
+}
+
+func (c *PluginController) deletePlugin(name string) error {
+	pluginPath := getPluginPath(name)
+
+	var kc *kubectl.Kubectl
+	if stat, err := os.Stat(pluginPath); os.IsNotExist(err) || !stat.IsDir() {
+		// Covers edge case that if plugin does not have a directory with manifests
+		// it will try and delete by the containership.io/plugin-id label
+		label := pluginLabelKey + "=" + name
+		kc = kubectl.NewDeleteByLabelCmd(constants.ContainershipNamespace, label)
+	} else {
+		kc = kubectl.NewDeleteCmd(getPluginPath(name))
+	}
+
+	err := runAndLogFromKubectl(kc)
+	if err != nil {
+		return err
 	}
 
 	// attempts to clean up the manifest directory that was created,
