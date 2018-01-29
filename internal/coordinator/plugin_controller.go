@@ -41,7 +41,9 @@ const (
 
 	pluginLabelKey = "containership.io/plugin-id"
 
-	maxPluginControllerRetries = 5
+	pluginDelayBetweenRetries = 30 * time.Second
+
+	maxPluginControllerRetries = 10
 )
 
 // PluginController is the controller implementation for the containership
@@ -76,9 +78,11 @@ func NewPluginController(kubeclientset kubernetes.Interface, clientset csclients
 	eventBroadcaster.StartLogging(log.Infof)
 	eventBroadcaster.StartRecordingToSink(&typedcorev1.EventSinkImpl{Interface: kubeclientset.CoreV1().Events("")})
 
+	rateLimiter := workqueue.NewItemExponentialFailureRateLimiter(pluginDelayBetweenRetries, pluginDelayBetweenRetries)
+
 	pc := &PluginController{
 		clientset: clientset,
-		workqueue: workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), "Plugins"),
+		workqueue: workqueue.NewNamedRateLimitingQueue(rateLimiter, "Plugin"),
 		recorder:  eventBroadcaster.NewRecorder(scheme.Scheme, corev1.EventSource{Component: pluginControllerName}),
 	}
 
@@ -185,7 +189,7 @@ func (c *PluginController) handleErr(err error, key interface{}) error {
 
 	if c.workqueue.NumRequeues(key) < maxPluginControllerRetries {
 		c.workqueue.AddRateLimited(key)
-		return fmt.Errorf("error syncing %q: %s. has been resynced %v times", key, err.Error(), c.workqueue.NumRequeues(key))
+		return fmt.Errorf("error syncing %q: %s. Has been resynced %v times", key, err.Error(), c.workqueue.NumRequeues(key))
 	}
 
 	c.workqueue.Forget(key)
