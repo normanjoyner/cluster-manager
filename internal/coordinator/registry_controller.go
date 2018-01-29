@@ -299,6 +299,10 @@ func (c *RegistryController) processNextWorkItem() bool {
 			err := c.registrySyncHandler(key)
 			return c.handleErr(err, key)
 		case "serviceaccount":
+			if name != constants.ContainershipServiceAccountName {
+				break
+			}
+
 			err := c.serviceAccountSyncHandler(key)
 			return c.handleErr(err, key)
 		case "namespace":
