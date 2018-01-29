@@ -72,18 +72,23 @@ var osFs = afero.NewOsFs()
 // NewPluginController returns a new containership controller
 func NewPluginController(kubeclientset kubernetes.Interface, clientset csclientset.Interface, csInformerFactory csinformers.SharedInformerFactory) *PluginController {
 	log.Info(pluginControllerName, ": Creating event broadcaster")
-
+	// TODO we should not need to add to scheme everywhere. Pick a place.
 	csscheme.AddToScheme(scheme.Scheme)
 	eventBroadcaster := record.NewBroadcaster()
 	eventBroadcaster.StartLogging(log.Infof)
-	eventBroadcaster.StartRecordingToSink(&typedcorev1.EventSinkImpl{Interface: kubeclientset.CoreV1().Events("")})
+	eventBroadcaster.StartRecordingToSink(&typedcorev1.EventSinkImpl{
+		Interface: kubeclientset.CoreV1().Events(""),
+	})
+	recorder := eventBroadcaster.NewRecorder(scheme.Scheme, corev1.EventSource{
+		Component: pluginControllerName,
+	})
 
 	rateLimiter := workqueue.NewItemExponentialFailureRateLimiter(pluginDelayBetweenRetries, pluginDelayBetweenRetries)
 
 	pc := &PluginController{
 		clientset: clientset,
 		workqueue: workqueue.NewNamedRateLimitingQueue(rateLimiter, "Plugin"),
-		recorder:  eventBroadcaster.NewRecorder(scheme.Scheme, corev1.EventSource{Component: pluginControllerName}),
+		recorder:  recorder,
 	}
 
 	// Instantiate resource informers

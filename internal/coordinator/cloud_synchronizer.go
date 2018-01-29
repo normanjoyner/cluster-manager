@@ -23,11 +23,13 @@ type CloudSynchronizer struct {
 func NewCloudSynchronizer(csInformerFactory csinformers.SharedInformerFactory) *CloudSynchronizer {
 	return &CloudSynchronizer{
 		userSyncController: synccontrollers.NewUser(
+			k8sutil.API().Client(),
 			csInformerFactory,
 			k8sutil.CSAPI().Client(),
 		),
 
 		registrySyncController: synccontrollers.NewRegistry(
+			k8sutil.API().Client(),
 			csInformerFactory,
 			k8sutil.CSAPI().Client(),
 		),

@@ -9,11 +9,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"
-
-	"github.com/containership/cloud-agent/internal/constants"
-	"github.com/containership/cloud-agent/internal/log"
-	"github.com/containership/cloud-agent/internal/tools"
-
 	kubeinformers "k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/scheme"
@@ -22,6 +17,11 @@ import (
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/record"
 	"k8s.io/client-go/util/workqueue"
+
+	"github.com/containership/cloud-agent/internal/constants"
+	"github.com/containership/cloud-agent/internal/log"
+	"github.com/containership/cloud-agent/internal/tools"
+	csscheme "github.com/containership/cloud-agent/pkg/client/clientset/versioned/scheme"
 )
 
 const (
@@ -57,14 +57,21 @@ type ContainershipController struct {
 // NewContainershipController returns a new containership controller
 func NewContainershipController(kubeclientset kubernetes.Interface, kubeInformerFactory kubeinformers.SharedInformerFactory) *ContainershipController {
 	log.Info(controllerName, ": Creating event broadcaster")
+	// TODO we should not need to add to scheme everywhere. Pick a place.
+	csscheme.AddToScheme(scheme.Scheme)
 	eventBroadcaster := record.NewBroadcaster()
 	eventBroadcaster.StartLogging(log.Infof)
-	eventBroadcaster.StartRecordingToSink(&typedcorev1.EventSinkImpl{Interface: kubeclientset.CoreV1().Events("")})
+	eventBroadcaster.StartRecordingToSink(&typedcorev1.EventSinkImpl{
+		Interface: kubeclientset.CoreV1().Events(""),
+	})
+	recorder := eventBroadcaster.NewRecorder(scheme.Scheme, corev1.EventSource{
+		Component: controllerName,
+	})
 
 	c := &ContainershipController{
 		kubeclientset: kubeclientset,
 		workqueue:     workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), "Containership"),
-		recorder:      eventBroadcaster.NewRecorder(scheme.Scheme, corev1.EventSource{Component: controllerName}),
+		recorder:      recorder,
 	}
 	// Instantiate resource informers
 	namespaceInformer := kubeInformerFactory.Core().V1().Namespaces()
