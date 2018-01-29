@@ -166,7 +166,7 @@ func (c *ContainershipController) processNextWorkItem() bool {
 			// Forget here else we'd go into a loop of attempting to
 			// process a work item that is invalid.
 			c.workqueue.Forget(obj)
-			runtime.HandleError(fmt.Errorf("expected string in workqueue but got %#v", obj))
+			log.Errorf("expected string in workqueue but got %#v", obj)
 			return nil
 		}
 
@@ -176,7 +176,7 @@ func (c *ContainershipController) processNextWorkItem() bool {
 			// Forget here else we'd go into a loop of attempting to
 			// process a work item that is invalid.
 			c.workqueue.Forget(obj)
-			runtime.HandleError(fmt.Errorf("key is in incorrect format to process %#v", obj))
+			log.Errorf("key is in incorrect format to process %#v", obj)
 			return nil
 		}
 
@@ -215,7 +215,7 @@ func (c *ContainershipController) processNextWorkItem() bool {
 	}(obj)
 
 	if err != nil {
-		runtime.HandleError(err)
+		log.Error(err)
 		return true
 	}
 
@@ -325,7 +325,7 @@ func (c *ContainershipController) serviceAccountSyncHandler(key string) error {
 func (c *ContainershipController) enqueueNamespace(obj interface{}) {
 	key, err := tools.MetaResourceNamespaceKeyFunc("namespace", obj)
 	if err != nil {
-		runtime.HandleError(err)
+		log.Error(err)
 		return
 	}
 	c.workqueue.AddRateLimited(key)
@@ -337,7 +337,7 @@ func (c *ContainershipController) enqueueNamespace(obj interface{}) {
 func (c *ContainershipController) enqueueServiceAccount(obj interface{}) {
 	key, err := tools.MetaResourceNamespaceKeyFunc("serviceaccount", obj)
 	if err != nil {
-		runtime.HandleError(err)
+		log.Error(err)
 		return
 	}
 	c.workqueue.AddRateLimited(key)
