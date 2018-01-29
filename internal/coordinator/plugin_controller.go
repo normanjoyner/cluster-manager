@@ -286,18 +286,19 @@ type jsonPluginsResponse struct {
 
 // getAndFormatPlugin makes a request to get the plugin manifests from containership
 // cloud, then takes them and splits them up to be written to files
-// under the plugins/:plugin_id
-func (c *PluginController) getAndFormatPlugin(ID string) error {
+// under the plugins/:plugin_id.
+// Returns the number of manifests written if error is non-nil.
+func (c *PluginController) getAndFormatPlugin(ID string) (int, error) {
 	path := makePluginManifestPath(ID)
 	bytes, err := makeRequest(path)
 	if err != nil {
-		return err
+		return 0, err
 	}
 
 	var plugin jsonPluginsResponse
 	err = json.Unmarshal(bytes, &plugin)
 	if err != nil {
-		return err
+		return 0, err
 	}
 
 	for index, resources := range plugin.Manifests {
@@ -313,11 +314,11 @@ func (c *PluginController) getAndFormatPlugin(ID string) error {
 		// we only want to short circuit and return if there was an error
 		// else continue processing the manifests
 		if err != nil {
-			return err
+			return 0, err
 		}
 	}
 
-	return nil
+	return len(plugin.Manifests), nil
 }
 
 func getPluginPath(id string) string {
@@ -354,9 +355,15 @@ func cleanUpPluginManifests(name string) {
 // applyPlugin takes the manifests under the plugins id and runs them through
 // kubectl apply
 func (c *PluginController) applyPlugin(plugin *containershipv3.Plugin) error {
-	err := c.getAndFormatPlugin(plugin.Spec.ID)
+	numManifests, err := c.getAndFormatPlugin(plugin.Spec.ID)
 	if err != nil {
 		return err
+	}
+
+	if numManifests == 0 {
+		// No manifests were created, so there's nothing to apply. This can
+		// happen, for example, when the plugin implementation is k8s itself.
+		return nil
 	}
 
 	kc := kubectl.NewApplyCmd(getPluginPath(plugin.Spec.ID))
