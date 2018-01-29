@@ -1,6 +1,6 @@
 # !/bin/bash
 
-SEMVER_PATTERN="v[0-100]\.[0-100]\.[0-100]"
+SEMVER_PATTERN="v[0-9]*\.[0-9]*\.[0-9]*"
 GIT_DESCRIBE_CMD="git describe --dirty"
 GIT_DESCRIBE_EXACT_MATCH_CMD="$GIT_DESCRIBE_CMD --exact-match --match=$SEMVER_PATTERN"
 
