@@ -261,7 +261,7 @@ func (c *RegistryController) processNextWorkItem() bool {
 			// Forget here else we'd go into a loop of attempting to
 			// process a work item that is invalid.
 			c.workqueue.Forget(obj)
-			runtime.HandleError(fmt.Errorf("expected string in workqueue but got %#v", obj))
+			log.Errorf("expected string in workqueue but got %#v", obj)
 			return nil
 		}
 
@@ -272,7 +272,7 @@ func (c *RegistryController) processNextWorkItem() bool {
 			// Forget here else we'd go into a loop of attempting to
 			// process a work item that is invalid.
 			c.workqueue.Forget(obj)
-			runtime.HandleError(fmt.Errorf("key is in incorrect format to process %#v", obj))
+			log.Errorf("key is in incorrect format to process %#v", obj)
 			return nil
 		}
 
@@ -317,7 +317,7 @@ func (c *RegistryController) processNextWorkItem() bool {
 	}(obj)
 
 	if err != nil {
-		runtime.HandleError(err)
+		log.Error(err)
 		return true
 	}
 
@@ -491,7 +491,7 @@ func (c *RegistryController) registrySyncHandler(key string) error {
 				c.addServiceAccountToWorkqueue(ns.Name)
 			}
 
-			runtime.HandleError(fmt.Errorf("Registry '%s' in work queue no longer exists", key))
+			log.Errorf("Registry %q in work queue no longer exists", key)
 			return nil
 		}
 
@@ -576,7 +576,7 @@ func (c *RegistryController) enqueueRegistry(obj interface{}) {
 
 	key, err := tools.MetaResourceNamespaceKeyFunc("registry", obj)
 	if err != nil {
-		runtime.HandleError(err)
+		log.Error(err)
 		return
 	}
 	c.workqueue.AddRateLimited(key)
@@ -588,7 +588,7 @@ func (c *RegistryController) enqueueRegistry(obj interface{}) {
 func (c *RegistryController) enqueueServiceAccount(obj interface{}) {
 	key, err := tools.MetaResourceNamespaceKeyFunc("serviceaccount", obj)
 	if err != nil {
-		runtime.HandleError(err)
+		log.Error(err)
 		return
 	}
 	c.workqueue.AddRateLimited(key)
@@ -600,7 +600,7 @@ func (c *RegistryController) enqueueServiceAccount(obj interface{}) {
 func (c *RegistryController) enqueueNamespace(obj interface{}) {
 	key, err := tools.MetaResourceNamespaceKeyFunc("namespace", obj)
 	if err != nil {
-		runtime.HandleError(err)
+		log.Error(err)
 		return
 	}
 	c.workqueue.AddRateLimited(key)
@@ -617,12 +617,12 @@ func (c *RegistryController) queueSecretOwnerRegistryIfApplicable(obj interface{
 	if object, ok = obj.(metav1.Object); !ok {
 		tombstone, ok := obj.(cache.DeletedFinalStateUnknown)
 		if !ok {
-			runtime.HandleError(fmt.Errorf("error decoding object, invalid type"))
+			log.Errorf("error decoding object, invalid type")
 			return
 		}
 		object, ok = tombstone.Obj.(metav1.Object)
 		if !ok {
-			runtime.HandleError(fmt.Errorf("error decoding object tombstone, invalid type"))
+			log.Errorf("error decoding object tombstone, invalid type")
 			return
 		}
 		log.Infof("%s: Recovered deleted object '%s' from tombstone", registryControllerName, object.GetName())

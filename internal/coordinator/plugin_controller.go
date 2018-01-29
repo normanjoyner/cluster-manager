@@ -162,7 +162,7 @@ func (c *PluginController) processNextWorkItem() bool {
 			// Forget here else we'd go into a loop of attempting to
 			// process a work item that is invalid.
 			c.workqueue.Forget(obj)
-			runtime.HandleError(fmt.Errorf("expected string in workqueue but got %#v", obj))
+			log.Errorf("expected string in workqueue but got %#v", obj)
 			return nil
 		}
 
@@ -173,7 +173,7 @@ func (c *PluginController) processNextWorkItem() bool {
 	}(obj)
 
 	if err != nil {
-		runtime.HandleError(err)
+		log.Error(err)
 		return true
 	}
 
@@ -384,7 +384,7 @@ func (c *PluginController) applyPlugin(plugin *containershipv3.Plugin) error {
 func (c *PluginController) enqueuePlugin(obj interface{}) {
 	key, err := cache.MetaNamespaceKeyFunc(obj)
 	if err != nil {
-		runtime.HandleError(err)
+		log.Error(err)
 		return
 	}
 
