@@ -15,7 +15,6 @@ import (
 
 	containershipv3 "github.com/containership/cloud-agent/pkg/apis/containership.io/v3"
 	csclientset "github.com/containership/cloud-agent/pkg/client/clientset/versioned"
-	csscheme "github.com/containership/cloud-agent/pkg/client/clientset/versioned/scheme"
 	csinformers "github.com/containership/cloud-agent/pkg/client/informers/externalversions"
 	cslisters "github.com/containership/cloud-agent/pkg/client/listers/containership.io/v3"
 
@@ -52,9 +51,6 @@ func NewUser(kubeclientset kubernetes.Interface, csInformerFactory csinformers.S
 	userInformer := csInformerFactory.Containership().V3().Users()
 
 	userInformer.Informer().AddIndexers(indexByIDKeyFun())
-
-	// TODO we should not need to add to scheme everywhere. Pick a place.
-	csscheme.AddToScheme(scheme.Scheme)
 
 	log.Info(registrySyncControllerName, ": Creating event broadcaster")
 	eventBroadcaster := record.NewBroadcaster()
