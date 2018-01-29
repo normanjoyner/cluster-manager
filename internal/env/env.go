@@ -37,17 +37,17 @@ func init() {
 	// agent side does not require them so there's nothing to warn about.
 	env.organizationID = os.Getenv("CONTAINERSHIP_CLOUD_ORGANIZATION_ID")
 	if env.organizationID == "" {
-		log.Info("CONTAINERSHIP_CLOUD_ORGANIZATION_ID env var not specified")
+		log.Debug("CONTAINERSHIP_CLOUD_ORGANIZATION_ID env var not specified")
 	}
 
 	env.clusterID = os.Getenv("CONTAINERSHIP_CLOUD_CLUSTER_ID")
 	if env.clusterID == "" {
-		log.Info("CONTAINERSHIP_CLOUD_CLUSTER_ID env var not specified")
+		log.Debug("CONTAINERSHIP_CLOUD_CLUSTER_ID env var not specified")
 	}
 
 	env.cloudClusterAPIKey = os.Getenv("CONTAINERSHIP_CLOUD_CLUSTER_API_KEY")
 	if env.cloudClusterAPIKey == "" {
-		log.Info("CONTAINERSHIP_CLOUD_CLUSTER_API_KEY env var not specified")
+		log.Debug("CONTAINERSHIP_CLOUD_CLUSTER_API_KEY env var not specified")
 	}
 
 	env.csCloudEnvironment = strings.ToLower(os.Getenv("CONTAINERSHIP_CLOUD_ENVIRONMENT"))
