@@ -21,7 +21,6 @@ import (
 	"github.com/containership/cloud-agent/internal/constants"
 	"github.com/containership/cloud-agent/internal/log"
 	"github.com/containership/cloud-agent/internal/tools"
-	csscheme "github.com/containership/cloud-agent/pkg/client/clientset/versioned/scheme"
 )
 
 const (
@@ -57,8 +56,6 @@ type ContainershipController struct {
 // NewContainershipController returns a new containership controller
 func NewContainershipController(kubeclientset kubernetes.Interface, kubeInformerFactory kubeinformers.SharedInformerFactory) *ContainershipController {
 	log.Info(controllerName, ": Creating event broadcaster")
-	// TODO we should not need to add to scheme everywhere. Pick a place.
-	csscheme.AddToScheme(scheme.Scheme)
 	eventBroadcaster := record.NewBroadcaster()
 	eventBroadcaster.StartLogging(log.Infof)
 	eventBroadcaster.StartRecordingToSink(&typedcorev1.EventSinkImpl{

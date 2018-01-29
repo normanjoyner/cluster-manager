@@ -16,7 +16,6 @@ import (
 
 	containershipv3 "github.com/containership/cloud-agent/pkg/apis/containership.io/v3"
 	csclientset "github.com/containership/cloud-agent/pkg/client/clientset/versioned"
-	csscheme "github.com/containership/cloud-agent/pkg/client/clientset/versioned/scheme"
 	csinformers "github.com/containership/cloud-agent/pkg/client/informers/externalversions"
 	cslisters "github.com/containership/cloud-agent/pkg/client/listers/containership.io/v3"
 
@@ -56,8 +55,6 @@ func NewRegistry(kubeclientset kubernetes.Interface, csInformerFactory csinforme
 	registryInformer.Informer().AddIndexers(indexByIDKeyFun())
 
 	log.Info(registrySyncControllerName, ": Creating event broadcaster")
-	// TODO we should not need to add to scheme everywhere. Pick a place.
-	csscheme.AddToScheme(scheme.Scheme)
 	eventBroadcaster := record.NewBroadcaster()
 	eventBroadcaster.StartLogging(log.Infof)
 	eventBroadcaster.StartRecordingToSink(&typedcorev1.EventSinkImpl{

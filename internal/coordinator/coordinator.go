@@ -2,10 +2,12 @@ package coordinator
 
 import (
 	kubeinformers "k8s.io/client-go/informers"
+	"k8s.io/client-go/kubernetes/scheme"
 
 	"github.com/containership/cloud-agent/internal/env"
 	"github.com/containership/cloud-agent/internal/k8sutil"
 	"github.com/containership/cloud-agent/internal/log"
+	csscheme "github.com/containership/cloud-agent/pkg/client/clientset/versioned/scheme"
 	csinformers "github.com/containership/cloud-agent/pkg/client/informers/externalversions"
 )
 
@@ -20,6 +22,10 @@ var (
 
 // Initialize creates the informer factories, controller, and synchronizer.
 func Initialize() {
+	// Register our scheme with main k8s scheme so we can forward custom events
+	// properly
+	csscheme.AddToScheme(scheme.Scheme)
+
 	// Create Informer factories. All Informers should be created from these
 	// factories in order to share the same underlying caches.
 	interval := env.CoordinatorInformerSyncInterval()
