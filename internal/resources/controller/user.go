@@ -7,7 +7,9 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/scheme"
+	typedcorev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/record"
 
@@ -25,6 +27,9 @@ import (
 
 // UserSyncController is the implementation for syncing User CRDs
 type UserSyncController struct {
+	// kubeclientset is a standard kubernetes clientset
+	kubeclientset kubernetes.Interface
+
 	// clientset is a clientset for our own API group
 	clientset csclientset.Interface
 
@@ -43,7 +48,7 @@ const (
 
 // NewUser returns a UserSyncController that will be in control of pulling from cloud
 // comparing to the CRD cache and modifying based on those compares
-func NewUser(csInformerFactory csinformers.SharedInformerFactory, clientset csclientset.Interface) *UserSyncController {
+func NewUser(kubeclientset kubernetes.Interface, csInformerFactory csinformers.SharedInformerFactory, clientset csclientset.Interface) *UserSyncController {
 	userInformer := csInformerFactory.Containership().V3().Users()
 
 	userInformer.Informer().AddIndexers(indexByIDKeyFun())
@@ -54,9 +59,15 @@ func NewUser(csInformerFactory csinformers.SharedInformerFactory, clientset cscl
 	log.Info(registrySyncControllerName, ": Creating event broadcaster")
 	eventBroadcaster := record.NewBroadcaster()
 	eventBroadcaster.StartLogging(log.Infof)
-	recorder := eventBroadcaster.NewRecorder(scheme.Scheme, corev1.EventSource{Component: userSyncControllerName})
+	eventBroadcaster.StartRecordingToSink(&typedcorev1.EventSinkImpl{
+		Interface: kubeclientset.CoreV1().Events(""),
+	})
+	recorder := eventBroadcaster.NewRecorder(scheme.Scheme, corev1.EventSource{
+		Component: userSyncControllerName,
+	})
 
 	return &UserSyncController{
+		kubeclientset: kubeclientset,
 		clientset:     clientset,
 		lister:        userInformer.Lister(),
 		synced:        userInformer.Informer().HasSynced,
@@ -152,14 +163,22 @@ func (c *UserSyncController) doSync() {
 
 // Create takes a user spec in cache and creates the CRD
 func (c *UserSyncController) Create(u containershipv3.UserSpec) error {
-	_, err := c.clientset.ContainershipV3().Users(constants.ContainershipNamespace).Create(&containershipv3.User{
+	user, err := c.clientset.ContainershipV3().Users(constants.ContainershipNamespace).Create(&containershipv3.User{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: u.ID,
 		},
 		Spec: u,
 	})
+	if err != nil {
+		return err
+	}
 
-	return err
+	// We can only fire an event if the object was successfully created,
+	// otherwise there's no reasonable object to attach to.
+	c.recorder.Event(user, corev1.EventTypeNormal, "SyncCreate",
+		"Detected missing CR")
+
+	return nil
 }
 
 // Delete takes a name or the CRD and deletes it

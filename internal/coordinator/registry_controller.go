@@ -81,20 +81,23 @@ type RegistryController struct {
 // containership SA in each namespace contains each secret as an image pull secret
 func NewRegistryController(kubeclientset kubernetes.Interface, clientset csclientset.Interface, kubeInformerFactory kubeinformers.SharedInformerFactory, csInformerFactory csinformers.SharedInformerFactory) *RegistryController {
 
-	// Create event broadcaster
-	// Add coordinator types to the default Kubernetes Scheme so Events can be
-	// logged for coordinator types.
-	csscheme.AddToScheme(scheme.Scheme)
 	log.Info(registryControllerName, ": Creating event broadcaster")
+	// TODO we should not need to add to scheme everywhere. Pick a place.
+	csscheme.AddToScheme(scheme.Scheme)
 	eventBroadcaster := record.NewBroadcaster()
 	eventBroadcaster.StartLogging(log.Infof)
-	eventBroadcaster.StartRecordingToSink(&typedcorev1.EventSinkImpl{Interface: kubeclientset.CoreV1().Events("")})
+	eventBroadcaster.StartRecordingToSink(&typedcorev1.EventSinkImpl{
+		Interface: kubeclientset.CoreV1().Events(""),
+	})
+	recorder := eventBroadcaster.NewRecorder(scheme.Scheme, corev1.EventSource{
+		Component: registryControllerName,
+	})
 
 	c := &RegistryController{
 		kubeclientset: kubeclientset,
 		clientset:     clientset,
 		workqueue:     workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), "Registries"),
-		recorder:      eventBroadcaster.NewRecorder(scheme.Scheme, corev1.EventSource{Component: registryControllerName}),
+		recorder:      recorder,
 	}
 
 	// Instantiate resource informers we care about from the factory so they all

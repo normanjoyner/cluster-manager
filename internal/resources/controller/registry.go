@@ -8,7 +8,9 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/scheme"
+	typedcorev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/record"
 
@@ -26,6 +28,9 @@ import (
 
 // RegistrySyncController is the implementation for syncing Registry CRDs
 type RegistrySyncController struct {
+	// kubeclientset is a standard kubernetes clientset
+	kubeclientset kubernetes.Interface
+
 	// clientset is a clientset for our own API group
 	clientset csclientset.Interface
 
@@ -45,21 +50,26 @@ const (
 
 // NewRegistry returns a RegistrySyncController that will be in control of pulling from cloud
 // comparing to the CRD cache and modifying based on those compares
-func NewRegistry(csInformerFactory csinformers.SharedInformerFactory, clientset csclientset.Interface) *RegistrySyncController {
+func NewRegistry(kubeclientset kubernetes.Interface, csInformerFactory csinformers.SharedInformerFactory, clientset csclientset.Interface) *RegistrySyncController {
 	registryInformer := csInformerFactory.Containership().V3().Registries()
 
 	registryInformer.Informer().AddIndexers(indexByIDKeyFun())
 
+	log.Info(registrySyncControllerName, ": Creating event broadcaster")
 	// TODO we should not need to add to scheme everywhere. Pick a place.
 	csscheme.AddToScheme(scheme.Scheme)
-
-	log.Info(registrySyncControllerName, ": Creating event broadcaster")
 	eventBroadcaster := record.NewBroadcaster()
 	eventBroadcaster.StartLogging(log.Infof)
-	recorder := eventBroadcaster.NewRecorder(scheme.Scheme, corev1.EventSource{Component: registrySyncControllerName})
+	eventBroadcaster.StartRecordingToSink(&typedcorev1.EventSinkImpl{
+		Interface: kubeclientset.CoreV1().Events(""),
+	})
+	recorder := eventBroadcaster.NewRecorder(scheme.Scheme, corev1.EventSource{
+		Component: registrySyncControllerName,
+	})
 
 	// Create the registry controller
 	c := &RegistrySyncController{
+		kubeclientset:         kubeclientset,
 		clientset:             clientset,
 		lister:                registryInformer.Lister(),
 		synced:                registryInformer.Informer().HasSynced,
@@ -183,10 +193,14 @@ func (c *RegistrySyncController) Create(u containershipv3.RegistrySpec) error {
 		},
 		Spec: u,
 	})
-
 	if err != nil {
 		return err
 	}
+
+	// We can only fire an event if the object was successfully created,
+	// otherwise there's no reasonable object to attach to.
+	c.recorder.Event(newReg, corev1.EventTypeNormal, "SyncCreate",
+		"Detected missing CR")
 
 	if newReg.Spec.Provider == constants.EC2Registry {
 		c.tokenRegenerationByID[newReg.Name] = c.watchToken(newReg)
