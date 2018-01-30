@@ -11,6 +11,12 @@ ENV SRC_DIR=/go/src/github.com/containership/cloud-agent/
 
 WORKDIR /app
 
+# Glide install before adding rest of source so we can cache the resulting
+# vendor dir
+ADD glide.yaml glide.lock $SRC_DIR
+RUN cd $SRC_DIR && \
+        glide install -v
+
 # Add the source code:
 ADD . $SRC_DIR
 
@@ -23,7 +29,6 @@ ARG GIT_COMMIT
 
 # Build it:
 RUN cd $SRC_DIR && \
-    glide install -v && \
     CGO_ENABLED=0 GOOS=linux GOARCH=amd64 \
         go build -ldflags \
         "-X github.com/containership/cloud-agent/internal/buildinfo.gitDescribe=${GIT_DESCRIBE} \

@@ -9,12 +9,17 @@ ENV GOPATH=/gocode
 
 WORKDIR /app
 
+# Glide install before adding rest of source so we can cache the resulting
+# vendor dir
+ADD glide.yaml glide.lock $SRC_DIR
+RUN cd $SRC_DIR && \
+        glide install -v
+
 # Add the source code:
 ADD . $SRC_DIR
 
 # Build it:
 RUN cd $SRC_DIR && \
-    glide install -v && \
     go build -o coordinator cmd/cloud_coordinator/coordinator.go && \
     cp coordinator /app/
 
