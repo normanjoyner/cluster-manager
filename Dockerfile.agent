@@ -1,9 +1,8 @@
 FROM golang:1.9.3-alpine3.7 as builder
 
-RUN apk add --no-cache git gcc musl-dev
-
 # add tools for debug and development purposes
 RUN apk update && \
+    apk add --no-cache git gcc musl-dev && \
     apk add vim && \
     apk add glide
 
@@ -18,16 +17,15 @@ RUN cd $SRC_DIR && \
         glide install -v
 
 # Add the source code:
-ADD . $SRC_DIR
+COPY . $SRC_DIR
 
 # Place login script in known location:
 RUN mkdir -p /scripts && \
     cp $SRC_DIR/scripts/containership_login.sh /scripts
 
+# Build it:
 ARG GIT_DESCRIBE
 ARG GIT_COMMIT
-
-# Build it:
 RUN cd $SRC_DIR && \
     CGO_ENABLED=0 GOOS=linux GOARCH=amd64 \
         go build -ldflags \

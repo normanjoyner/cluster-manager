@@ -1,20 +1,12 @@
 FROM golang:1.9.3-alpine3.7 as builder
 
-ENV SRC_DIR=/go/src/github.com/containership/cloud-agent/
-ARG K8S_VERSION=v1.9.0
-
 # add tools for debug and development purposes
 RUN apk update && \
     apk add --no-cache git gcc musl-dev && \
     apk add vim && \
     apk add glide
 
-RUN set -x                  && \
-    apk --update upgrade    && \
-    apk add --update ca-certificates openssl && update-ca-certificates && \
-    rm -rf /var/cache/apk/* && \
-    wget -O /kubectl https://storage.googleapis.com/kubernetes-release/release/$K8S_VERSION/bin/linux/amd64/kubectl && \
-    chmod +x /kubectl
+ENV SRC_DIR=/go/src/github.com/containership/cloud-agent/
 
 WORKDIR /app
 
@@ -27,10 +19,18 @@ RUN cd $SRC_DIR && \
 # Add the source code:
 COPY . $SRC_DIR
 
-ARG GIT_DESCRIBE
-ARG GIT_COMMIT
+# Install kubectl
+ARG K8S_VERSION=v1.9.0
+RUN set -x                  && \
+    apk --update upgrade    && \
+    apk add --update ca-certificates openssl && update-ca-certificates && \
+    rm -rf /var/cache/apk/* && \
+    wget -O /kubectl https://storage.googleapis.com/kubernetes-release/release/$K8S_VERSION/bin/linux/amd64/kubectl && \
+    chmod +x /kubectl
 
 # Build it:
+ARG GIT_DESCRIBE
+ARG GIT_COMMIT
 RUN cd $SRC_DIR && \
     CGO_ENABLED=0 GOOS=linux GOARCH=amd64 \
         go build -ldflags \
