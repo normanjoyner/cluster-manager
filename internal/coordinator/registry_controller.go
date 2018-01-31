@@ -491,7 +491,7 @@ func (c *RegistryController) registrySyncHandler(key string) error {
 				c.addServiceAccountToWorkqueue(ns.Name)
 			}
 
-			log.Errorf("Registry %q in work queue no longer exists", key)
+			log.Infof("Registry %q in work queue no longer exists", key)
 			return nil
 		}
 
