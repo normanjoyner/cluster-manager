@@ -62,11 +62,11 @@ mount:
 	@echo $(shell ls /Users/.minikube-mounts)
 
 deploy-crds:
-	kubectl apply -f deploy/common/containership-users-crd.yaml
-	kubectl apply -f deploy/common/containership-registries-crd.yaml
+	kubectl apply -f deploy/crd
 
 deploy-common: deploy-crds
 	kubectl apply -f deploy/common/containership-core-namespace.yaml
+	kubectl apply -f deploy/rbac
 	kubectl apply -f deploy/eventrouter/eventrouter.yaml
 	kubectl apply -f deploy/common/containership-env-configmap.yaml
 	kubectl apply -f deploy/common/containership-coordinator-service.yaml
