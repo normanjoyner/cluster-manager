@@ -10,6 +10,12 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"
+	kubeinformers "k8s.io/client-go/informers"
+	"k8s.io/client-go/kubernetes"
+	corelistersv1 "k8s.io/client-go/listers/core/v1"
+	"k8s.io/client-go/tools/cache"
+	"k8s.io/client-go/tools/record"
+	"k8s.io/client-go/util/workqueue"
 
 	"github.com/containership/cloud-agent/internal/constants"
 	"github.com/containership/cloud-agent/internal/log"
@@ -18,15 +24,6 @@ import (
 	csclientset "github.com/containership/cloud-agent/pkg/client/clientset/versioned"
 	csinformers "github.com/containership/cloud-agent/pkg/client/informers/externalversions"
 	cslisters "github.com/containership/cloud-agent/pkg/client/listers/containership.io/v3"
-
-	kubeinformers "k8s.io/client-go/informers"
-	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/kubernetes/scheme"
-	typedcorev1 "k8s.io/client-go/kubernetes/typed/core/v1"
-	corelistersv1 "k8s.io/client-go/listers/core/v1"
-	"k8s.io/client-go/tools/cache"
-	"k8s.io/client-go/tools/record"
-	"k8s.io/client-go/util/workqueue"
 )
 
 const (
@@ -79,22 +76,11 @@ type RegistryController struct {
 // each namespace has a secret for each registry, as well as ensuring that the
 // containership SA in each namespace contains each secret as an image pull secret
 func NewRegistryController(kubeclientset kubernetes.Interface, clientset csclientset.Interface, kubeInformerFactory kubeinformers.SharedInformerFactory, csInformerFactory csinformers.SharedInformerFactory) *RegistryController {
-
-	log.Info(registryControllerName, ": Creating event broadcaster")
-	eventBroadcaster := record.NewBroadcaster()
-	eventBroadcaster.StartLogging(log.Infof)
-	eventBroadcaster.StartRecordingToSink(&typedcorev1.EventSinkImpl{
-		Interface: kubeclientset.CoreV1().Events(""),
-	})
-	recorder := eventBroadcaster.NewRecorder(scheme.Scheme, corev1.EventSource{
-		Component: registryControllerName,
-	})
-
 	c := &RegistryController{
 		kubeclientset: kubeclientset,
 		clientset:     clientset,
 		workqueue:     workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), "Registries"),
-		recorder:      recorder,
+		recorder:      tools.CreateAndStartRecorder(kubeclientset, registryControllerName),
 	}
 
 	// Instantiate resource informers we care about from the factory so they all

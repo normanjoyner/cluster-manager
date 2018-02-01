@@ -14,6 +14,7 @@ import (
 	"github.com/containership/cloud-agent/internal/k8sutil/kubectl"
 	"github.com/containership/cloud-agent/internal/log"
 	"github.com/containership/cloud-agent/internal/request"
+	"github.com/containership/cloud-agent/internal/tools"
 
 	containershipv3 "github.com/containership/cloud-agent/pkg/apis/containership.io/v3"
 	csclientset "github.com/containership/cloud-agent/pkg/client/clientset/versioned"
@@ -24,14 +25,12 @@ import (
 	"k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"
 
-	corev1 "k8s.io/api/core/v1"
-
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/kubernetes/scheme"
-	typedcorev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/record"
 	"k8s.io/client-go/util/workqueue"
+
+	corev1 "k8s.io/api/core/v1"
 )
 
 const (
@@ -70,22 +69,12 @@ var osFs = afero.NewOsFs()
 
 // NewPluginController returns a new containership controller
 func NewPluginController(kubeclientset kubernetes.Interface, clientset csclientset.Interface, csInformerFactory csinformers.SharedInformerFactory) *PluginController {
-	log.Info(pluginControllerName, ": Creating event broadcaster")
-	eventBroadcaster := record.NewBroadcaster()
-	eventBroadcaster.StartLogging(log.Infof)
-	eventBroadcaster.StartRecordingToSink(&typedcorev1.EventSinkImpl{
-		Interface: kubeclientset.CoreV1().Events(""),
-	})
-	recorder := eventBroadcaster.NewRecorder(scheme.Scheme, corev1.EventSource{
-		Component: pluginControllerName,
-	})
-
 	rateLimiter := workqueue.NewItemExponentialFailureRateLimiter(pluginDelayBetweenRetries, pluginDelayBetweenRetries)
 
 	pc := &PluginController{
 		clientset: clientset,
 		workqueue: workqueue.NewNamedRateLimitingQueue(rateLimiter, "Plugin"),
-		recorder:  recorder,
+		recorder:  tools.CreateAndStartRecorder(kubeclientset, pluginControllerName),
 	}
 
 	// Instantiate resource informers

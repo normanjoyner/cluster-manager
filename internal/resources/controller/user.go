@@ -8,8 +8,6 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/kubernetes/scheme"
-	typedcorev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/record"
 
@@ -22,13 +20,11 @@ import (
 	"github.com/containership/cloud-agent/internal/env"
 	"github.com/containership/cloud-agent/internal/log"
 	"github.com/containership/cloud-agent/internal/resources"
+	"github.com/containership/cloud-agent/internal/tools"
 )
 
 // UserSyncController is the implementation for syncing User CRDs
 type UserSyncController struct {
-	// kubeclientset is a standard kubernetes clientset
-	kubeclientset kubernetes.Interface
-
 	// clientset is a clientset for our own API group
 	clientset csclientset.Interface
 
@@ -47,29 +43,18 @@ const (
 
 // NewUser returns a UserSyncController that will be in control of pulling from cloud
 // comparing to the CRD cache and modifying based on those compares
-func NewUser(kubeclientset kubernetes.Interface, csInformerFactory csinformers.SharedInformerFactory, clientset csclientset.Interface) *UserSyncController {
+func NewUser(kubeclientset kubernetes.Interface, clientset csclientset.Interface, csInformerFactory csinformers.SharedInformerFactory) *UserSyncController {
 	userInformer := csInformerFactory.Containership().V3().Users()
 
-	userInformer.Informer().AddIndexers(indexByIDKeyFun())
-
-	log.Info(registrySyncControllerName, ": Creating event broadcaster")
-	eventBroadcaster := record.NewBroadcaster()
-	eventBroadcaster.StartLogging(log.Infof)
-	eventBroadcaster.StartRecordingToSink(&typedcorev1.EventSinkImpl{
-		Interface: kubeclientset.CoreV1().Events(""),
-	})
-	recorder := eventBroadcaster.NewRecorder(scheme.Scheme, corev1.EventSource{
-		Component: userSyncControllerName,
-	})
+	userInformer.Informer().AddIndexers(tools.IndexByIDKeyFun())
 
 	return &UserSyncController{
-		kubeclientset: kubeclientset,
 		clientset:     clientset,
 		lister:        userInformer.Lister(),
 		synced:        userInformer.Informer().HasSynced,
 		informer:      userInformer.Informer(),
 		cloudResource: resources.NewCsUsers(),
-		recorder:      recorder,
+		recorder:      tools.CreateAndStartRecorder(kubeclientset, registrySyncControllerName),
 	}
 }
 

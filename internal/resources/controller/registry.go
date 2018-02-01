@@ -9,8 +9,6 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/kubernetes/scheme"
-	typedcorev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/record"
 
@@ -23,13 +21,11 @@ import (
 	"github.com/containership/cloud-agent/internal/env"
 	"github.com/containership/cloud-agent/internal/log"
 	"github.com/containership/cloud-agent/internal/resources"
+	"github.com/containership/cloud-agent/internal/tools"
 )
 
 // RegistrySyncController is the implementation for syncing Registry CRDs
 type RegistrySyncController struct {
-	// kubeclientset is a standard kubernetes clientset
-	kubeclientset kubernetes.Interface
-
 	// clientset is a clientset for our own API group
 	clientset csclientset.Interface
 
@@ -37,10 +33,10 @@ type RegistrySyncController struct {
 	synced   cache.InformerSynced
 	informer cache.SharedIndexInformer
 
-	cloudResource         *resources.CsRegistries
-	tokenRegenerationByID map[string]chan bool
+	cloudResource *resources.CsRegistries
+	recorder      record.EventRecorder
 
-	recorder record.EventRecorder
+	tokenRegenerationByID map[string]chan bool
 }
 
 const (
@@ -49,31 +45,21 @@ const (
 
 // NewRegistry returns a RegistrySyncController that will be in control of pulling from cloud
 // comparing to the CRD cache and modifying based on those compares
-func NewRegistry(kubeclientset kubernetes.Interface, csInformerFactory csinformers.SharedInformerFactory, clientset csclientset.Interface) *RegistrySyncController {
+func NewRegistry(kubeclientset kubernetes.Interface, clientset csclientset.Interface, csInformerFactory csinformers.SharedInformerFactory) *RegistrySyncController {
 	registryInformer := csInformerFactory.Containership().V3().Registries()
 
-	registryInformer.Informer().AddIndexers(indexByIDKeyFun())
-
-	log.Info(registrySyncControllerName, ": Creating event broadcaster")
-	eventBroadcaster := record.NewBroadcaster()
-	eventBroadcaster.StartLogging(log.Infof)
-	eventBroadcaster.StartRecordingToSink(&typedcorev1.EventSinkImpl{
-		Interface: kubeclientset.CoreV1().Events(""),
-	})
-	recorder := eventBroadcaster.NewRecorder(scheme.Scheme, corev1.EventSource{
-		Component: registrySyncControllerName,
-	})
+	registryInformer.Informer().AddIndexers(tools.IndexByIDKeyFun())
 
 	// Create the registry controller
 	c := &RegistrySyncController{
-		kubeclientset:         kubeclientset,
-		clientset:             clientset,
-		lister:                registryInformer.Lister(),
-		synced:                registryInformer.Informer().HasSynced,
-		informer:              registryInformer.Informer(),
-		cloudResource:         resources.NewCsRegistries(),
+		clientset:     clientset,
+		lister:        registryInformer.Lister(),
+		synced:        registryInformer.Informer().HasSynced,
+		informer:      registryInformer.Informer(),
+		cloudResource: resources.NewCsRegistries(),
+		recorder:      tools.CreateAndStartRecorder(kubeclientset, registrySyncControllerName),
+
 		tokenRegenerationByID: make(map[string]chan bool, 0),
-		recorder:              recorder,
 	}
 
 	registryInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
@@ -231,7 +217,7 @@ func safeClose(t chan bool) {
 		if ok {
 			close(t)
 		} else {
-			fmt.Println("Channel closed!")
+			log.Debug("Channel closed!")
 		}
 	default:
 		close(t)

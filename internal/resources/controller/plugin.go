@@ -3,10 +3,13 @@ package controller
 import (
 	"fmt"
 
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
+	"k8s.io/client-go/tools/record"
 
 	containershipv3 "github.com/containership/cloud-agent/pkg/apis/containership.io/v3"
 	csclientset "github.com/containership/cloud-agent/pkg/client/clientset/versioned"
@@ -17,6 +20,7 @@ import (
 	"github.com/containership/cloud-agent/internal/env"
 	"github.com/containership/cloud-agent/internal/log"
 	"github.com/containership/cloud-agent/internal/resources"
+	"github.com/containership/cloud-agent/internal/tools"
 )
 
 // PluginSyncController is the implementation for syncing Plugin CRDs
@@ -29,14 +33,20 @@ type PluginSyncController struct {
 	informer cache.SharedIndexInformer
 
 	cloudResource *resources.CsPlugins
+
+	recorder record.EventRecorder
 }
+
+const (
+	pluginSyncControllerName = "PluginSyncController"
+)
 
 // NewPlugin returns a PluginSyncController that will be in control of pulling from cloud
 // comparing to the CRD cache and modifying based on those compares
-func NewPlugin(csInformerFactory csinformers.SharedInformerFactory, clientset csclientset.Interface) *PluginSyncController {
+func NewPlugin(kubeclientset kubernetes.Interface, clientset csclientset.Interface, csInformerFactory csinformers.SharedInformerFactory) *PluginSyncController {
 	pluginInformer := csInformerFactory.Containership().V3().Plugins()
 
-	pluginInformer.Informer().AddIndexers(indexByIDKeyFun())
+	pluginInformer.Informer().AddIndexers(tools.IndexByIDKeyFun())
 
 	return &PluginSyncController{
 		clientset:     clientset,
@@ -44,6 +54,7 @@ func NewPlugin(csInformerFactory csinformers.SharedInformerFactory, clientset cs
 		synced:        pluginInformer.Informer().HasSynced,
 		informer:      pluginInformer.Informer(),
 		cloudResource: resources.NewCsPlugins(),
+		recorder:      tools.CreateAndStartRecorder(kubeclientset, pluginSyncControllerName),
 	}
 }
 
@@ -123,13 +134,18 @@ func (c *PluginSyncController) doSync() {
 }
 
 // Create takes a plugin spec in cache and creates the CRD
-func (c *PluginSyncController) Create(u containershipv3.PluginSpec) error {
-	_, err := c.clientset.ContainershipV3().Plugins(constants.ContainershipNamespace).Create(&containershipv3.Plugin{
+func (c *PluginSyncController) Create(p containershipv3.PluginSpec) error {
+	plugin, err := c.clientset.ContainershipV3().Plugins(constants.ContainershipNamespace).Create(&containershipv3.Plugin{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: u.ID,
+			Name: p.ID,
 		},
-		Spec: u,
+		Spec: p,
 	})
+
+	// We can only fire an event if the object was successfully created,
+	// otherwise there's no reasonable object to attach to.
+	c.recorder.Event(plugin, corev1.EventTypeNormal, "SyncCreate",
+		"Detected missing CR")
 
 	return err
 }

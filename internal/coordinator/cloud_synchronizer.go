@@ -24,19 +24,20 @@ func NewCloudSynchronizer(csInformerFactory csinformers.SharedInformerFactory) *
 	return &CloudSynchronizer{
 		userSyncController: synccontrollers.NewUser(
 			k8sutil.API().Client(),
-			csInformerFactory,
 			k8sutil.CSAPI().Client(),
+			csInformerFactory,
 		),
 
 		registrySyncController: synccontrollers.NewRegistry(
 			k8sutil.API().Client(),
-			csInformerFactory,
 			k8sutil.CSAPI().Client(),
+			csInformerFactory,
 		),
 
 		pluginSyncController: synccontrollers.NewPlugin(
-			csInformerFactory,
+			k8sutil.API().Client(),
 			k8sutil.CSAPI().Client(),
+			csInformerFactory,
 		),
 
 		syncStopCh: make(chan struct{}),

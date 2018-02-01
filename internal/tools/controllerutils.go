@@ -4,7 +4,15 @@ import (
 	"fmt"
 	"strings"
 
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/kubernetes/scheme"
+	typedcorev1 "k8s.io/client-go/kubernetes/typed/core/v1"
+	"k8s.io/client-go/tools/cache"
+	"k8s.io/client-go/tools/record"
+
+	"github.com/containership/cloud-agent/internal/log"
 )
 
 // MetaResourceNamespaceKeyFunc is a convenient KeyFunc which knows how to make
@@ -41,4 +49,31 @@ func SplitMetaResourceNamespaceKeyFunc(key string) (kind, namespace, name string
 	}
 
 	return "", "", "", fmt.Errorf("unexpected key format: %q", key)
+}
+
+// IndexByIDKeyFun returns a function for indexing a cache by ID
+func IndexByIDKeyFun() cache.Indexers {
+	return cache.Indexers{
+		"byID": func(obj interface{}) ([]string, error) {
+			meta, err := meta.Accessor(obj)
+			if err != nil {
+				return []string{""}, fmt.Errorf("object has no meta: %v", err)
+			}
+			return []string{meta.GetName()}, nil
+		},
+	}
+}
+
+// CreateAndStartRecorder creates and starts a new recorder with the given name
+func CreateAndStartRecorder(kubeclientset kubernetes.Interface, name string) record.EventRecorder {
+	eventBroadcaster := record.NewBroadcaster()
+	eventBroadcaster.StartLogging(log.Infof)
+	eventBroadcaster.StartRecordingToSink(&typedcorev1.EventSinkImpl{
+		Interface: kubeclientset.CoreV1().Events(""),
+	})
+	recorder := eventBroadcaster.NewRecorder(scheme.Scheme, corev1.EventSource{
+		Component: name,
+	})
+
+	return recorder
 }
