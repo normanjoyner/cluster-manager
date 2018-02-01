@@ -1,15 +1,10 @@
 package controller
 
 import (
-	"fmt"
-
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/tools/cache"
-	"k8s.io/client-go/tools/record"
 
 	containershipv3 "github.com/containership/cloud-agent/pkg/apis/containership.io/v3"
 	csclientset "github.com/containership/cloud-agent/pkg/client/clientset/versioned"
@@ -17,7 +12,6 @@ import (
 	cslisters "github.com/containership/cloud-agent/pkg/client/listers/containership.io/v3"
 
 	"github.com/containership/cloud-agent/internal/constants"
-	"github.com/containership/cloud-agent/internal/env"
 	"github.com/containership/cloud-agent/internal/log"
 	"github.com/containership/cloud-agent/internal/resources"
 	"github.com/containership/cloud-agent/internal/tools"
@@ -25,16 +19,10 @@ import (
 
 // PluginSyncController is the implementation for syncing Plugin CRDs
 type PluginSyncController struct {
-	// clientset is a clientset for our own API group
-	clientset csclientset.Interface
+	*syncController
 
-	lister   cslisters.PluginLister
-	synced   cache.InformerSynced
-	informer cache.SharedIndexInformer
-
+	lister        cslisters.PluginLister
 	cloudResource *resources.CsPlugins
-
-	recorder record.EventRecorder
 }
 
 const (
@@ -49,38 +37,23 @@ func NewPlugin(kubeclientset kubernetes.Interface, clientset csclientset.Interfa
 	pluginInformer.Informer().AddIndexers(tools.IndexByIDKeyFun())
 
 	return &PluginSyncController{
-		clientset:     clientset,
+		syncController: &syncController{
+			name:      pluginSyncControllerName,
+			clientset: clientset,
+			synced:    pluginInformer.Informer().HasSynced,
+			informer:  pluginInformer.Informer(),
+			recorder:  tools.CreateAndStartRecorder(kubeclientset, pluginSyncControllerName),
+		},
+
 		lister:        pluginInformer.Lister(),
-		synced:        pluginInformer.Informer().HasSynced,
-		informer:      pluginInformer.Informer(),
 		cloudResource: resources.NewCsPlugins(),
-		recorder:      tools.CreateAndStartRecorder(kubeclientset, pluginSyncControllerName),
 	}
 }
 
 // SyncWithCloud kicks of the Sync() function, should be started only after
 // Informer caches we are about to use are synced
 func (c *PluginSyncController) SyncWithCloud(stopCh <-chan struct{}) error {
-	log.Info("Starting Plugin resource controller")
-
-	log.Info("Waiting for Plugin informer caches to sync")
-	if ok := cache.WaitForCacheSync(stopCh, c.synced); !ok {
-		return fmt.Errorf("Failed to wait for Plugin cache to sync")
-	}
-
-	// Only run one worker because a resource's underlying
-	// cache is not thread-safe and we don't want to do parallel
-	// requests to the API anyway
-	go wait.JitterUntil(c.doSync,
-		env.ContainershipCloudSyncInterval(),
-		constants.SyncJitterFactor,
-		true, // sliding: restart period only after doSync finishes
-		stopCh)
-
-	<-stopCh
-	log.Info("Plugin sync stopped")
-
-	return nil
+	return c.syncWithCloud(c.doSync, stopCh)
 }
 
 func (c *PluginSyncController) doSync() {

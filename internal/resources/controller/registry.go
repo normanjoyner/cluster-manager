@@ -1,16 +1,13 @@
 package controller
 
 import (
-	"fmt"
 	"time"
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
-	"k8s.io/client-go/tools/record"
 
 	containershipv3 "github.com/containership/cloud-agent/pkg/apis/containership.io/v3"
 	csclientset "github.com/containership/cloud-agent/pkg/client/clientset/versioned"
@@ -18,7 +15,6 @@ import (
 	cslisters "github.com/containership/cloud-agent/pkg/client/listers/containership.io/v3"
 
 	"github.com/containership/cloud-agent/internal/constants"
-	"github.com/containership/cloud-agent/internal/env"
 	"github.com/containership/cloud-agent/internal/log"
 	"github.com/containership/cloud-agent/internal/resources"
 	"github.com/containership/cloud-agent/internal/tools"
@@ -26,15 +22,10 @@ import (
 
 // RegistrySyncController is the implementation for syncing Registry CRDs
 type RegistrySyncController struct {
-	// clientset is a clientset for our own API group
-	clientset csclientset.Interface
+	*syncController
 
-	lister   cslisters.RegistryLister
-	synced   cache.InformerSynced
-	informer cache.SharedIndexInformer
-
+	lister        cslisters.RegistryLister
 	cloudResource *resources.CsRegistries
-	recorder      record.EventRecorder
 
 	tokenRegenerationByID map[string]chan bool
 }
@@ -52,12 +43,16 @@ func NewRegistry(kubeclientset kubernetes.Interface, clientset csclientset.Inter
 
 	// Create the registry controller
 	c := &RegistrySyncController{
-		clientset:     clientset,
+		syncController: &syncController{
+			name:      registrySyncControllerName,
+			clientset: clientset,
+			synced:    registryInformer.Informer().HasSynced,
+			informer:  registryInformer.Informer(),
+			recorder:  tools.CreateAndStartRecorder(kubeclientset, registrySyncControllerName),
+		},
+
 		lister:        registryInformer.Lister(),
-		synced:        registryInformer.Informer().HasSynced,
-		informer:      registryInformer.Informer(),
 		cloudResource: resources.NewCsRegistries(),
-		recorder:      tools.CreateAndStartRecorder(kubeclientset, registrySyncControllerName),
 
 		tokenRegenerationByID: make(map[string]chan bool, 0),
 	}
@@ -80,26 +75,7 @@ func NewRegistry(kubeclientset kubernetes.Interface, clientset csclientset.Inter
 // SyncWithCloud kicks of the Sync() function, should be started only after
 // Informer caches we are about to use are synced
 func (c *RegistrySyncController) SyncWithCloud(stopCh <-chan struct{}) error {
-	log.Info("Starting Registry resource controller")
-
-	log.Info("Waiting for Registry informer caches to sync")
-	if ok := cache.WaitForCacheSync(stopCh, c.synced); !ok {
-		return fmt.Errorf("Failed to wait for Registry cache to sync")
-	}
-
-	// Only run one worker because a resource's underlying
-	// cache is not thread-safe and we don't want to do parallel
-	// requests to the API anyway
-	go wait.JitterUntil(c.doSync,
-		env.ContainershipCloudSyncInterval(),
-		constants.SyncJitterFactor,
-		true, // sliding: restart period only after doSync finishes
-		stopCh)
-
-	<-stopCh
-	log.Info("Registry sync stopped")
-
-	return nil
+	return c.syncWithCloud(c.doSync, stopCh)
 }
 
 func (c *RegistrySyncController) doSync() {
