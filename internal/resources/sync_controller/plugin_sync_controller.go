@@ -114,13 +114,16 @@ func (c *PluginSyncController) Create(p containershipv3.PluginSpec) error {
 		},
 		Spec: p,
 	})
+	if err != nil {
+		return err
+	}
 
 	// We can only fire an event if the object was successfully created,
 	// otherwise there's no reasonable object to attach to.
 	c.recorder.Event(plugin, corev1.EventTypeNormal, "SyncCreate",
 		"Detected missing CR")
 
-	return err
+	return nil
 }
 
 // Delete takes a name or the CRD and deletes it
