@@ -5,16 +5,16 @@ import (
 
 	"github.com/containership/cloud-agent/internal/k8sutil"
 	"github.com/containership/cloud-agent/internal/log"
-	synccontrollers "github.com/containership/cloud-agent/internal/resources/controller"
+	synccontroller "github.com/containership/cloud-agent/internal/resources/sync_controller"
 	csinformers "github.com/containership/cloud-agent/pkg/client/informers/externalversions"
 )
 
 // CloudSynchronizer synchronizes Containership Cloud resources
 // into our Kubernetes CRDs.
 type CloudSynchronizer struct {
-	userSyncController     *synccontrollers.UserSyncController
-	registrySyncController *synccontrollers.RegistrySyncController
-	pluginSyncController   *synccontrollers.PluginSyncController
+	userSyncController     *synccontroller.UserSyncController
+	registrySyncController *synccontroller.RegistrySyncController
+	pluginSyncController   *synccontroller.PluginSyncController
 	syncStopCh             chan struct{}
 	stopped                bool
 }
@@ -22,19 +22,19 @@ type CloudSynchronizer struct {
 // NewCloudSynchronizer constructs a new CloudSynchronizer.
 func NewCloudSynchronizer(csInformerFactory csinformers.SharedInformerFactory) *CloudSynchronizer {
 	return &CloudSynchronizer{
-		userSyncController: synccontrollers.NewUser(
+		userSyncController: synccontroller.NewUser(
 			k8sutil.API().Client(),
 			k8sutil.CSAPI().Client(),
 			csInformerFactory,
 		),
 
-		registrySyncController: synccontrollers.NewRegistry(
+		registrySyncController: synccontroller.NewRegistry(
 			k8sutil.API().Client(),
 			k8sutil.CSAPI().Client(),
 			csInformerFactory,
 		),
 
-		pluginSyncController: synccontrollers.NewPlugin(
+		pluginSyncController: synccontroller.NewPlugin(
 			k8sutil.API().Client(),
 			k8sutil.CSAPI().Client(),
 			csInformerFactory,
