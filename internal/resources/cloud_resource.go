@@ -38,7 +38,7 @@ func Sync(cr CloudResource) error {
 
 	err = cr.UnmarshalToCache(bytes)
 	if err != nil {
-		log.Debugf("Bad response: %s\n", string(bytes))
+		log.Debugf("Bad response: %s", string(bytes))
 	}
 	return err
 }

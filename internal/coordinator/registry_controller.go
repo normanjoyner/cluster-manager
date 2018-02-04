@@ -275,7 +275,7 @@ func (c *RegistryController) processNextWorkItem() bool {
 		}
 
 		if terminatingOrTerminated == true {
-			log.Infof("%s: Namespace '%s' for %s in work queue does not exist\n", registryControllerName, namespace, kind)
+			log.Infof("%s: Namespace '%s' for %s in work queue does not exist", registryControllerName, namespace, kind)
 			return nil
 		}
 

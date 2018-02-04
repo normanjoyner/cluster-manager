@@ -185,7 +185,7 @@ func (c *ContainershipController) processNextWorkItem() bool {
 		}
 
 		if terminatingOrTerminated == true {
-			log.Infof("%s: Namespace '%s' for %s in work queue does not exist\n", controllerName, namespace, kind)
+			log.Infof("%s: Namespace '%s' for %s in work queue does not exist", controllerName, namespace, kind)
 			return nil
 		}
 

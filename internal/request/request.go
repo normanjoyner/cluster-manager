@@ -91,7 +91,7 @@ func (r *Requester) MakeRequest() (*http.Response, error) {
 
 	res, err := client.Do(req)
 	if err != nil {
-		log.Debugf("Failed request: %+v\n", *req)
+		log.Debugf("Failed request: %+v", *req)
 		return res, err
 	}
 
@@ -99,9 +99,9 @@ func (r *Requester) MakeRequest() (*http.Response, error) {
 	// in Unmarshal
 	if res.StatusCode < http.StatusOK ||
 		res.StatusCode >= http.StatusMultipleChoices {
-		log.Debugf("Cloud API responded with %d (%s)\n", res.StatusCode,
+		log.Debugf("Cloud API responded with %d (%s)", res.StatusCode,
 			http.StatusText(res.StatusCode))
-		log.Debugf("Request: %+v\n", *req)
+		log.Debugf("Request: %+v", *req)
 
 		return res, fmt.Errorf("Request returned with status code %d", res.StatusCode)
 	}
