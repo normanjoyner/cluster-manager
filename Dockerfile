@@ -23,7 +23,4 @@ RUN cd $SRC_DIR && \
     go build -o coordinator cmd/cloud_coordinator/coordinator.go && \
     cp coordinator /app/
 
-ENTRYPOINT /app/coordinator
-
-# TODO glog wants to log to a file by default. Don't use glog. See issue #36.
-CMD ["-logtostderr=true"]
+WORKDIR $SRC_DIR

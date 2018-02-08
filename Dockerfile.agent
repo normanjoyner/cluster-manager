@@ -1,4 +1,4 @@
-FROM golang:1.9.3-alpine3.7 as builder
+FROM golang:1.9.3-alpine3.7
 
 # add tools for debug and development purposes
 RUN apk update && \
@@ -35,12 +35,3 @@ RUN cd $SRC_DIR && \
         -a -tags netgo \
         -o agent cmd/cloud_agent/agent.go && \
     cp agent /app/
-
-
-# Create Docker image of just the binary
-FROM scratch as runner
-COPY --from=builder ./scripts /scripts
-COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
-COPY --from=builder ./app/agent .
-# TODO glog wants to log to a file by default. Don't use glog. See issue #36.
-CMD ["./agent", "-logtostderr=true"]
