@@ -7,6 +7,7 @@ def dockerUtils = cs_library.io.containership.Docker.new(this)
 def gitUtils = cs_library.io.containership.Git.new(this)
 def npmUtils = cs_library.io.containership.Npm.new(this)
 def pipelineUtils = cs_library.io.containership.Pipeline.new(this)
+def kubectlUtils = cs_library.io.containership.Kubectl.new(this)
 
 pipelineUtils.jenkinsTemplate {
     node('k8s-pod') {
@@ -28,6 +29,7 @@ pipelineUtils.jenkinsTemplate {
         def git_branch
         def git_tag
         def is_tag_build = false
+        def is_pr_build = false
         def docker_image_tag
 
         def docker_test_image_id_agent
@@ -41,7 +43,8 @@ pipelineUtils.jenkinsTemplate {
             env.GIT_BRANCH = scmVars.GIT_BRANCH
             git_commit = scmVars.GIT_COMMIT
             git_branch = scmVars.GIT_BRANCH
-            is_tag_build = gitUtils.isTagBuild(scmVars.GIT_COMMIT)
+            is_tag_build = gitUtils.isTagBuild(git_branch)
+            is_pr_build = gitUtils.isPRBuild(git_branch)
 
             if(is_tag_build) {
                 git_tag = scmVars.GIT_BRANCH
@@ -94,7 +97,7 @@ pipelineUtils.jenkinsTemplate {
             }
         )
 
-        if(!gitUtils.isPRBuild(git_branch)) {
+        if(!is_pr_build) {
             stage('Publish Preparation') {
                 container('docker') {
                     dockerUtils.buildImage("${docker_repo_agent}:${docker_image_tag}-tmp", dockerfile_agent)
@@ -147,12 +150,10 @@ pipelineUtils.jenkinsTemplate {
             }
 
             stage('Publish - Docker') {
-                if(!gitUtils.isPRBuild(git_branch)) {
-                    container('docker') {
-                        dockerUtils.login('docker-cred-ntate22')
-                        dockerUtils.push(docker_repo_agent, docker_image_tag)
-                        dockerUtils.push(docker_repo_coordinator, docker_image_tag)
-                    }
+                container('docker') {
+                    dockerUtils.login('docker-cred-ntate22')
+                    dockerUtils.push(docker_repo_agent, docker_image_tag)
+                    dockerUtils.push(docker_repo_coordinator, docker_image_tag)
                 }
             }
 
@@ -160,15 +161,8 @@ pipelineUtils.jenkinsTemplate {
                 echo "We need to support deploying to kubernetes clusters"
 
                 container('kubectl') {
-                    sh "kubectl config get-contexts"
-                    sh "kubectl get pods"
-
-                    withCredentials([
-                        file(credentialsId: 'kube_config_gke_jenkins', variable: 'KUBE_CONFIG')
-                    ]) {
-                        sh "kubectl --kubeconfig=$KUBE_CONFIG config view"
-                        sh "kubectl --kubeconfig=$KUBE_CONFIG config get-contexts"
-                        sh "kubectl --kubeconfig=$KUBE_CONFIG get pods"
+                    kubectlUtils.withKubeConfig(pipelineUtils.getKubeCredentialIdStage()) {
+                        kubectlUtils.runCommand("get pods")
                     }
                 }
             }
