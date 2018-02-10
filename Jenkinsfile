@@ -24,6 +24,8 @@ pipelineUtils.jenkinsTemplate {
         def docker_repo_agent = "${docker_org}/${docker_name_agent}"
         def docker_repo_coordinator = "${docker_org}/${docker_name_coordinator}"
 
+        def deploy_branch = 'master'
+
         // will be set in checkout stage
         def git_commit
         def git_branch
@@ -97,7 +99,7 @@ pipelineUtils.jenkinsTemplate {
             }
         )
 
-        if(!is_pr_build) {
+        if(!is_pr_build && git_branch == deploy_branch) {
             stage('Publish Preparation') {
                 container('docker') {
                     dockerUtils.buildImage("${docker_repo_agent}:${docker_image_tag}-tmp", dockerfile_agent)
