@@ -158,6 +158,8 @@ pipelineUtils.jenkinsWithNodeTemplate {
     }
 
     stage('Cleanup') {
-        echo 'No cleanup needed!'
+        container('docker') {
+            dockerUtils.cleanup()
+        }
     }
 }
