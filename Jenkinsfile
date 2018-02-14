@@ -116,7 +116,7 @@ pipelineUtils.jenkinsWithNodeTemplate {
                     sh 'echo "ADD ./containership-login.sh /scripts" >> Dockerfile.agent-scratch'
                     sh 'echo "ADD ./ca-certificates.crt /etc/ssl/certs/ca-certificates.crt" >> Dockerfile.agent-scratch'
                     sh 'echo "ADD ./agent ." >> Dockerfile.agent-scratch'
-                    sh 'echo "CMD [\"./agent\", \"-logtostderr=true\"]" >> Dockerfile.agent-scratch'
+                    sh 'echo "CMD [\\"./agent\\", \\"-logtostderr=true\\"]" >> Dockerfile.agent-scratch'
 
                     dockerUtils.buildImage("${docker_repo_agent}:${docker_image_tag}", "./Dockerfile.agent-scratch")
                     docker_image_id_agent = dockerUtils.getImageId(docker_repo_agent, "${docker_image_tag}")
@@ -140,7 +140,7 @@ pipelineUtils.jenkinsWithNodeTemplate {
                     sh 'echo "ADD ./kubectl /etc/kubectl/kubectl" >> Dockerfile.coordinator-scratch'
                     sh 'echo "ADD ./ca-certificates.crt /etc/ssl/certs/ca-certificates.crt" >> Dockerfile.coordinator-scratch'
                     sh 'echo "ENV KUBECTL_PATH=/etc/kubectl/kubectl" >> Dockerfile.coordinator-scratch'
-                    sh 'echo "CMD [\"./coordinator\", \"-logtostderr=true\"]" >> Dockerfile.coordinator-scratch'
+                    sh 'echo "CMD [\\"./coordinator\\", \\"-logtostderr=true\\"]" >> Dockerfile.coordinator-scratch'
 
                     dockerUtils.buildImage("${docker_repo_coordinator}:${docker_image_tag}", "./Dockerfile.coordinator-scratch")
                     docker_image_id_coordinator = dockerUtils.getImageId(docker_repo_coordinator, "${docker_image_tag}")
