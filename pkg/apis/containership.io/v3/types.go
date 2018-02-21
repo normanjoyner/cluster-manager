@@ -130,3 +130,54 @@ type PluginList struct {
 
 	Items []Plugin `json:"items"`
 }
+
+// +genclient
+// +genclient:noStatus
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+
+// ClusterUpgrade describes the cluster upgrade that has been requested.
+// This is not synced from cloud
+type ClusterUpgrade struct {
+	metav1.TypeMeta   `json:",inline"`
+	metav1.ObjectMeta `json:"metadata,omitempty"`
+
+	Spec ClusterUpgradeSpec `json:"spec"`
+}
+
+// ClusterUpgradeSpec is the spec for a Containership Cloud Cluster Upgrade.
+type ClusterUpgradeSpec struct {
+	ID                      string        `json:"id"`
+	AddedAt                 string        `json:"added_at"`
+	Description             string        `json:"description"`
+	TargetKubernetesVersion string        `json:"target_kubernetes_version"`
+	TargetEtcdVersion       string        `json:"target_etcd_version"`
+	LabelSelector           string        `json:"label_selector"`
+	Timeout                 string        `json:"timeout"`
+	Status                  UpgradeStatus `json:"status"`
+	CurrentNode             string        `json:"current_node"`
+	NextNode                string        `json:"next_node"`
+}
+
+// UpgradeStatus keeps track of where in the upgrade process the cluster is
+type UpgradeStatus int
+
+const (
+	// Failed status gets set when 1 or more nodes in upgrade if unsucessful
+	Failed UpgradeStatus = 1
+	// Success status gets set when all nodes have been updated to Target Version
+	Success UpgradeStatus = 2
+	// InProgress means the update process has started
+	InProgress UpgradeStatus = 3
+	// Created status is for when the ClusterUpgrade has been created, but the update process has not yet started
+	Created UpgradeStatus = 4
+)
+
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+
+// ClusterUpgradeList is a list of ClusterUpgrades.
+type ClusterUpgradeList struct {
+	metav1.TypeMeta `json:",inline"`
+	metav1.ListMeta `json:"metadata"`
+
+	Items []ClusterUpgrade `json:"items"`
+}
