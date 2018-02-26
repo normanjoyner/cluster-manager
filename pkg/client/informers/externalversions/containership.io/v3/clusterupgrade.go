@@ -33,59 +33,59 @@ import (
 	cache "k8s.io/client-go/tools/cache"
 )
 
-// PluginInformer provides access to a shared informer and lister for
-// Plugins.
-type PluginInformer interface {
+// ClusterUpgradeInformer provides access to a shared informer and lister for
+// ClusterUpgrades.
+type ClusterUpgradeInformer interface {
 	Informer() cache.SharedIndexInformer
-	Lister() v3.PluginLister
+	Lister() v3.ClusterUpgradeLister
 }
 
-type pluginInformer struct {
+type clusterUpgradeInformer struct {
 	factory          internalinterfaces.SharedInformerFactory
 	tweakListOptions internalinterfaces.TweakListOptionsFunc
 	namespace        string
 }
 
-// NewPluginInformer constructs a new informer for Plugin type.
+// NewClusterUpgradeInformer constructs a new informer for ClusterUpgrade type.
 // Always prefer using an informer factory to get a shared informer instead of getting an independent
 // one. This reduces memory footprint and number of connections to the server.
-func NewPluginInformer(client versioned.Interface, namespace string, resyncPeriod time.Duration, indexers cache.Indexers) cache.SharedIndexInformer {
-	return NewFilteredPluginInformer(client, namespace, resyncPeriod, indexers, nil)
+func NewClusterUpgradeInformer(client versioned.Interface, namespace string, resyncPeriod time.Duration, indexers cache.Indexers) cache.SharedIndexInformer {
+	return NewFilteredClusterUpgradeInformer(client, namespace, resyncPeriod, indexers, nil)
 }
 
-// NewFilteredPluginInformer constructs a new informer for Plugin type.
+// NewFilteredClusterUpgradeInformer constructs a new informer for ClusterUpgrade type.
 // Always prefer using an informer factory to get a shared informer instead of getting an independent
 // one. This reduces memory footprint and number of connections to the server.
-func NewFilteredPluginInformer(client versioned.Interface, namespace string, resyncPeriod time.Duration, indexers cache.Indexers, tweakListOptions internalinterfaces.TweakListOptionsFunc) cache.SharedIndexInformer {
+func NewFilteredClusterUpgradeInformer(client versioned.Interface, namespace string, resyncPeriod time.Duration, indexers cache.Indexers, tweakListOptions internalinterfaces.TweakListOptionsFunc) cache.SharedIndexInformer {
 	return cache.NewSharedIndexInformer(
 		&cache.ListWatch{
 			ListFunc: func(options v1.ListOptions) (runtime.Object, error) {
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.ContainershipV3().Plugins(namespace).List(options)
+				return client.ContainershipV3().ClusterUpgrades(namespace).List(options)
 			},
 			WatchFunc: func(options v1.ListOptions) (watch.Interface, error) {
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.ContainershipV3().Plugins(namespace).Watch(options)
+				return client.ContainershipV3().ClusterUpgrades(namespace).Watch(options)
 			},
 		},
-		&containership_io_v3.Plugin{},
+		&containership_io_v3.ClusterUpgrade{},
 		resyncPeriod,
 		indexers,
 	)
 }
 
-func (f *pluginInformer) defaultInformer(client versioned.Interface, resyncPeriod time.Duration) cache.SharedIndexInformer {
-	return NewFilteredPluginInformer(client, f.namespace, resyncPeriod, cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc}, f.tweakListOptions)
+func (f *clusterUpgradeInformer) defaultInformer(client versioned.Interface, resyncPeriod time.Duration) cache.SharedIndexInformer {
+	return NewFilteredClusterUpgradeInformer(client, f.namespace, resyncPeriod, cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc}, f.tweakListOptions)
 }
 
-func (f *pluginInformer) Informer() cache.SharedIndexInformer {
-	return f.factory.InformerFor(&containership_io_v3.Plugin{}, f.defaultInformer)
+func (f *clusterUpgradeInformer) Informer() cache.SharedIndexInformer {
+	return f.factory.InformerFor(&containership_io_v3.ClusterUpgrade{}, f.defaultInformer)
 }
 
-func (f *pluginInformer) Lister() v3.PluginLister {
-	return v3.NewPluginLister(f.Informer().GetIndexer())
+func (f *clusterUpgradeInformer) Lister() v3.ClusterUpgradeLister {
+	return v3.NewClusterUpgradeLister(f.Informer().GetIndexer())
 }
