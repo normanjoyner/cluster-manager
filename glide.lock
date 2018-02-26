@@ -1,8 +1,8 @@
-hash: 5a4222a36156ef47cddcc338735fd2864693fe1e959cd7ef1447c3ce768aaee7
-updated: 2018-01-26T09:38:25.504942-05:00
+hash: 8d8a785193e37a58e6c6b04ff29a1d852ec25d22511edb30e446bfa09c07c054
+updated: 2018-02-26T11:58:17.323567433-05:00
 imports:
 - name: github.com/aws/aws-sdk-go
-  version: 094c4e4e03d9f1c2c7d25a17b5df5f2685ae922a
+  version: f7f1ee9550cc76ceea731d99c8dbe00a0c39f66d
   subpackages:
   - aws
   - aws/awserr
@@ -20,6 +20,7 @@ imports:
   - aws/request
   - aws/session
   - aws/signer/v4
+  - internal/sdkrand
   - internal/shareddefaults
   - private/protocol
   - private/protocol/json/jsonutil
@@ -176,7 +177,7 @@ imports:
 - name: gopkg.in/yaml.v2
   version: 53feefa2559fb8dfa8d81baad31be332c97d6c77
 - name: k8s.io/api
-  version: 11147472b7c934c474a2c484af3c0c5210b7a3af
+  version: 006a217681ae70cbacdd66a5e2fca1a61a8ff28e
   subpackages:
   - admissionregistration/v1alpha1
   - admissionregistration/v1beta1
@@ -216,7 +217,7 @@ imports:
   - pkg/client/clientset/clientset/scheme
   - pkg/client/clientset/clientset/typed/apiextensions/v1beta1
 - name: k8s.io/apimachinery
-  version: 180eddb345a5be3a157cea1c624700ad5bd27b8f
+  version: 68f9c3a1feb3140df59c67ced62d3a5df8e6c9c2
   subpackages:
   - pkg/api/errors
   - pkg/api/meta
@@ -260,7 +261,7 @@ imports:
   - third_party/forked/golang/json
   - third_party/forked/golang/reflect
 - name: k8s.io/client-go
-  version: 78700dec6369ba22221b72770783300f143df150
+  version: 9389c055a838d4f208b699b3c7c51b70f2368861
   subpackages:
   - discovery
   - discovery/fake
@@ -380,7 +381,7 @@ imports:
   - util/integer
   - util/workqueue
 - name: k8s.io/code-generator
-  version: fef8bcdbaf36ac6a1a18c9ef7d85200b249fad30
+  version: 91d3f6a57905178524105a085085901bb73bd3dc
 - name: k8s.io/kube-openapi
   version: 39a7bf85c140f972372c2a0d1ee40adbf0c8bfe1
   subpackages:

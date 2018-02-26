@@ -1,7 +1,7 @@
 package: github.com/containership/cloud-agent
 import:
 - package: k8s.io/client-go
-  version: v6.0.0
+  version: kubernetes-1.9.3
 - package: k8s.io/code-generator
   version: kubernetes-1.9.3
 - package: github.com/gorilla/mux

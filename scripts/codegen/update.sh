@@ -3,6 +3,11 @@
 SCRIPT_NAME=$(basename $0)
 
 SRC_DIR=$GOPATH/src/github.com/containership/cloud-agent
+
+go get k8s.io/gengo
+rm -R ./vendor/github.com/golang/glog
+rm -R ./vendor/github.com/spf13/pflag
+
 cd $SRC_DIR
 
 vendor/k8s.io/code-generator/generate-groups.sh all \
