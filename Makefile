@@ -55,6 +55,7 @@ deploy-common: deploy-crds ## Deploy all common yamls
 	kubectl apply -f deploy/eventrouter/eventrouter.yaml
 	kubectl apply -f deploy/common/containership-env-configmap.yaml
 	kubectl apply -f deploy/common/containership-coordinator-service.yaml
+	kubectl apply -f deploy/common/containership-service-account.yaml
 
 deploy-agent: deploy-common ## Deploy the agent
 	kubectl apply -f deploy/development/agent.yaml

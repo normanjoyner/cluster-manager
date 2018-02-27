@@ -17,6 +17,7 @@ var (
 	regController       *RegistryController
 	csController        *ContainershipController
 	plgnController      *PluginController
+	cupController       *UpgradeController
 	cloudSynchronizer   *CloudSynchronizer
 )
 
@@ -41,6 +42,9 @@ func Initialize() {
 	plgnController = NewPluginController(
 		k8sutil.API().Client(), k8sutil.CSAPI().Client(), csInformerFactory)
 
+	cupController = NewUpgradeController(
+		k8sutil.API().Client(), k8sutil.CSAPI().Client(), kubeInformerFactory, csInformerFactory)
+
 	// Synchronizer needs to be created before any jobs start so
 	// that all needed index functions can be added to the
 	// informers
@@ -56,9 +60,10 @@ func Run() {
 
 	cloudSynchronizer.Run()
 
-	go regController.Run(1, stopCh)
 	go csController.Run(1, stopCh)
+	go cupController.Run(1, stopCh)
 	go plgnController.Run(1, stopCh)
+	go regController.Run(1, stopCh)
 
 	// if stopCh is closed something went wrong
 	<-stopCh
