@@ -2,7 +2,6 @@ package sysuser
 
 import (
 	"fmt"
-	"io"
 	"os"
 	"path"
 	"sync"
@@ -11,6 +10,7 @@ import (
 
 	"github.com/containership/cloud-agent/internal/constants"
 	"github.com/containership/cloud-agent/internal/log"
+	"github.com/containership/cloud-agent/internal/tools/fsutil"
 	v3 "github.com/containership/cloud-agent/pkg/apis/containership.io/v3"
 )
 
@@ -58,12 +58,12 @@ func InitializeAuthorizedKeysFileStructure() error {
 
 func initializeAuthorizedKeysFileStructure(fs afero.Fs) error {
 	// Create directories / fix permissions if needed
-	err := ensureDirExistsWithCorrectPermissions(fs, getSSHDir(), sshDirPermissions)
+	err := fsutil.EnsureDirExistsWithCorrectPermissions(fs, getSSHDir(), sshDirPermissions)
 	if err != nil {
 		return err
 	}
 
-	err = ensureDirExistsWithCorrectPermissions(fs, getScriptsDir(), scriptsDirPermissions)
+	err = fsutil.EnsureDirExistsWithCorrectPermissions(fs, getScriptsDir(), scriptsDirPermissions)
 	if err != nil {
 		return err
 	}
@@ -71,7 +71,7 @@ func initializeAuthorizedKeysFileStructure(fs afero.Fs) error {
 	// Create empty authorized_keys if needed (this is just to simplify other
 	// logic down the line)
 	akFile := GetAuthorizedKeysFullPath()
-	if !fileExists(fs, akFile) {
+	if !fsutil.FileExists(fs, akFile) {
 		log.Info("authorized_keys file didn't exist so we're creating it")
 		f, err := fs.OpenFile(akFile, os.O_CREATE|os.O_WRONLY|os.O_TRUNC,
 			authorizedKeysPermissions)
@@ -87,71 +87,12 @@ func initializeAuthorizedKeysFileStructure(fs afero.Fs) error {
 	}
 
 	// Copy login script into place
-	err = copyFileForcefully(fs, getLoginScriptFullPath(), loginScriptContainerPath)
+	err = fsutil.CopyFileForcefully(fs, getLoginScriptFullPath(), loginScriptContainerPath, scriptPermissions)
 	if err != nil {
 		return err
 	}
 
 	return nil
-}
-
-func ensureDirExistsWithCorrectPermissions(fs afero.Fs, dir string, perms os.FileMode) error {
-	if !dirExists(fs, dir) {
-		log.Infof("Directory %s didn't exist so we're creating it", dir)
-		if err := fs.MkdirAll(dir, perms); err != nil {
-			return err
-		}
-	} else {
-		// Ensure permissions of existing dir are correct
-		if err := fs.Chmod(dir, perms); err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
-// copyFileForcefully copies src to dst, overwriting dst if it exists.
-func copyFileForcefully(fs afero.Fs, dst string, src string) error {
-	// Open dst
-	dstFile, err := fs.OpenFile(dst, os.O_CREATE|os.O_WRONLY|os.O_TRUNC,
-		scriptPermissions)
-	if err != nil {
-		return err
-	}
-	defer dstFile.Close()
-
-	// Open src (don't care about flags here)
-	srcFile, err := fs.Open(src)
-	if err != nil {
-		return err
-	}
-	defer srcFile.Close()
-
-	// Copy it
-	_, err = io.Copy(dstFile, srcFile)
-
-	return err
-}
-
-// dirExists returns true if dir exists and is a directory, else false
-func dirExists(fs afero.Fs, dir string) bool {
-	stat, err := fs.Stat(dir)
-	if err != nil {
-		return false
-	}
-
-	return stat.IsDir()
-}
-
-// fileExists returns true if file exists and is a regular file, else false
-func fileExists(fs afero.Fs, file string) bool {
-	stat, err := fs.Stat(file)
-	if err != nil {
-		return false
-	}
-
-	return stat.Mode().IsRegular()
 }
 
 // getSSHDir returns the SSH directory built from the environment
@@ -175,7 +116,7 @@ func writeAuthorizedKeys(fs afero.Fs, users []v3.UserSpec) error {
 	filename := GetAuthorizedKeysFullPath()
 
 	// Prevent against ssh dir deletion or permissions changes
-	err := ensureDirExistsWithCorrectPermissions(fs, getSSHDir(), sshDirPermissions)
+	err := fsutil.EnsureDirExistsWithCorrectPermissions(fs, getSSHDir(), sshDirPermissions)
 	if err != nil {
 		return err
 	}

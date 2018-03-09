@@ -235,14 +235,6 @@ func isDone(cup *containershipv3.ClusterUpgrade) bool {
 	return false
 }
 
-// isTargetVersion checks if the current node version matches the target version
-// of the cluster upgrade that is being processed. This only checks that the
-// kubelet is up to date, and does not check the static pods.
-//TODO: later we should consider doing this check in a safer/more reliable way
-func isTargetVersion(cup *containershipv3.ClusterUpgrade, node *corev1.Node) bool {
-	return node.Status.NodeInfo.KubeletVersion == cup.Spec.TargetKubernetesVersion
-}
-
 // isCurrentNode checks to see if the node being looked at is the current node being processed
 func isCurrentNode(cup *containershipv3.ClusterUpgrade, node *corev1.Node) bool {
 	return cup.Spec.CurrentNode == node.Name
@@ -268,7 +260,7 @@ func (uc *UpgradeController) getNextNode(cup *containershipv3.ClusterUpgrade) *c
 }
 
 func isNext(cup *containershipv3.ClusterUpgrade, node *corev1.Node) bool {
-	return !isTargetVersion(cup, node) && !isCurrentNode(cup, node)
+	return !tools.NodeIsTargetKubernetesVersion(cup, node) && !isCurrentNode(cup, node)
 }
 
 func addCustomLabelSelectors(selector labels.Selector, lss []containershipv3.LabelSelectorSpec) labels.Selector {

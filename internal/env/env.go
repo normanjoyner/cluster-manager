@@ -19,6 +19,7 @@ type environment struct {
 	clusterID                       string
 	csCloudEnvironment              string
 	csServerPort                    string
+	nodeName                        string
 	organizationID                  string
 	kubeconfig                      string
 	kubectlPath                     string
@@ -80,6 +81,7 @@ func init() {
 	}
 
 	env.kubeconfig = os.Getenv("KUBECONFIG")
+	env.nodeName = os.Getenv("NODE_NAME")
 }
 
 // OrganizationID returns Containership Cloud organization id
@@ -132,9 +134,14 @@ func Kubeconfig() string {
 	return env.kubeconfig
 }
 
-// KubectlPath reutrns the path to use the kubectl command
+// KubectlPath returns the path to use the kubectl command
 func KubectlPath() string {
 	return env.kubectlPath
+}
+
+// NodeName returns the name of the node that is running the process
+func NodeName() string {
+	return env.nodeName
 }
 
 // Dump dumps the environment if we're in development mode

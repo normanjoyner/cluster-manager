@@ -157,7 +157,6 @@ type ClusterUpgradeSpec struct {
 	Timeout                 string              `json:"timeout"`
 	Status                  UpgradeStatus       `json:"status"`
 	CurrentNode             string              `json:"current_node"`
-	NextNode                string              `json:"next_node"`
 }
 
 // UpgradeStatus keeps track of where in the upgrade process the cluster is
