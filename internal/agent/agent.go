@@ -19,7 +19,7 @@ import (
 var (
 	kubeInformerFactory kubeinformers.SharedInformerFactory
 	csInformerFactory   csinformers.SharedInformerFactory
-	userController      *Controller
+	userController      *UserController
 	cupController       *UpgradeController
 )
 
@@ -44,7 +44,7 @@ func Initialize() {
 	kubeInformerFactory = k8sutil.API().NewKubeSharedInformerFactory(interval)
 	csInformerFactory = k8sutil.CSAPI().NewCSSharedInformerFactory(interval)
 
-	userController = NewController(
+	userController = NewUserController(
 		k8sutil.CSAPI().Client(), csInformerFactory)
 
 	cupController = NewUpgradeController(

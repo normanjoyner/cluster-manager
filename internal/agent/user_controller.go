@@ -34,10 +34,10 @@ const (
 	maxRetriesUserController = 5
 )
 
-// Controller is the agent controller which watches for CRD changes and reports
+// UserController is the agent controller which watches for CRD changes and reports
 // back when a write to host is needed
 // TODO this needs to be able to be instantiated with a different resource type
-type Controller struct {
+type UserController struct {
 	clientset   csclientset.Interface
 	usersLister cslisters.UserLister
 	usersSynced cache.InformerSynced
@@ -47,12 +47,12 @@ type Controller struct {
 	fileWatchCmdCh chan int
 }
 
-// NewController creates a new agent Controller
-func NewController(
+// NewUserController creates a new agent UserController
+func NewUserController(
 	clientset csclientset.Interface,
-	csInformerFactory csinformers.SharedInformerFactory) *Controller {
+	csInformerFactory csinformers.SharedInformerFactory) *UserController {
 
-	c := &Controller{
+	c := &UserController{
 		clientset:      clientset,
 		workqueue:      workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), "Users"),
 		requestWriteCh: make(chan bool),
@@ -85,9 +85,9 @@ func NewController(
 	return c
 }
 
-// Run kicks off the Controller with the given number of workers to process the
+// Run kicks off the UserController with the given number of workers to process the
 // workqueue
-func (c *Controller) Run(numWorkers int, stopCh <-chan struct{}) error {
+func (c *UserController) Run(numWorkers int, stopCh <-chan struct{}) error {
 	defer runtime.HandleCrash()
 	defer c.workqueue.ShutDown()
 
@@ -123,14 +123,14 @@ func (c *Controller) Run(numWorkers int, stopCh <-chan struct{}) error {
 }
 
 // runWorker continually requests that the next queue item be processed
-func (c *Controller) runWorker() {
+func (c *UserController) runWorker() {
 	for c.processNextWorkItem() {
 	}
 }
 
 // processNextWorkItem continually pops items off of the workqueue and handles
 // them
-func (c *Controller) processNextWorkItem() bool {
+func (c *UserController) processNextWorkItem() bool {
 	obj, shutdown := c.workqueue.Get()
 
 	if shutdown {
@@ -168,7 +168,7 @@ func (c *Controller) processNextWorkItem() bool {
 // if it did the resource gets requeued up to as many times as is set for
 // the max retries. If retry count is hit, or the resource is synced successfully
 // the resource is moved of the queue
-func (c *Controller) handleErr(err error, key interface{}) error {
+func (c *UserController) handleErr(err error, key interface{}) error {
 	if err == nil {
 		c.workqueue.Forget(key)
 		return nil
@@ -186,7 +186,7 @@ func (c *Controller) handleErr(err error, key interface{}) error {
 
 // enqueueUser enqueues the key for a given user - it should not be called for
 // other object types
-func (c *Controller) enqueueUser(obj interface{}) {
+func (c *UserController) enqueueUser(obj interface{}) {
 	var key string
 	var err error
 	if key, err = cache.MetaNamespaceKeyFunc(obj); err != nil {
@@ -201,7 +201,7 @@ func (c *Controller) enqueueUser(obj interface{}) {
 // interesting must have happened for us to get to this point. Note that write
 // requests are rate limited on the other side, so we can request as many times
 // as we want here and it will collapse to periodic writes of the latest cache
-func (c *Controller) syncHandler(key string) error {
+func (c *UserController) syncHandler(key string) error {
 	log.Debugf("User updated: key=%s", key)
 	c.requestWriteCh <- true
 	return nil
@@ -211,7 +211,7 @@ func (c *Controller) syncHandler(key string) error {
 // writes if there is any requests
 // TODO add support for multiple resource types, either by modifying this or
 // using a different structure
-func (c *Controller) handleWriteRequests(stopCh <-chan struct{}) {
+func (c *UserController) handleWriteRequests(stopCh <-chan struct{}) {
 	// Handle write requests faster than the cloud sync interval to ensure
 	// that a user isn't stuck waiting for SSH to work for twice the sync
 	// interval in the worst case.
@@ -249,7 +249,7 @@ func (c *Controller) handleWriteRequests(stopCh <-chan struct{}) {
 	}
 }
 
-func (c *Controller) writeAuthorizedUsers() error {
+func (c *UserController) writeAuthorizedUsers() error {
 	// TODO for users this must filter on `ssh_access=true` once
 	// RBAC is integrated on coordinator side (RBAC CRD Controller
 	// adds the label)
@@ -277,7 +277,7 @@ func (c *Controller) writeAuthorizedUsers() error {
 
 // sendCmdToFileWatcher sends a command to the file watcher routine and
 // blocks until a command complete response is received
-func (c *Controller) sendCmdToFileWatcher(cmd int) {
+func (c *UserController) sendCmdToFileWatcher(cmd int) {
 	c.fileWatchCmdCh <- cmd
 	<-c.fileWatchCmdCh // wait for cmd complete
 }
@@ -289,7 +289,7 @@ func (c *Controller) sendCmdToFileWatcher(cmd int) {
 // when we write to the file ourselves, we must disable the file
 // watcher by sending a Stop command and re-enable it with a Start
 // command after writing.
-func (c *Controller) authorizedKeysWatcher() {
+func (c *UserController) authorizedKeysWatcher() {
 	filename := sysuser.GetAuthorizedKeysFullPath()
 
 	fileWatcher, err := fsnotify.NewWatcher()
