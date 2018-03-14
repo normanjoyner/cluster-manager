@@ -19,7 +19,7 @@ limitations under the License.
 package v3
 
 import (
-	v3 "github.com/containership/cloud-agent/pkg/apis/containership.io/v3"
+	v3 "github.com/containership/cloud-agent/pkg/apis/provision.containership.io/v3"
 	scheme "github.com/containership/cloud-agent/pkg/client/clientset/versioned/scheme"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	types "k8s.io/apimachinery/pkg/types"
@@ -53,7 +53,7 @@ type clusterUpgrades struct {
 }
 
 // newClusterUpgrades returns a ClusterUpgrades
-func newClusterUpgrades(c *ContainershipV3Client, namespace string) *clusterUpgrades {
+func newClusterUpgrades(c *ContainershipProvisionV3Client, namespace string) *clusterUpgrades {
 	return &clusterUpgrades{
 		client: c.RESTClient(),
 		ns:     namespace,

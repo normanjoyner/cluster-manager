@@ -19,7 +19,7 @@ limitations under the License.
 package fake
 
 import (
-	v3 "github.com/containership/cloud-agent/pkg/apis/containership.io/v3"
+	v3 "github.com/containership/cloud-agent/pkg/apis/provision.containership.io/v3"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	labels "k8s.io/apimachinery/pkg/labels"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
@@ -30,13 +30,13 @@ import (
 
 // FakeClusterUpgrades implements ClusterUpgradeInterface
 type FakeClusterUpgrades struct {
-	Fake *FakeContainershipV3
+	Fake *FakeContainershipProvisionV3
 	ns   string
 }
 
-var clusterupgradesResource = schema.GroupVersionResource{Group: "containership.io", Version: "v3", Resource: "clusterupgrades"}
+var clusterupgradesResource = schema.GroupVersionResource{Group: "provision.containership.io", Version: "v3", Resource: "clusterupgrades"}
 
-var clusterupgradesKind = schema.GroupVersionKind{Group: "containership.io", Version: "v3", Kind: "ClusterUpgrade"}
+var clusterupgradesKind = schema.GroupVersionKind{Group: "provision.containership.io", Version: "v3", Kind: "ClusterUpgrade"}
 
 // Get takes name of the clusterUpgrade, and returns the corresponding clusterUpgrade object, and an error if there is any.
 func (c *FakeClusterUpgrades) Get(name string, options v1.GetOptions) (result *v3.ClusterUpgrade, err error) {

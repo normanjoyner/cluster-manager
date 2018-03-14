@@ -24,6 +24,7 @@ import (
 	"fmt"
 
 	v3 "github.com/containership/cloud-agent/pkg/apis/containership.io/v3"
+	provision_containership_io_v3 "github.com/containership/cloud-agent/pkg/apis/provision.containership.io/v3"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	cache "k8s.io/client-go/tools/cache"
 )
@@ -55,14 +56,16 @@ func (f *genericInformer) Lister() cache.GenericLister {
 func (f *sharedInformerFactory) ForResource(resource schema.GroupVersionResource) (GenericInformer, error) {
 	switch resource {
 	// Group=containership.io, Version=v3
-	case v3.SchemeGroupVersion.WithResource("clusterupgrades"):
-		return &genericInformer{resource: resource.GroupResource(), informer: f.Containership().V3().ClusterUpgrades().Informer()}, nil
 	case v3.SchemeGroupVersion.WithResource("plugins"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Containership().V3().Plugins().Informer()}, nil
 	case v3.SchemeGroupVersion.WithResource("registries"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Containership().V3().Registries().Informer()}, nil
 	case v3.SchemeGroupVersion.WithResource("users"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Containership().V3().Users().Informer()}, nil
+
+		// Group=provision.containership.io, Version=v3
+	case provision_containership_io_v3.SchemeGroupVersion.WithResource("clusterupgrades"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.ContainershipProvision().V3().ClusterUpgrades().Informer()}, nil
 
 	}
 

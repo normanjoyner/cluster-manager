@@ -5,11 +5,11 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
-	containershipio "github.com/containership/cloud-agent/pkg/apis/containership.io"
+	provisioncontainershipio "github.com/containership/cloud-agent/pkg/apis/provision.containership.io"
 )
 
 // SchemeGroupVersion is group version used to register these objects
-var SchemeGroupVersion = schema.GroupVersion{Group: containershipio.GroupName, Version: "v3"}
+var SchemeGroupVersion = schema.GroupVersion{Group: provisioncontainershipio.GroupName, Version: "v3"}
 
 // Resource takes an unqualified resource and returns a Group qualified GroupResource
 func Resource(resource string) schema.GroupResource {
@@ -34,12 +34,8 @@ func init() {
 // Adds the list of known types to api.Scheme.
 func addKnownTypes(scheme *runtime.Scheme) error {
 	scheme.AddKnownTypes(SchemeGroupVersion,
-		&Plugin{},
-		&PluginList{},
-		&Registry{},
-		&RegistryList{},
-		&User{},
-		&UserList{},
+		&ClusterUpgrade{},
+		&ClusterUpgradeList{},
 	)
 	metav1.AddToGroupVersion(scheme, SchemeGroupVersion)
 	return nil

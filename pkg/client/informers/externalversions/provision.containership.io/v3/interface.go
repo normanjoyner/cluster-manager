@@ -26,12 +26,8 @@ import (
 
 // Interface provides access to all the informers in this group version.
 type Interface interface {
-	// Plugins returns a PluginInformer.
-	Plugins() PluginInformer
-	// Registries returns a RegistryInformer.
-	Registries() RegistryInformer
-	// Users returns a UserInformer.
-	Users() UserInformer
+	// ClusterUpgrades returns a ClusterUpgradeInformer.
+	ClusterUpgrades() ClusterUpgradeInformer
 }
 
 type version struct {
@@ -45,17 +41,7 @@ func New(f internalinterfaces.SharedInformerFactory, namespace string, tweakList
 	return &version{factory: f, namespace: namespace, tweakListOptions: tweakListOptions}
 }
 
-// Plugins returns a PluginInformer.
-func (v *version) Plugins() PluginInformer {
-	return &pluginInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
-}
-
-// Registries returns a RegistryInformer.
-func (v *version) Registries() RegistryInformer {
-	return &registryInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
-}
-
-// Users returns a UserInformer.
-func (v *version) Users() UserInformer {
-	return &userInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
+// ClusterUpgrades returns a ClusterUpgradeInformer.
+func (v *version) ClusterUpgrades() ClusterUpgradeInformer {
+	return &clusterUpgradeInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
 }

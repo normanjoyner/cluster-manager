@@ -15,7 +15,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/fake"
 
-	containershipv3 "github.com/containership/cloud-agent/pkg/apis/containership.io/v3"
+	provisioncsv3 "github.com/containership/cloud-agent/pkg/apis/provision.containership.io/v3"
 	csclientset "github.com/containership/cloud-agent/pkg/client/clientset/versioned"
 	fakecontainershipv3 "github.com/containership/cloud-agent/pkg/client/clientset/versioned/fake"
 	csinformers "github.com/containership/cloud-agent/pkg/client/informers/externalversions"
@@ -24,7 +24,7 @@ import (
 type buildLabelTest struct {
 	name     string
 	cluster  []runtime.Object
-	input    *containershipv3.ClusterUpgrade
+	input    *provisioncsv3.ClusterUpgrade
 	expected runtime.Object
 }
 
@@ -71,8 +71,8 @@ var tests = []buildLabelTest{
 	// No input
 	{
 		name: "Master node next",
-		input: &containershipv3.ClusterUpgrade{
-			Spec: containershipv3.ClusterUpgradeSpec{
+		input: &provisioncsv3.ClusterUpgrade{
+			Spec: provisioncsv3.ClusterUpgradeSpec{
 				TargetKubernetesVersion: "v1.9.2",
 			},
 		},
@@ -85,8 +85,8 @@ var tests = []buildLabelTest{
 	// next test 2
 	{
 		name: "Master node at desired version. return worker",
-		input: &containershipv3.ClusterUpgrade{
-			Spec: containershipv3.ClusterUpgradeSpec{
+		input: &provisioncsv3.ClusterUpgrade{
+			Spec: provisioncsv3.ClusterUpgradeSpec{
 				TargetKubernetesVersion: "v1.9.2",
 			},
 		},
@@ -99,8 +99,8 @@ var tests = []buildLabelTest{
 	// next test 3
 	{
 		name: "Master node at desired version. return next master",
-		input: &containershipv3.ClusterUpgrade{
-			Spec: containershipv3.ClusterUpgradeSpec{
+		input: &provisioncsv3.ClusterUpgrade{
+			Spec: provisioncsv3.ClusterUpgradeSpec{
 				TargetKubernetesVersion: "v1.9.2",
 			},
 		},
@@ -113,10 +113,10 @@ var tests = []buildLabelTest{
 	// next test 4
 	{
 		name: "Get node with label selector",
-		input: &containershipv3.ClusterUpgrade{
-			Spec: containershipv3.ClusterUpgradeSpec{
+		input: &provisioncsv3.ClusterUpgrade{
+			Spec: provisioncsv3.ClusterUpgradeSpec{
 				TargetKubernetesVersion: "v1.9.2",
-				LabelSelector: []containershipv3.LabelSelectorSpec{
+				LabelSelector: []provisioncsv3.LabelSelectorSpec{
 					{
 						Label:    "custom.label/key",
 						Operator: "=",

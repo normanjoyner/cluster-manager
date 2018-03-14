@@ -20,6 +20,7 @@ package versioned
 
 import (
 	containershipv3 "github.com/containership/cloud-agent/pkg/client/clientset/versioned/typed/containership.io/v3"
+	containershipprovisionv3 "github.com/containership/cloud-agent/pkg/client/clientset/versioned/typed/provision.containership.io/v3"
 	glog "github.com/golang/glog"
 	discovery "k8s.io/client-go/discovery"
 	rest "k8s.io/client-go/rest"
@@ -31,13 +32,17 @@ type Interface interface {
 	ContainershipV3() containershipv3.ContainershipV3Interface
 	// Deprecated: please explicitly pick a version if possible.
 	Containership() containershipv3.ContainershipV3Interface
+	ContainershipProvisionV3() containershipprovisionv3.ContainershipProvisionV3Interface
+	// Deprecated: please explicitly pick a version if possible.
+	ContainershipProvision() containershipprovisionv3.ContainershipProvisionV3Interface
 }
 
 // Clientset contains the clients for groups. Each group has exactly one
 // version included in a Clientset.
 type Clientset struct {
 	*discovery.DiscoveryClient
-	containershipV3 *containershipv3.ContainershipV3Client
+	containershipV3          *containershipv3.ContainershipV3Client
+	containershipProvisionV3 *containershipprovisionv3.ContainershipProvisionV3Client
 }
 
 // ContainershipV3 retrieves the ContainershipV3Client
@@ -49,6 +54,17 @@ func (c *Clientset) ContainershipV3() containershipv3.ContainershipV3Interface {
 // Please explicitly pick a version.
 func (c *Clientset) Containership() containershipv3.ContainershipV3Interface {
 	return c.containershipV3
+}
+
+// ContainershipProvisionV3 retrieves the ContainershipProvisionV3Client
+func (c *Clientset) ContainershipProvisionV3() containershipprovisionv3.ContainershipProvisionV3Interface {
+	return c.containershipProvisionV3
+}
+
+// Deprecated: ContainershipProvision retrieves the default version of ContainershipProvisionClient.
+// Please explicitly pick a version.
+func (c *Clientset) ContainershipProvision() containershipprovisionv3.ContainershipProvisionV3Interface {
+	return c.containershipProvisionV3
 }
 
 // Discovery retrieves the DiscoveryClient
@@ -71,6 +87,10 @@ func NewForConfig(c *rest.Config) (*Clientset, error) {
 	if err != nil {
 		return nil, err
 	}
+	cs.containershipProvisionV3, err = containershipprovisionv3.NewForConfig(&configShallowCopy)
+	if err != nil {
+		return nil, err
+	}
 
 	cs.DiscoveryClient, err = discovery.NewDiscoveryClientForConfig(&configShallowCopy)
 	if err != nil {
@@ -85,6 +105,7 @@ func NewForConfig(c *rest.Config) (*Clientset, error) {
 func NewForConfigOrDie(c *rest.Config) *Clientset {
 	var cs Clientset
 	cs.containershipV3 = containershipv3.NewForConfigOrDie(c)
+	cs.containershipProvisionV3 = containershipprovisionv3.NewForConfigOrDie(c)
 
 	cs.DiscoveryClient = discovery.NewDiscoveryClientForConfigOrDie(c)
 	return &cs
@@ -94,6 +115,7 @@ func NewForConfigOrDie(c *rest.Config) *Clientset {
 func New(c rest.Interface) *Clientset {
 	var cs Clientset
 	cs.containershipV3 = containershipv3.New(c)
+	cs.containershipProvisionV3 = containershipprovisionv3.New(c)
 
 	cs.DiscoveryClient = discovery.NewDiscoveryClient(c)
 	return &cs

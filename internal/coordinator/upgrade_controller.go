@@ -8,10 +8,10 @@ import (
 	"github.com/containership/cloud-agent/internal/log"
 	"github.com/containership/cloud-agent/internal/tools"
 
-	containershipv3 "github.com/containership/cloud-agent/pkg/apis/containership.io/v3"
+	provisioncsv3 "github.com/containership/cloud-agent/pkg/apis/provision.containership.io/v3"
 	csclientset "github.com/containership/cloud-agent/pkg/client/clientset/versioned"
 	csinformers "github.com/containership/cloud-agent/pkg/client/informers/externalversions"
-	cslisters "github.com/containership/cloud-agent/pkg/client/listers/containership.io/v3"
+	pcslisters "github.com/containership/cloud-agent/pkg/client/listers/provision.containership.io/v3"
 
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/selection"
@@ -44,7 +44,7 @@ type UpgradeController struct {
 	kubeclientset kubernetes.Interface
 	csclientset   csclientset.Interface
 
-	upgradeLister  cslisters.ClusterUpgradeLister
+	upgradeLister  pcslisters.ClusterUpgradeLister
 	upgradesSynced cache.InformerSynced
 	nodeLister     corelistersv1.NodeLister
 	nodesSynced    cache.InformerSynced
@@ -72,7 +72,7 @@ func NewUpgradeController(kubeclientset kubernetes.Interface, clientset csclient
 	}
 
 	// Instantiate resource informers
-	upgradeInformer := csInformerFactory.Containership().V3().ClusterUpgrades()
+	upgradeInformer := csInformerFactory.ContainershipProvision().V3().ClusterUpgrades()
 	nodeInformer := kubeInformerFactory.Core().V1().Nodes()
 
 	// informers listens for add events an queues the cluster upgrade
@@ -208,8 +208,8 @@ func (uc *UpgradeController) upgradeSyncHandler(key string) error {
 
 	currentUpgrade := upgrade.DeepCopy()
 	currentUpgrade.Spec.CurrentNode = node.Name
-	currentUpgrade.Spec.Status = containershipv3.UpgradeInProgress
-	_, err = uc.csclientset.ContainershipV3().ClusterUpgrades(constants.ContainershipNamespace).Update(currentUpgrade)
+	currentUpgrade.Spec.Status = provisioncsv3.UpgradeInProgress
+	_, err = uc.csclientset.ContainershipProvisionV3().ClusterUpgrades(constants.ContainershipNamespace).Update(currentUpgrade)
 
 	return err
 }
@@ -227,8 +227,8 @@ func (uc *UpgradeController) enqueueUpgrade(obj interface{}) {
 
 // isDone returns true if an upgrade has already been fully processed and has
 // the status of either Successed or Failed
-func isDone(cup *containershipv3.ClusterUpgrade) bool {
-	if cup.Spec.Status == containershipv3.UpgradeSuccess || cup.Spec.Status == containershipv3.UpgradeFailed {
+func isDone(cup *provisioncsv3.ClusterUpgrade) bool {
+	if cup.Spec.Status == provisioncsv3.UpgradeSuccess || cup.Spec.Status == provisioncsv3.UpgradeFailed {
 		return true
 	}
 
@@ -236,12 +236,12 @@ func isDone(cup *containershipv3.ClusterUpgrade) bool {
 }
 
 // isCurrentNode checks to see if the node being looked at is the current node being processed
-func isCurrentNode(cup *containershipv3.ClusterUpgrade, node *corev1.Node) bool {
+func isCurrentNode(cup *provisioncsv3.ClusterUpgrade, node *corev1.Node) bool {
 	return cup.Spec.CurrentNode == node.Name
 }
 
 // getNextNode finds the next node to start updating
-func (uc *UpgradeController) getNextNode(cup *containershipv3.ClusterUpgrade) *corev1.Node {
+func (uc *UpgradeController) getNextNode(cup *provisioncsv3.ClusterUpgrade) *corev1.Node {
 	masters, _ := uc.nodeLister.List(getMasterSelector(cup.Spec.LabelSelector))
 	for _, master := range masters {
 		if isNext(cup, master) {
@@ -259,11 +259,11 @@ func (uc *UpgradeController) getNextNode(cup *containershipv3.ClusterUpgrade) *c
 	return nil
 }
 
-func isNext(cup *containershipv3.ClusterUpgrade, node *corev1.Node) bool {
+func isNext(cup *provisioncsv3.ClusterUpgrade, node *corev1.Node) bool {
 	return !tools.NodeIsTargetKubernetesVersion(cup, node) && !isCurrentNode(cup, node)
 }
 
-func addCustomLabelSelectors(selector labels.Selector, lss []containershipv3.LabelSelectorSpec) labels.Selector {
+func addCustomLabelSelectors(selector labels.Selector, lss []provisioncsv3.LabelSelectorSpec) labels.Selector {
 	for _, ls := range lss {
 		nr, _ := labels.NewRequirement(ls.Label, ls.Operator, ls.Value)
 		selector = selector.Add(*nr)
@@ -272,7 +272,7 @@ func addCustomLabelSelectors(selector labels.Selector, lss []containershipv3.Lab
 	return selector
 }
 
-func getMasterSelector(lss []containershipv3.LabelSelectorSpec) labels.Selector {
+func getMasterSelector(lss []provisioncsv3.LabelSelectorSpec) labels.Selector {
 	masterSelector := labels.Set(
 		map[string]string{
 			"node-role.kubernetes.io/master": "true",
@@ -282,7 +282,7 @@ func getMasterSelector(lss []containershipv3.LabelSelectorSpec) labels.Selector 
 	return masterSelector
 }
 
-func getWorkerSelector(lss []containershipv3.LabelSelectorSpec) labels.Selector {
+func getWorkerSelector(lss []provisioncsv3.LabelSelectorSpec) labels.Selector {
 	masterLabelDNE, _ := labels.NewRequirement("node-role.kubernetes.io/master", selection.DoesNotExist, []string{})
 	workerSelector := labels.NewSelector()
 	workerSelector = workerSelector.Add(*masterLabelDNE)

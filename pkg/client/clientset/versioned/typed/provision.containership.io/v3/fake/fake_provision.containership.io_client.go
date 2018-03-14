@@ -19,30 +19,22 @@ limitations under the License.
 package fake
 
 import (
-	v3 "github.com/containership/cloud-agent/pkg/client/clientset/versioned/typed/containership.io/v3"
+	v3 "github.com/containership/cloud-agent/pkg/client/clientset/versioned/typed/provision.containership.io/v3"
 	rest "k8s.io/client-go/rest"
 	testing "k8s.io/client-go/testing"
 )
 
-type FakeContainershipV3 struct {
+type FakeContainershipProvisionV3 struct {
 	*testing.Fake
 }
 
-func (c *FakeContainershipV3) Plugins(namespace string) v3.PluginInterface {
-	return &FakePlugins{c, namespace}
-}
-
-func (c *FakeContainershipV3) Registries(namespace string) v3.RegistryInterface {
-	return &FakeRegistries{c, namespace}
-}
-
-func (c *FakeContainershipV3) Users(namespace string) v3.UserInterface {
-	return &FakeUsers{c, namespace}
+func (c *FakeContainershipProvisionV3) ClusterUpgrades(namespace string) v3.ClusterUpgradeInterface {
+	return &FakeClusterUpgrades{c, namespace}
 }
 
 // RESTClient returns a RESTClient that is used to communicate
 // with API server by this client implementation.
-func (c *FakeContainershipV3) RESTClient() rest.Interface {
+func (c *FakeContainershipProvisionV3) RESTClient() rest.Interface {
 	var ret *rest.RESTClient
 	return ret
 }

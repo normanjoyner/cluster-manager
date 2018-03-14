@@ -19,10 +19,10 @@ import (
 	"github.com/containership/cloud-agent/internal/resources/upgradescript"
 	"github.com/containership/cloud-agent/internal/tools"
 
-	containershipv3 "github.com/containership/cloud-agent/pkg/apis/containership.io/v3"
+	provisioncsv3 "github.com/containership/cloud-agent/pkg/apis/provision.containership.io/v3"
 	csclientset "github.com/containership/cloud-agent/pkg/client/clientset/versioned"
 	csinformers "github.com/containership/cloud-agent/pkg/client/informers/externalversions"
-	cslisters "github.com/containership/cloud-agent/pkg/client/listers/containership.io/v3"
+	pcslisters "github.com/containership/cloud-agent/pkg/client/listers/provision.containership.io/v3"
 )
 
 const (
@@ -35,7 +35,7 @@ type UpgradeController struct {
 	clientset     csclientset.Interface
 	kubeclientset kubernetes.Interface
 
-	upgradeLister  cslisters.ClusterUpgradeLister
+	upgradeLister  pcslisters.ClusterUpgradeLister
 	upgradesSynced cache.InformerSynced
 	nodeLister     corelistersv1.NodeLister
 	nodesSynced    cache.InformerSynced
@@ -58,14 +58,14 @@ func NewUpgradeController(
 
 	// Create an informer from the factory so that we share the underlying
 	// cache with other controllers
-	upgradeInformer := csInformerFactory.Containership().V3().ClusterUpgrades()
+	upgradeInformer := csInformerFactory.ContainershipProvision().V3().ClusterUpgrades()
 	nodeInformer := kubeInformerFactory.Core().V1().Nodes()
 
 	// All event handlers simply add to a workqueue to be processed by a worker
 	upgradeInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
 		UpdateFunc: func(old, new interface{}) {
-			newUpgrade := new.(*containershipv3.ClusterUpgrade)
-			oldUpgrade := old.(*containershipv3.ClusterUpgrade)
+			newUpgrade := new.(*provisioncsv3.ClusterUpgrade)
+			oldUpgrade := old.(*provisioncsv3.ClusterUpgrade)
 			if oldUpgrade.ResourceVersion == newUpgrade.ResourceVersion || newUpgrade.Spec.CurrentNode != env.NodeName() {
 				// This must be a syncInterval update, or does not apply to the
 				// host that the agent is running on

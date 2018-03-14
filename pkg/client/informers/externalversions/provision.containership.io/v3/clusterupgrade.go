@@ -23,10 +23,10 @@ package v3
 import (
 	time "time"
 
-	containership_io_v3 "github.com/containership/cloud-agent/pkg/apis/containership.io/v3"
+	provision_containership_io_v3 "github.com/containership/cloud-agent/pkg/apis/provision.containership.io/v3"
 	versioned "github.com/containership/cloud-agent/pkg/client/clientset/versioned"
 	internalinterfaces "github.com/containership/cloud-agent/pkg/client/informers/externalversions/internalinterfaces"
-	v3 "github.com/containership/cloud-agent/pkg/client/listers/containership.io/v3"
+	v3 "github.com/containership/cloud-agent/pkg/client/listers/provision.containership.io/v3"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	watch "k8s.io/apimachinery/pkg/watch"
@@ -63,16 +63,16 @@ func NewFilteredClusterUpgradeInformer(client versioned.Interface, namespace str
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.ContainershipV3().ClusterUpgrades(namespace).List(options)
+				return client.ContainershipProvisionV3().ClusterUpgrades(namespace).List(options)
 			},
 			WatchFunc: func(options v1.ListOptions) (watch.Interface, error) {
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.ContainershipV3().ClusterUpgrades(namespace).Watch(options)
+				return client.ContainershipProvisionV3().ClusterUpgrades(namespace).Watch(options)
 			},
 		},
-		&containership_io_v3.ClusterUpgrade{},
+		&provision_containership_io_v3.ClusterUpgrade{},
 		resyncPeriod,
 		indexers,
 	)
@@ -83,7 +83,7 @@ func (f *clusterUpgradeInformer) defaultInformer(client versioned.Interface, res
 }
 
 func (f *clusterUpgradeInformer) Informer() cache.SharedIndexInformer {
-	return f.factory.InformerFor(&containership_io_v3.ClusterUpgrade{}, f.defaultInformer)
+	return f.factory.InformerFor(&provision_containership_io_v3.ClusterUpgrade{}, f.defaultInformer)
 }
 
 func (f *clusterUpgradeInformer) Lister() v3.ClusterUpgradeLister {

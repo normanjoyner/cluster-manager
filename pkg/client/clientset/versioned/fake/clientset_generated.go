@@ -22,6 +22,8 @@ import (
 	clientset "github.com/containership/cloud-agent/pkg/client/clientset/versioned"
 	containershipv3 "github.com/containership/cloud-agent/pkg/client/clientset/versioned/typed/containership.io/v3"
 	fakecontainershipv3 "github.com/containership/cloud-agent/pkg/client/clientset/versioned/typed/containership.io/v3/fake"
+	containershipprovisionv3 "github.com/containership/cloud-agent/pkg/client/clientset/versioned/typed/provision.containership.io/v3"
+	fakecontainershipprovisionv3 "github.com/containership/cloud-agent/pkg/client/clientset/versioned/typed/provision.containership.io/v3/fake"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/discovery"
@@ -70,4 +72,14 @@ func (c *Clientset) ContainershipV3() containershipv3.ContainershipV3Interface {
 // Containership retrieves the ContainershipV3Client
 func (c *Clientset) Containership() containershipv3.ContainershipV3Interface {
 	return &fakecontainershipv3.FakeContainershipV3{Fake: &c.Fake}
+}
+
+// ContainershipProvisionV3 retrieves the ContainershipProvisionV3Client
+func (c *Clientset) ContainershipProvisionV3() containershipprovisionv3.ContainershipProvisionV3Interface {
+	return &fakecontainershipprovisionv3.FakeContainershipProvisionV3{Fake: &c.Fake}
+}
+
+// ContainershipProvision retrieves the ContainershipProvisionV3Client
+func (c *Clientset) ContainershipProvision() containershipprovisionv3.ContainershipProvisionV3Interface {
+	return &fakecontainershipprovisionv3.FakeContainershipProvisionV3{Fake: &c.Fake}
 }

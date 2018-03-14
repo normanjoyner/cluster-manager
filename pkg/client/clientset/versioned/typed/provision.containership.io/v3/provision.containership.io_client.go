@@ -19,38 +19,28 @@ limitations under the License.
 package v3
 
 import (
-	v3 "github.com/containership/cloud-agent/pkg/apis/containership.io/v3"
+	v3 "github.com/containership/cloud-agent/pkg/apis/provision.containership.io/v3"
 	"github.com/containership/cloud-agent/pkg/client/clientset/versioned/scheme"
 	serializer "k8s.io/apimachinery/pkg/runtime/serializer"
 	rest "k8s.io/client-go/rest"
 )
 
-type ContainershipV3Interface interface {
+type ContainershipProvisionV3Interface interface {
 	RESTClient() rest.Interface
-	PluginsGetter
-	RegistriesGetter
-	UsersGetter
+	ClusterUpgradesGetter
 }
 
-// ContainershipV3Client is used to interact with features provided by the containership.io group.
-type ContainershipV3Client struct {
+// ContainershipProvisionV3Client is used to interact with features provided by the provision.containership.io group.
+type ContainershipProvisionV3Client struct {
 	restClient rest.Interface
 }
 
-func (c *ContainershipV3Client) Plugins(namespace string) PluginInterface {
-	return newPlugins(c, namespace)
+func (c *ContainershipProvisionV3Client) ClusterUpgrades(namespace string) ClusterUpgradeInterface {
+	return newClusterUpgrades(c, namespace)
 }
 
-func (c *ContainershipV3Client) Registries(namespace string) RegistryInterface {
-	return newRegistries(c, namespace)
-}
-
-func (c *ContainershipV3Client) Users(namespace string) UserInterface {
-	return newUsers(c, namespace)
-}
-
-// NewForConfig creates a new ContainershipV3Client for the given config.
-func NewForConfig(c *rest.Config) (*ContainershipV3Client, error) {
+// NewForConfig creates a new ContainershipProvisionV3Client for the given config.
+func NewForConfig(c *rest.Config) (*ContainershipProvisionV3Client, error) {
 	config := *c
 	if err := setConfigDefaults(&config); err != nil {
 		return nil, err
@@ -59,12 +49,12 @@ func NewForConfig(c *rest.Config) (*ContainershipV3Client, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &ContainershipV3Client{client}, nil
+	return &ContainershipProvisionV3Client{client}, nil
 }
 
-// NewForConfigOrDie creates a new ContainershipV3Client for the given config and
+// NewForConfigOrDie creates a new ContainershipProvisionV3Client for the given config and
 // panics if there is an error in the config.
-func NewForConfigOrDie(c *rest.Config) *ContainershipV3Client {
+func NewForConfigOrDie(c *rest.Config) *ContainershipProvisionV3Client {
 	client, err := NewForConfig(c)
 	if err != nil {
 		panic(err)
@@ -72,9 +62,9 @@ func NewForConfigOrDie(c *rest.Config) *ContainershipV3Client {
 	return client
 }
 
-// New creates a new ContainershipV3Client for the given RESTClient.
-func New(c rest.Interface) *ContainershipV3Client {
-	return &ContainershipV3Client{c}
+// New creates a new ContainershipProvisionV3Client for the given RESTClient.
+func New(c rest.Interface) *ContainershipProvisionV3Client {
+	return &ContainershipProvisionV3Client{c}
 }
 
 func setConfigDefaults(config *rest.Config) error {
@@ -92,7 +82,7 @@ func setConfigDefaults(config *rest.Config) error {
 
 // RESTClient returns a RESTClient that is used to communicate
 // with API server by this client implementation.
-func (c *ContainershipV3Client) RESTClient() rest.Interface {
+func (c *ContainershipProvisionV3Client) RESTClient() rest.Interface {
 	if c == nil {
 		return nil
 	}
