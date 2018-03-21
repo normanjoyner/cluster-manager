@@ -25,7 +25,7 @@ const (
 	// Type of agent that runs this controller
 	controllerName = "ContainershipController"
 	// number of times an object will be requeued if there is an error
-	maxRetriesContrainershipController = 5
+	maxRetriesContainershipController = 5
 )
 
 // ContainershipController is the controller implementation for the containership
@@ -224,7 +224,7 @@ func (c *ContainershipController) handleErr(err error, key interface{}) error {
 		return nil
 	}
 
-	if c.workqueue.NumRequeues(key) < maxRetriesContrainershipController {
+	if c.workqueue.NumRequeues(key) < maxRetriesContainershipController {
 		c.workqueue.AddRateLimited(key)
 		return fmt.Errorf("error syncing '%v': %s. has been resynced %v times", key, err.Error(), c.workqueue.NumRequeues(key))
 	}

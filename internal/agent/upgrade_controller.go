@@ -1,8 +1,11 @@
 package agent
 
 import (
+	"encoding/json"
 	"fmt"
 	"time"
+
+	corev1 "k8s.io/api/core/v1"
 
 	"k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -26,6 +29,8 @@ import (
 )
 
 const (
+	upgradeControllerName = "upgradeAgent"
+
 	maxRetriesUpgradeController = 5
 )
 
@@ -65,10 +70,8 @@ func NewUpgradeController(
 	upgradeInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
 		UpdateFunc: func(old, new interface{}) {
 			newUpgrade := new.(*provisioncsv3.ClusterUpgrade)
-			oldUpgrade := old.(*provisioncsv3.ClusterUpgrade)
-			if oldUpgrade.ResourceVersion == newUpgrade.ResourceVersion || newUpgrade.Spec.CurrentNode != env.NodeName() {
-				// This must be a syncInterval update, or does not apply to the
-				// host that the agent is running on
+			if newUpgrade.Spec.CurrentNode != env.NodeName() {
+				// Not the current node so nothing to do
 				return
 			}
 			uc.enqueueUpgrade(new)
@@ -138,9 +141,7 @@ func (uc *UpgradeController) processNextWorkItem() bool {
 			return nil
 		}
 
-		// Run the syncHandler, passing it the namespace/name string of the
-		// User resource to be synced.
-		err := uc.syncHandler(key)
+		err := uc.upgradeSyncHandler(key)
 		return uc.handleErr(err, key)
 	}(obj)
 
@@ -164,7 +165,7 @@ func (uc *UpgradeController) handleErr(err error, key interface{}) error {
 
 	if uc.workqueue.NumRequeues(key) < maxRetriesUpgradeController {
 		uc.workqueue.AddRateLimited(key)
-		return fmt.Errorf("error syncing '%v': %s. has been resynced %v times", key, err.Error(), uc.workqueue.NumRequeues(key))
+		return fmt.Errorf("error syncing '%v': %s. Has been resynced %v times", key, err.Error(), uc.workqueue.NumRequeues(key))
 	}
 
 	uc.workqueue.Forget(key)
@@ -172,23 +173,22 @@ func (uc *UpgradeController) handleErr(err error, key interface{}) error {
 	return err
 }
 
-// enqueueUpgrade enqueues the key for a given upgrade - it should not be called
-// for other object types
+// enqueueUpgrade enqueues an upgrade
 func (uc *UpgradeController) enqueueUpgrade(obj interface{}) {
-	var key string
-	var err error
-	if key, err = cache.MetaNamespaceKeyFunc(obj); err != nil {
+	key, err := cache.MetaNamespaceKeyFunc(obj)
+	if err != nil {
 		log.Error(err)
 		return
 	}
+
 	uc.workqueue.AddRateLimited(key)
 }
 
-// syncHandler looks at the current state of the system and decides how to act.
+// upgradeSyncHandler looks at the current state of the system and decides how to act.
 // For upgrade that means writing the upgrade script to the directory that is being
 // watched by the systemd upgrade process.
-func (uc *UpgradeController) syncHandler(key string) error {
-	log.Infof("Upgrade processing: key=%s", key)
+func (uc *UpgradeController) upgradeSyncHandler(key string) error {
+	log.Infof("Upgrade processing: key=%q", key)
 	_, name, _ := cache.SplitMetaNamespaceKey(key)
 	// We only want to act on cluster upgrades that are from the containership-core
 	// namespace to make sure they are valid and were created by containership cloud
@@ -198,18 +198,121 @@ func (uc *UpgradeController) syncHandler(key string) error {
 	}
 
 	node, _ := uc.nodeLister.Get(env.NodeName())
-	if tools.NodeIsTargetKubernetesVersion(upgrade, node) == true {
+
+	upgradeAnnotation, err := tools.GetNodeUpgradeAnnotation(node)
+	if err != nil {
+		return err
+	}
+
+	switch {
+	case upgradeAnnotation == nil:
+		// Upgrade hasn't started or we're in an unknown state
+		if tools.NodeIsTargetKubernetesVersion(upgrade, node) {
+			// Nothing to do since we're at the desired version
+			return nil
+		}
+
+		// Kick off upgrade and mark status as InProgress
+		return uc.startUpgrade(node, upgrade)
+
+	case upgradeAnnotation.Status == provisioncsv3.UpgradeInProgress:
+		if tools.NodeIsTargetKubernetesVersion(upgrade, node) {
+			// We must be done upgrading - presumably it succeeded because
+			// we're at the version we expect and we didn't time out.
+			// Finish the upgrade with a Success status.
+			return uc.finishUpgradeWithStatus(node, provisioncsv3.UpgradeSuccess)
+		}
+
+	case upgradeAnnotation.Status == provisioncsv3.UpgradeSuccess:
+	case upgradeAnnotation.Status == provisioncsv3.UpgradeFailed:
+	default:
+		// Nothing to do
 		return nil
 	}
 
+	return nil
+}
+
+func (uc *UpgradeController) startUpgrade(node *corev1.Node, upgrade *provisioncsv3.ClusterUpgrade) error {
+	log.Info("Beginning upgrade process")
+
+	// Step 1: Fetch the upgrade script from Cloud
+	log.Info("Downloading upgrade script")
+	script, err := uc.downloadUpgradeScript()
+	if err != nil {
+		log.Error("Download upgrade script failed:", err)
+		return err
+	}
+
+	// Step 2: Mark node as in progress
+	log.Info("Setting node upgrade status to InProgress")
+	err = uc.writeNodeUpgradeAnnotation(node,
+		provisioncsv3.NodeUpgradeAnnotation{
+			upgrade.Spec.TargetKubernetesVersion,
+			provisioncsv3.UpgradeInProgress,
+			time.Now().UTC(),
+		})
+	if err != nil {
+		log.Error("Node annotation write failed:", err)
+		return err
+	}
+
+	// Step 3: Execute the upgrade script
+	log.Info("Writing upgrade script")
+	targetVersion := upgrade.Spec.TargetKubernetesVersion
+	upgradeID := upgrade.Spec.ID
+	return upgradescript.Write(script, targetVersion, upgradeID)
+}
+
+// finishUpgradeWithStatus performs any necessary cleanup and posts the updated
+// status for this node.
+func (uc *UpgradeController) finishUpgradeWithStatus(node *corev1.Node,
+	status provisioncsv3.UpgradeStatus) error {
+	log.Info("Setting node upgrade status to %s", string(status))
+
+	// Remove the `current` file first so regardless of any failures after this point
+	// we'll be able to retry if needed by writing a new `current`
+	if err := upgradescript.RemoveCurrent(); err != nil {
+		// There's no good option for handling this, so just continue instead of
+		// failing the upgrade.
+		log.Error("Could not remove `current` upgrade file:", err)
+	}
+
+	upgradeAnnotation, err := tools.GetNodeUpgradeAnnotation(node)
+	if err != nil {
+		return err
+	}
+
+	return uc.writeNodeUpgradeAnnotation(node,
+		provisioncsv3.NodeUpgradeAnnotation{
+			upgradeAnnotation.ClusterVersion,
+			status,
+			upgradeAnnotation.StartTime,
+		})
+}
+
+func (uc *UpgradeController) downloadUpgradeScript() ([]byte, error) {
 	//// TODO figure out how we are getting script from cloud
 	// currently we are talking about a path that looks like
 	// /organization/:organization_id/cluster/:cluster_id/host/:host_id
-	// Step 1: Fetch the upgrade script from Cloud
 	script := []byte("#!/bin/bash\necho 'hallo'\n")
+	return script, nil
+}
 
-	targetVersion := upgrade.Spec.TargetKubernetesVersion
-	upgradeID := upgrade.Spec.ID
-	// Step 2: Execute the upgrade script
-	return upgradescript.Write(script, targetVersion, upgradeID)
+// writeNodeUpgradeAnnotation writes the node upgrade annotation
+// struct to the node
+func (uc *UpgradeController) writeNodeUpgradeAnnotation(node *corev1.Node, upgradeAnnotation provisioncsv3.NodeUpgradeAnnotation) error {
+	node = node.DeepCopy()
+
+	annotBytes, err := json.Marshal(upgradeAnnotation)
+	if err != nil {
+		return err
+	}
+
+	annotations := node.ObjectMeta.Annotations
+	annotations[constants.NodeUpgradeAnnotationKey] = string(annotBytes)
+
+	_, err = uc.kubeclientset.Core().Nodes().Update(node)
+
+	return err
 }

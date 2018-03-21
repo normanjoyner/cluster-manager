@@ -4,6 +4,8 @@ import (
 	"strings"
 
 	"k8s.io/apimachinery/pkg/api/meta"
+	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/selection"
 
 	"github.com/containership/cloud-agent/internal/log"
 )
@@ -45,6 +47,12 @@ const (
 	Quay = "quay"
 )
 
+const (
+	// NodeUpgradeAnnotationKey is the key into the annotations map
+	// on a node that retrieves the node upgrade metadata
+	NodeUpgradeAnnotationKey = "containership.io/upgrade"
+)
+
 // BaseContainershipManagedLabelString is the containership
 // managed label as a string
 const BaseContainershipManagedLabelString = "containership.io/managed=true"
@@ -82,4 +90,13 @@ func IsContainershipManaged(obj interface{}) bool {
 	}
 
 	return false
+}
+
+// GetContainershipManagedSelector returns a label selector that
+// selects Containership-managed resources
+func GetContainershipManagedSelector() labels.Selector {
+	pair := strings.Split(BaseContainershipManagedLabelString, "=")
+	req, _ := labels.NewRequirement(pair[0], selection.Equals, []string{pair[1]})
+	selector := labels.NewSelector()
+	return selector.Add(*req)
 }

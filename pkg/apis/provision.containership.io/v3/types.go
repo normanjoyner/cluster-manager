@@ -1,6 +1,8 @@
 package v3
 
 import (
+	"time"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"k8s.io/apimachinery/pkg/selection"
@@ -33,16 +35,23 @@ type ClusterUpgradeSpec struct {
 }
 
 // UpgradeStatus keeps track of where in the upgrade process the cluster is
-type UpgradeStatus int
+type UpgradeStatus string
 
 const (
 	// UpgradeInProgress means the update process has started
-	UpgradeInProgress UpgradeStatus = 1
+	UpgradeInProgress UpgradeStatus = "InProgress"
 	// UpgradeSuccess status gets set when all nodes have been updated to Target Version
-	UpgradeSuccess UpgradeStatus = 2
-	// UpgradeFailed status gets set when 1 or more nodes in upgrade if unsucessful
-	UpgradeFailed UpgradeStatus = 3
+	UpgradeSuccess UpgradeStatus = "Success"
+	// UpgradeFailed status gets set when 1 or more nodes in upgrade if unsuccessful
+	UpgradeFailed UpgradeStatus = "Failed"
 )
+
+// NodeUpgradeAnnotation is the upgrade metadata attached to a node
+type NodeUpgradeAnnotation struct {
+	ClusterVersion string        `json:"clusterVersion"`
+	Status         UpgradeStatus `json:"status"`
+	StartTime      time.Time     `json:"startTime"`
+}
 
 // LabelSelectorSpec lets a user add more filters to the nodes they want to update
 type LabelSelectorSpec struct {
