@@ -8,9 +8,16 @@ metadata:
       containership.io/managed: "true"
 data:
   CONTAINERSHIP_CLOUD_ENVIRONMENT: "development"
+  CONTAINERSHIP_CLOUD_API_BASE_URL: "https://stage-api.containership.io"
+
   CONTAINERSHIP_CLOUD_SYNC_INTERVAL_SEC: "15s"
   AGENT_INFORMER_SYNC_INTERVAL_SEC: "30s"
   COORDINATOR_INFORMER_SYNC_INTERVAL_SEC: "30s"
+
+  # Assume minikube - change this for other environments
+  NODE_NAME: "minikube"
+
+  # These must be filled in for local testing
   CONTAINERSHIP_CLOUD_CLUSTER_API_KEY: ""
   CONTAINERSHIP_CLOUD_ORGANIZATION_ID: ""
   CONTAINERSHIP_CLOUD_CLUSTER_ID: ""
