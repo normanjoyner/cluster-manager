@@ -49,21 +49,38 @@ mount: ## Set up minikube mount
 deploy-crds: ## Deploy all CRDs
 	kubectl apply -f deploy/crd
 
+undeploy-crds: ## Delete all CRDs
+	# Leading dash on undeploy targets are for ignoring errors
+	-kubectl delete --now -f deploy/crd
+
 deploy-common: deploy-crds ## Deploy all common yamls
+	#  Namespace must come first
 	kubectl apply -f deploy/common/containership-core-namespace.yaml
 	kubectl apply -f deploy/rbac
-	kubectl apply -f deploy/eventrouter/eventrouter.yaml
-	kubectl apply -f deploy/common/containership-env-configmap.yaml
-	kubectl apply -f deploy/common/containership-coordinator-service.yaml
-	kubectl apply -f deploy/common/containership-service-account.yaml
+	kubectl apply -f deploy/common
+	kubectl apply -f deploy/eventrouter
+
+undeploy-common: undeploy-crds ## Delete all common yamls
+	# Don't care about order for deletes
+	-kubectl delete --now -f deploy/common
+	-kubectl delete --now -f deploy/rbac
+	-kubectl delete --now -f deploy/eventrouter
 
 deploy-agent: deploy-common ## Deploy the agent
 	kubectl apply -f deploy/development/agent.yaml
 
+undeploy-agent: ## Delete the agent
+	-kubectl delete --now -f deploy/development/agent.yaml
+
 deploy-coordinator: deploy-common ## Deploy the coordinator
 	kubectl apply -f deploy/development/coordinator.yaml
 
+undeploy-coordinator: ## Delete the coordinator
+	-kubectl delete --now -f deploy/development/coordinator.yaml
+
 deploy: deploy-agent deploy-coordinator # Deploy everything
+
+undeploy: undeploy-agent undeploy-coordinator undeploy-common ## Delete everything from Kubernetes
 
 build-agent: ## Build the agent in Docker
 	@eval $$(minikube docker-env) ;\
