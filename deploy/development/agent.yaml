@@ -30,11 +30,9 @@ spec:
                 name: containership-env-configmap
           image: containership/cloud-agent
           imagePullPolicy: IfNotPresent
+          command: ["./agent", "-logtostderr=true"]
           volumeMounts:
             - name: containership-mount
               mountPath: /etc/containership
-          resources:
-            requests:
-              cpu: 0.15
           securityContext:
             privileged: true
