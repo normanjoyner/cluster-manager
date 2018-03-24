@@ -32,6 +32,11 @@ spec:
           envFrom:
             - configMapRef:
                 name: containership-env-configmap
+          env:
+            - name: NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
           image: containership/cloud-agent
           imagePullPolicy: IfNotPresent
           command: ["./agent", "-logtostderr=true"]
