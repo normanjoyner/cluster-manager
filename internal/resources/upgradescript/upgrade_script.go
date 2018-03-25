@@ -19,8 +19,8 @@ const (
 
 	// TODO discuss how we want to restructure the containership area more
 	// and what the correct permissions for this file should be
-	upgradeScriptPermissions        = os.FileMode(0600)
-	currentUpgradeScriptPermissions = os.FileMode(0755)
+	upgradeScriptPermissions        = os.FileMode(0700)
+	currentUpgradeScriptPermissions = os.FileMode(0600)
 	upgradeScriptDirPermissions     = os.ModeDir | os.FileMode(0700)
 )
 
