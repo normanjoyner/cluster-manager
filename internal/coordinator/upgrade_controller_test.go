@@ -32,7 +32,17 @@ var masterNodeTrue = &v1.Node{
 	ObjectMeta: metav1.ObjectMeta{
 		Name: "Master True",
 		Labels: map[string]string{
-			"node-role.kubernetes.io/master": "true",
+			"containership.io/managed":       "true",
+			"node-role.kubernetes.io/master": "",
+		},
+	},
+}
+
+var masterNodeUnmanaged = &v1.Node{
+	ObjectMeta: metav1.ObjectMeta{
+		Name: "Master True, unmanaged",
+		Labels: map[string]string{
+			"node-role.kubernetes.io/master": "",
 		},
 	},
 }
@@ -40,6 +50,9 @@ var masterNodeTrue = &v1.Node{
 var workerNode = &v1.Node{
 	ObjectMeta: metav1.ObjectMeta{
 		Name: "Worker, Master flag DNE",
+		Labels: map[string]string{
+			"containership.io/managed": "true",
+		},
 	},
 }
 
@@ -47,7 +60,8 @@ var masterNodeWithVersion = &v1.Node{
 	ObjectMeta: metav1.ObjectMeta{
 		Name: "Master w/ version",
 		Labels: map[string]string{
-			"node-role.kubernetes.io/master": "true",
+			"containership.io/managed":       "true",
+			"node-role.kubernetes.io/master": "",
 		},
 	},
 	Status: v1.NodeStatus{
@@ -61,14 +75,14 @@ var masterNodeWithLabel = &v1.Node{
 	ObjectMeta: metav1.ObjectMeta{
 		Name: "Master with label",
 		Labels: map[string]string{
-			"node-role.kubernetes.io/master": "true",
+			"containership.io/managed":       "true",
+			"node-role.kubernetes.io/master": "",
 			"custom.label/key":               "value",
 		},
 	},
 }
 
 var tests = []buildLabelTest{
-	// No input
 	{
 		name: "Master node next",
 		input: &provisioncsv3.ClusterUpgrade{
@@ -82,7 +96,19 @@ var tests = []buildLabelTest{
 		},
 		expected: masterNodeTrue,
 	},
-	// next test 2
+	{
+		name: "Master node unmanaged",
+		input: &provisioncsv3.ClusterUpgrade{
+			Spec: provisioncsv3.ClusterUpgradeSpec{
+				TargetKubernetesVersion: "v1.9.2",
+			},
+		},
+		cluster: []runtime.Object{
+			masterNodeUnmanaged,
+			workerNode,
+		},
+		expected: workerNode,
+	},
 	{
 		name: "Master node at desired version. return worker",
 		input: &provisioncsv3.ClusterUpgrade{
@@ -96,7 +122,6 @@ var tests = []buildLabelTest{
 		},
 		expected: workerNode,
 	},
-	// next test 3
 	{
 		name: "Master node at desired version. return next master",
 		input: &provisioncsv3.ClusterUpgrade{
@@ -110,7 +135,6 @@ var tests = []buildLabelTest{
 		},
 		expected: masterNodeTrue,
 	},
-	// next test 4
 	{
 		name: "Get node with label selector",
 		input: &provisioncsv3.ClusterUpgrade{
