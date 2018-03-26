@@ -100,12 +100,13 @@ func write(fs afero.Fs, filename string, permissions os.FileMode, script []byte)
 }
 
 // removeCurrentUpgradeScript removes the /current file after an upgrade
-// has completed
+// has completed. nil is returned if the file does not exist.
 func removeCurrentUpgradeScript(fs afero.Fs) error {
 	currentScriptFilename := GetUpgradeScriptFullPath(currentScriptFile)
 
 	log.Debug("Upgrade file \"current\" is being removed.")
-	return fs.Remove(currentScriptFilename)
+	// RemoveAll instead of Remove so no error is returned if `current` DNE.
+	return fs.RemoveAll(currentScriptFilename)
 }
 
 // GetUpgradeScriptFullPath returns path to the upgrade script
