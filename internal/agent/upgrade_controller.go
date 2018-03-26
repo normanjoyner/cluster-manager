@@ -3,6 +3,8 @@ package agent
 import (
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
+	"net/http"
 	"time"
 
 	corev1 "k8s.io/api/core/v1"
@@ -295,8 +297,39 @@ func (uc *UpgradeController) downloadUpgradeScript() ([]byte, error) {
 	//// TODO figure out how we are getting script from cloud
 	// currently we are talking about a path that looks like
 	// /organization/:organization_id/cluster/:cluster_id/host/:host_id
-	script := []byte("#!/bin/bash\necho 'hallo'\n")
-	return script, nil
+	url := fmt.Sprintf("https://s3.amazonaws.com/stage.containership.io/%s-upgrade.sh", env.NodeName())
+	req, err := http.NewRequest(
+		"GET",
+		url,
+		nil,
+	)
+
+	client := &http.Client{
+		Timeout: time.Second * 10,
+	}
+
+	res, err := client.Do(req)
+	if err != nil {
+		log.Error("Failed request: %+v", *req)
+		return nil, err
+	}
+
+	if res.StatusCode < http.StatusOK ||
+		res.StatusCode >= http.StatusMultipleChoices {
+		log.Debugf("Cloud API responded with %d (%s)", res.StatusCode,
+			http.StatusText(res.StatusCode))
+		log.Debugf("Request: %+v", *req)
+
+		return nil, fmt.Errorf("Request returned with status code %d", res.StatusCode)
+	}
+	defer res.Body.Close()
+
+	bytes, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	return bytes, nil
 }
 
 // writeNodeUpgradeAnnotation writes the node upgrade annotation
