@@ -15,13 +15,13 @@ func TestNew(t *testing.T) {
 	path := "/path"
 	method := "GET"
 	//body := nil
-	n, err := New("/path", "GET", nil)
+	n, err := New(CloudServiceAPI, "/path", "GET", nil)
 
 	if err != nil {
 		t.Errorf("Requester client errored on create: %v", err)
 	}
 
-	if url := n.URL(); url != appendToBaseURL(path) {
+	if url := n.URL(); url != appendToBaseURL(CloudServiceAPI, path) {
 		t.Errorf("Requester client path is %s, expected to be %s", url, path)
 	}
 
@@ -38,11 +38,11 @@ func TestNew(t *testing.T) {
 func TestAppendToBaseURL(t *testing.T) {
 
 	path := "/metadata"
-	url := appendToBaseURL(path)
-	expected := fmt.Sprintf("%s/v3/metadata", env.BaseURL())
+	url := appendToBaseURL(CloudServiceAPI, path)
+	expected := fmt.Sprintf("%s/v3/metadata", env.APIBaseURL())
 
 	if url != expected {
-		t.Errorf("appendToBaseURL(%q) == %q, expected %q", path, url, expected)
+		t.Errorf("appendToBaseURL(CloudServiceAPI, %q) == %q, expected %q", path, url, expected)
 	}
 }
 

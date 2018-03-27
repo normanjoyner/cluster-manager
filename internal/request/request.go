@@ -19,14 +19,26 @@ type Requester struct {
 	body   []byte
 }
 
+// CloudService indicates the cloud service a request is associated with
+type CloudService int
+
+const (
+	// CloudServiceAPI is the Cloud API service
+	CloudServiceAPI CloudService = iota
+	// CloudServiceProvision is the Cloud Provision service
+	CloudServiceProvision
+)
+
 var urlParams = map[string]string{
 	"OrganizationID": env.OrganizationID(),
 	"ClusterID":      env.ClusterID(),
+	// TODO should we rename NODE_NAME to NODE_ID?
+	"NodeID": env.NodeName(),
 }
 
 // New returns a Requester with the endpoint and type or request set that is
 // needed to be made
-func New(path, method string, body []byte) (*Requester, error) {
+func New(service CloudService, path, method string, body []byte) (*Requester, error) {
 	tmpl, err := template.New("test").Parse(path)
 
 	if err != nil {
@@ -43,7 +55,7 @@ func New(path, method string, body []byte) (*Requester, error) {
 	p := w.String()
 
 	return &Requester{
-		url:    appendToBaseURL(p),
+		url:    appendToBaseURL(service, p),
 		method: method,
 		body:   body,
 	}, nil
@@ -64,8 +76,16 @@ func (r *Requester) Body() []byte {
 	return r.body
 }
 
-func appendToBaseURL(path string) string {
-	return fmt.Sprintf("%s/v3%s", env.BaseURL(), path)
+func appendToBaseURL(service CloudService, path string) string {
+	var base string
+	switch service {
+	case CloudServiceAPI:
+		base = env.APIBaseURL()
+	case CloudServiceProvision:
+		base = env.ProvisionBaseURL()
+	}
+
+	return fmt.Sprintf("%s/v3%s", base, path)
 }
 
 func addHeaders(req *http.Request) {

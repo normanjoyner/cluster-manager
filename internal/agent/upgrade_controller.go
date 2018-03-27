@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"net/http"
 	"time"
 
 	corev1 "k8s.io/api/core/v1"
@@ -21,6 +20,7 @@ import (
 	"github.com/containership/cloud-agent/internal/constants"
 	"github.com/containership/cloud-agent/internal/env"
 	"github.com/containership/cloud-agent/internal/log"
+	"github.com/containership/cloud-agent/internal/request"
 	"github.com/containership/cloud-agent/internal/resources/upgradescript"
 	"github.com/containership/cloud-agent/internal/tools"
 
@@ -34,6 +34,11 @@ const (
 	upgradeControllerName = "upgradeAgent"
 
 	maxRetriesUpgradeController = 5
+)
+
+const (
+	// TODO finalize this - current version is just for rough testing
+	nodeUpgradeScriptEndpointTemplate = "/organizations/{{.OrganizationID}}/clusters/{{.ClusterID}}/nodes/{{.NodeID}}-upgrade.sh"
 )
 
 // UpgradeController is the agent controller which watches for ClusterUpgrade updates
@@ -225,8 +230,12 @@ func (uc *UpgradeController) upgradeSyncHandler(key string) error {
 			return uc.finishUpgradeWithStatus(node, provisioncsv3.UpgradeSuccess)
 		}
 
+		// TODO add timeout logic so upgrade fails after set period of time
+
 	case upgradeAnnotation.Status == provisioncsv3.UpgradeSuccess:
+		fallthrough
 	case upgradeAnnotation.Status == provisioncsv3.UpgradeFailed:
+		fallthrough
 	default:
 		// Nothing to do
 		return nil
@@ -235,6 +244,8 @@ func (uc *UpgradeController) upgradeSyncHandler(key string) error {
 	return nil
 }
 
+// startUpgrade kicks off the upgrade process by downloading and writing the
+// upgrade script as well as updating the current node's upgrade status.
 func (uc *UpgradeController) startUpgrade(node *corev1.Node, upgrade *provisioncsv3.ClusterUpgrade) error {
 	log.Info("Beginning upgrade process")
 
@@ -294,37 +305,21 @@ func (uc *UpgradeController) finishUpgradeWithStatus(node *corev1.Node,
 }
 
 func (uc *UpgradeController) downloadUpgradeScript() ([]byte, error) {
-	//// TODO figure out how we are getting script from cloud
-	// currently we are talking about a path that looks like
-	// /organization/:organization_id/cluster/:cluster_id/host/:host_id
-	url := fmt.Sprintf("https://s3.amazonaws.com/stage.containership.io/%s-upgrade.sh", env.NodeName())
-	req, err := http.NewRequest(
+	req, err := request.New(request.CloudServiceProvision,
+		nodeUpgradeScriptEndpointTemplate,
 		"GET",
-		url,
-		nil,
-	)
-
-	client := &http.Client{
-		Timeout: time.Second * 10,
-	}
-
-	res, err := client.Do(req)
+		nil)
 	if err != nil {
-		log.Error("Failed request: %+v", *req)
 		return nil, err
 	}
 
-	if res.StatusCode < http.StatusOK ||
-		res.StatusCode >= http.StatusMultipleChoices {
-		log.Debugf("Cloud API responded with %d (%s)", res.StatusCode,
-			http.StatusText(res.StatusCode))
-		log.Debugf("Request: %+v", *req)
-
-		return nil, fmt.Errorf("Request returned with status code %d", res.StatusCode)
+	resp, err := req.MakeRequest()
+	if err != nil {
+		return nil, err
 	}
-	defer res.Body.Close()
+	defer resp.Body.Close()
 
-	bytes, err := ioutil.ReadAll(res.Body)
+	bytes, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		return nil, err
 	}

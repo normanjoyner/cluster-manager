@@ -44,7 +44,7 @@ func Sync(cr CloudResource) error {
 }
 
 func makeRequest(endpoint string) ([]byte, error) {
-	req, err := request.New(endpoint, "GET", nil)
+	req, err := request.New(request.CloudServiceAPI, endpoint, "GET", nil)
 	if err != nil {
 		return nil, err
 	}

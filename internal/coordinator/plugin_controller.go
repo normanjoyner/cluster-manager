@@ -214,7 +214,7 @@ func makePluginManifestPath(ID string) string {
 }
 
 func makeRequest(path string) ([]byte, error) {
-	req, err := request.New(path, "GET", nil)
+	req, err := request.New(request.CloudServiceAPI, path, "GET", nil)
 	if err != nil {
 		return nil, err
 	}

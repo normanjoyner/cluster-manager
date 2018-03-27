@@ -15,7 +15,8 @@ type environment struct {
 	agentInformerSyncInterval       time.Duration
 	coordinatorInformerSyncInterval time.Duration
 	cloudClusterAPIKey              string
-	baseURL                         string
+	apiBaseURL                      string
+	provisionBaseURL                string
 	clusterID                       string
 	csCloudEnvironment              string
 	csServerPort                    string
@@ -56,9 +57,14 @@ func init() {
 		env.csCloudEnvironment = "production"
 	}
 
-	env.baseURL = os.Getenv("CONTAINERSHIP_CLOUD_API_BASE_URL")
-	if env.baseURL == "" {
-		env.baseURL = "https://api.containership.io"
+	env.apiBaseURL = os.Getenv("CONTAINERSHIP_CLOUD_API_BASE_URL")
+	if env.apiBaseURL == "" {
+		env.apiBaseURL = "https://api.containership.io"
+	}
+
+	env.provisionBaseURL = os.Getenv("CONTAINERSHIP_CLOUD_PROVISION_BASE_URL")
+	if env.provisionBaseURL == "" {
+		env.provisionBaseURL = "https://provision.containership.io"
 	}
 
 	env.csCloudSyncInterval = getDurationEnvOrDefault("CONTAINERSHIP_CLOUD_SYNC_INTERVAL_SEC",
@@ -99,9 +105,14 @@ func CloudClusterAPIKey() string {
 	return env.cloudClusterAPIKey
 }
 
-// BaseURL returns Containership Cloud API url
-func BaseURL() string {
-	return env.baseURL
+// APIBaseURL returns Containership Cloud API url
+func APIBaseURL() string {
+	return env.apiBaseURL
+}
+
+// ProvisionBaseURL returns Containership Cloud Provision url
+func ProvisionBaseURL() string {
+	return env.provisionBaseURL
 }
 
 // ContainershipCloudSyncInterval returns the cloud sync interval
