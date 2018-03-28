@@ -32,8 +32,7 @@ const (
 var urlParams = map[string]string{
 	"OrganizationID": env.OrganizationID(),
 	"ClusterID":      env.ClusterID(),
-	// TODO should we rename NODE_NAME to NODE_ID?
-	"NodeID": env.NodeName(),
+	"NodeName":       env.NodeName(),
 }
 
 // New returns a Requester with the endpoint and type or request set that is

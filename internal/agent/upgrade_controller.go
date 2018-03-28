@@ -31,14 +31,14 @@ import (
 )
 
 const (
-	upgradeControllerName = "upgradeAgent"
+	upgradeControllerName = "UpgradeAgentController"
 
 	maxRetriesUpgradeController = 5
 )
 
 const (
 	// TODO finalize this - current version is just for rough testing
-	nodeUpgradeScriptEndpointTemplate = "/organizations/{{.OrganizationID}}/clusters/{{.ClusterID}}/nodes/{{.NodeID}}-upgrade.sh"
+	nodeUpgradeScriptEndpointTemplate = "/organizations/{{.OrganizationID}}/clusters/{{.ClusterID}}/nodes/{{.NodeName}}-upgrade.sh"
 )
 
 // UpgradeController is the agent controller which watches for ClusterUpgrade updates
@@ -65,7 +65,7 @@ func NewUpgradeController(
 	uc := &UpgradeController{
 		clientset:     clientset,
 		kubeclientset: kubeclientset,
-		workqueue:     workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), "UpgradeAgent"),
+		workqueue:     workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), upgradeControllerName),
 	}
 
 	// Create an informer from the factory so that we share the underlying
@@ -76,12 +76,28 @@ func NewUpgradeController(
 	// All event handlers simply add to a workqueue to be processed by a worker
 	upgradeInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
 		UpdateFunc: func(old, new interface{}) {
+			oldUpgrade := old.(*provisioncsv3.ClusterUpgrade)
 			newUpgrade := new.(*provisioncsv3.ClusterUpgrade)
-			if newUpgrade.Spec.CurrentNode != env.NodeName() {
-				// Not the current node so nothing to do
+			if oldUpgrade.ResourceVersion == newUpgrade.ResourceVersion ||
+				newUpgrade.Spec.CurrentNode != env.NodeName() {
+				// syncInterval update or not the current node so nothing to do
 				return
 			}
 			uc.enqueueUpgrade(new)
+		},
+	})
+
+	// We need to trigger synchronization on node annotation updates
+	nodeInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
+		UpdateFunc: func(old, new interface{}) {
+			oldNode := old.(*corev1.Node)
+			newNode := new.(*corev1.Node)
+			if oldNode.ResourceVersion == newNode.ResourceVersion ||
+				newNode.Name != env.NodeName() {
+				// syncInterval update or not the current node so nothing to do
+				return
+			}
+			uc.enqueueNode(new)
 		},
 	})
 
@@ -148,7 +164,8 @@ func (uc *UpgradeController) processNextWorkItem() bool {
 			return nil
 		}
 
-		err := uc.upgradeSyncHandler(key)
+		// A common syncHandler is called for keys of any type (node or upgrade)
+		err := uc.syncHandler(key)
 		return uc.handleErr(err, key)
 	}(obj)
 
@@ -191,17 +208,29 @@ func (uc *UpgradeController) enqueueUpgrade(obj interface{}) {
 	uc.workqueue.AddRateLimited(key)
 }
 
-// upgradeSyncHandler looks at the current state of the system and decides how to act.
+// enqueueNode enqueues a node
+func (uc *UpgradeController) enqueueNode(obj interface{}) {
+	key, err := cache.MetaNamespaceKeyFunc(obj)
+	if err != nil {
+		log.Error(err)
+		return
+	}
+
+	uc.workqueue.AddRateLimited(key)
+}
+
+// syncHandler looks at the current state of the system and decides how to act.
 // For upgrade that means writing the upgrade script to the directory that is being
 // watched by the systemd upgrade process.
-func (uc *UpgradeController) upgradeSyncHandler(key string) error {
-	log.Infof("Upgrade processing: key=%q", key)
-	_, name, _ := cache.SplitMetaNamespaceKey(key)
-	// We only want to act on cluster upgrades that are from the containership-core
-	// namespace to make sure they are valid and were created by containership cloud
-	upgrade, err := uc.upgradeLister.ClusterUpgrades(constants.ContainershipNamespace).Get(name)
+func (uc *UpgradeController) syncHandler(key string) error {
+	log.Infof("%s: processing key=%q", upgradeControllerName, key)
+
+	upgrade, err := uc.getCurrentUpgrade()
 	if err != nil {
 		return err
+	}
+	if upgrade == nil {
+		// No active upgrades, so nothing to do
 	}
 
 	node, _ := uc.nodeLister.Get(env.NodeName())
@@ -242,6 +271,26 @@ func (uc *UpgradeController) upgradeSyncHandler(key string) error {
 	}
 
 	return nil
+}
+
+// getCurrentUpgrade returns the current in-progress upgrade or nil if no upgrade
+// is in-progress.
+// TODO need to enforce only one InProgress upgrade at a time
+// TODO shared function between agent and coordinator controllers
+func (uc *UpgradeController) getCurrentUpgrade() (*provisioncsv3.ClusterUpgrade, error) {
+	upgrades, err := uc.upgradeLister.ClusterUpgrades(constants.ContainershipNamespace).
+		List(constants.GetContainershipManagedSelector())
+	if err != nil {
+		return nil, err
+	}
+
+	for _, upgrade := range upgrades {
+		if upgrade.Spec.Status == provisioncsv3.UpgradeInProgress {
+			return upgrade, nil
+		}
+	}
+
+	return nil, nil
 }
 
 // startUpgrade kicks off the upgrade process by downloading and writing the

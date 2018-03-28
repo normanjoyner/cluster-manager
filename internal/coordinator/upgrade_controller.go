@@ -58,9 +58,6 @@ type UpgradeController struct {
 	// recorder is an event recorder for recording Event resources to the
 	// Kubernetes API.
 	recorder record.EventRecorder
-
-	// TODO we shouldn't be keeping state in RAM for upgrades
-	currentUpgradeName string
 }
 
 // NewUpgradeController returns a new upgrade controller
@@ -245,8 +242,6 @@ func (uc *UpgradeController) upgradeSyncHandler(key string) error {
 	currentUpgrade.Spec.Status = provisioncsv3.UpgradeInProgress
 	_, err = uc.csclientset.ContainershipProvisionV3().ClusterUpgrades(constants.ContainershipNamespace).Update(currentUpgrade)
 
-	uc.currentUpgradeName = currentUpgrade.Name
-
 	return err
 }
 
@@ -270,6 +265,8 @@ func nodeIsDone(node *corev1.Node) (bool, error) {
 	return false, nil
 }
 
+// nodeSyncHandler surveys the system state and determines which node, if any,
+// is next to upgrade.
 func (uc *UpgradeController) nodeSyncHandler(key string) error {
 	_, _, name, _ := tools.SplitMetaResourceNamespaceKeyFunc(key)
 
@@ -283,49 +280,69 @@ func (uc *UpgradeController) nodeSyncHandler(key string) error {
 		return err
 	}
 
-	currentUpgrade, err := uc.upgradeLister.ClusterUpgrades(constants.ContainershipNamespace).
-		Get(uc.currentUpgradeName)
+	currentUpgrade, err := uc.getCurrentUpgrade()
 	if err != nil {
-		if errors.IsNotFound(err) {
-			// Upgrade is no longer around so no need to upgrade
-			return nil
-		}
-
 		return err
 	}
-
-	if !isCurrentNode(currentUpgrade, node) {
-		// Nothing to do
+	if currentUpgrade == nil {
+		// No active upgrades, so nothing to do
 		return nil
 	}
 
-	done, err := nodeIsDone(node)
+	if !isCurrentNode(currentUpgrade, node) {
+		// Current upgrade does not apply to this node, so nothing to do
+		return nil
+	}
+
+	currentNodeIsDone, err := nodeIsDone(node)
 	if err != nil {
 		return err
 	}
 
-	if done {
-		log.Infof("%s: Node %s finished upgrading", upgradeControllerName, node.Name)
+	if !currentNodeIsDone {
+		// Nothing interesting to do
+		// TODO may not be true once timeout is implemented
+		return nil
+	}
 
-		next := uc.getNextNode(currentUpgrade)
+	// Current node is done upgrading, decide how to proceed
+	log.Infof("%s: Node %s finished upgrading", upgradeControllerName, node.Name)
 
-		currentUpgradeCopy := currentUpgrade.DeepCopy()
-		if next == nil {
-			// No more nodes to upgrade, so finish up
-			currentUpgradeCopy.Spec.Status = uc.getFinalUpgradeStatus(currentUpgradeCopy)
-			currentUpgradeCopy.Spec.CurrentNode = ""
-		} else {
-			log.Infof("%s: Marking node %s for upgrade", upgradeControllerName, next.Name)
-			currentUpgradeCopy.Spec.CurrentNode = next.Name
-		}
+	next := uc.getNextNode(currentUpgrade)
 
-		_, err = uc.csclientset.ContainershipProvisionV3().ClusterUpgrades(constants.ContainershipNamespace).Update(currentUpgradeCopy)
-		if err != nil {
-			return err
+	currentUpgradeCopy := currentUpgrade.DeepCopy()
+	if next == nil {
+		// No more nodes to upgrade, so finish up
+		currentUpgradeCopy.Spec.Status = uc.getFinalUpgradeStatus(currentUpgradeCopy)
+		currentUpgradeCopy.Spec.CurrentNode = ""
+	} else {
+		log.Infof("%s: Marking node %s for upgrade", upgradeControllerName, next.Name)
+		currentUpgradeCopy.Spec.CurrentNode = next.Name
+	}
+
+	_, err = uc.csclientset.ContainershipProvisionV3().ClusterUpgrades(constants.ContainershipNamespace).Update(currentUpgradeCopy)
+
+	return err
+}
+
+// getCurrentUpgrade returns the current in-progress upgrade or nil if no upgrade
+// is in-progress.
+// TODO need to enforce only one InProgress upgrade at a time
+// TODO shared function between agent and coordinator controllers
+func (uc *UpgradeController) getCurrentUpgrade() (*provisioncsv3.ClusterUpgrade, error) {
+	upgrades, err := uc.upgradeLister.ClusterUpgrades(constants.ContainershipNamespace).
+		List(constants.GetContainershipManagedSelector())
+	if err != nil {
+		return nil, err
+	}
+
+	for _, upgrade := range upgrades {
+		if upgrade.Spec.Status == provisioncsv3.UpgradeInProgress {
+			return upgrade, nil
 		}
 	}
 
-	return nil
+	return nil, nil
 }
 
 func (uc *UpgradeController) getFinalUpgradeStatus(cup *provisioncsv3.ClusterUpgrade) provisioncsv3.UpgradeStatus {
