@@ -35,6 +35,22 @@ func Write(script []byte, targetVersion, upgradeID string) error {
 	return writeUpgradeScript(osFs, script, filename)
 }
 
+// Exists returns true if the upgrade script exists on disk (i.e.
+// Write() has been called for this upgrade), else false
+func Exists(targetVersion, upgradeID string) (bool, error) {
+	filename := GetUpgradeScriptFullPath(getUpgradeScriptFilename(targetVersion, upgradeID))
+
+	_, err := osFs.Stat(filename)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return false, nil
+		}
+		return false, err
+	}
+
+	return true, nil
+}
+
 // RemoveCurrent removes the /current file after an upgrade has completed
 func RemoveCurrent() error {
 	return removeCurrentUpgradeScript(osFs)

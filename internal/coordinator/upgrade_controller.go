@@ -30,7 +30,7 @@ import (
 )
 
 const (
-	upgradeControllerName = "upgrade"
+	upgradeControllerName = "UpgradeController"
 
 	upgradeDelayBetweenRetries = 30 * time.Second
 
@@ -117,7 +117,8 @@ func (uc *UpgradeController) Run(numWorkers int, stopCh chan struct{}) {
 
 	if ok := cache.WaitForCacheSync(
 		stopCh,
-		uc.upgradesSynced); !ok {
+		uc.upgradesSynced,
+		uc.nodesSynced); !ok {
 		// If this channel is unable to wait for caches to sync we stop both
 		// the containership controller, and the upgrade controller
 		close(stopCh)
@@ -217,52 +218,74 @@ func (uc *UpgradeController) handleErr(err error, key interface{}) error {
 	return err
 }
 
+// enqueueUpgrade enqueues an upgrade
+func (uc *UpgradeController) enqueueUpgrade(obj interface{}) {
+	key, err := tools.MetaResourceNamespaceKeyFunc("upgrade", obj)
+	if err != nil {
+		log.Error(err)
+		return
+	}
+
+	uc.workqueue.AddRateLimited(key)
+}
+
+// enqueueNode enqueues a node
+func (uc *UpgradeController) enqueueNode(obj interface{}) {
+	key, err := tools.MetaResourceNamespaceKeyFunc("node", obj)
+	if err != nil {
+		log.Error(err)
+		return
+	}
+
+	uc.workqueue.AddRateLimited(key)
+}
+
+// enqueueNodeAfterDelay enqueues a node after a given delay. It is intended to
+// be called asynchronously.
+func (uc *UpgradeController) enqueueNodeAfterDelay(node *corev1.Node, d time.Duration) {
+	timer := time.NewTimer(d)
+	<-timer.C
+	log.Debugf("Enqueuing node %q after %v", node.Name, d)
+	uc.enqueueNode(node)
+}
+
 // upgradeSyncHandler looks at the UpgradeCluster resource and if it is in a
 // completed state return. Otherwise, it finds the next node that should be
-// updated and sets that as the current node on the cluster resource.
+// upgraded and sets that as the current node on the cluster resource.
 func (uc *UpgradeController) upgradeSyncHandler(key string) error {
 	_, _, name, _ := tools.SplitMetaResourceNamespaceKeyFunc(key)
 	upgrade, err := uc.upgradeLister.ClusterUpgrades(constants.ContainershipNamespace).Get(name)
+	if err != nil {
+		if errors.IsNotFound(err) {
+			// Upgrade is no longer around so nothing to do
+			return nil
+		}
+
+		return err
+	}
+
 	// If upgrade has already been fully processed and either Successed or Failed
-	// we don't need to do anything
-	// This should never happen since we're only listening for Add events but
-	// let's be safe
+	// we don't need to do anything. We're only listening to Add events so this
+	// should be unlikely, but it can happen e.g. if coordinator restarts.
 	if isUpgradeDone(upgrade) {
 		return nil
 	}
 
-	// if cluster is not in upgraded state
+	existingUpgrade, _ := uc.getCurrentUpgrade()
+	if existingUpgrade != nil {
+		// There's already an upgrade in-progress. This should
+		// never happen, but ignore it to be safe.
+		return nil
+	}
+
+	// Cluster is not in an upgraded state, so kick off the upgrade process
+	// by marking the first applicable node as in-progress.
 	node := uc.getNextNode(upgrade)
 	if node == nil {
 		return nil
 	}
 
-	currentUpgrade := upgrade.DeepCopy()
-	currentUpgrade.Spec.CurrentNode = node.Name
-	currentUpgrade.Spec.Status = provisioncsv3.UpgradeInProgress
-	_, err = uc.csclientset.ContainershipProvisionV3().ClusterUpgrades(constants.ContainershipNamespace).Update(currentUpgrade)
-
-	return err
-}
-
-// nodeIsDone returns true if the given node is finished upgrading, else false.
-// Note that "done" may be success or failure.
-func nodeIsDone(node *corev1.Node) (bool, error) {
-	upgradeAnnotation, err := tools.GetNodeUpgradeAnnotation(node)
-	switch {
-	case err != nil:
-		return false, err
-	case upgradeAnnotation == nil:
-		return false, nil
-	case upgradeAnnotation.Status == provisioncsv3.UpgradeInProgress:
-		return false, nil
-	case upgradeAnnotation.Status == provisioncsv3.UpgradeSuccess:
-		return true, nil
-	case upgradeAnnotation.Status == provisioncsv3.UpgradeFailed:
-		return true, nil
-	}
-
-	return false, nil
+	return uc.startUpgradeForNode(upgrade, node)
 }
 
 // nodeSyncHandler surveys the system state and determines which node, if any,
@@ -294,41 +317,106 @@ func (uc *UpgradeController) nodeSyncHandler(key string) error {
 		return nil
 	}
 
-	currentNodeIsDone, err := nodeIsDone(node)
-	if err != nil {
-		return err
+	// Starting here, we may mutate the upgrade object and make decisions based
+	// on that mutated state. To avoid race conditions, we must only operate on
+	// a copy of the state.
+	currentUpgrade = currentUpgrade.DeepCopy()
+
+	nodeIsTargetVersion := tools.NodeIsTargetKubernetesVersion(currentUpgrade, node)
+	nodeTimedOut := false
+	if !nodeIsTargetVersion {
+		// Check for timeout
+		startTime, _ := time.Parse(time.UnixDate, currentUpgrade.Spec.Status.CurrentStartTime)
+		elapsed := time.Since(startTime)
+		if elapsed.Seconds() >= float64(currentUpgrade.Spec.NodeTimeoutSeconds) {
+			nodeTimedOut = true
+		}
 	}
 
-	if !currentNodeIsDone {
-		// Nothing interesting to do
-		// TODO may not be true once timeout is implemented
+	if !nodeTimedOut && !nodeIsTargetVersion {
+		// Upgrade is still processing, nothing to do
 		return nil
 	}
 
 	// Current node is done upgrading, decide how to proceed
-	log.Infof("%s: Node %s finished upgrading", upgradeControllerName, node.Name)
-
-	next := uc.getNextNode(currentUpgrade)
-
-	currentUpgradeCopy := currentUpgrade.DeepCopy()
-	if next == nil {
-		// No more nodes to upgrade, so finish up
-		currentUpgradeCopy.Spec.Status = uc.getFinalUpgradeStatus(currentUpgradeCopy)
-		currentUpgradeCopy.Spec.CurrentNode = ""
-	} else {
-		log.Infof("%s: Marking node %s for upgrade", upgradeControllerName, next.Name)
-		currentUpgradeCopy.Spec.CurrentNode = next.Name
+	// This map shouldn't be nil since the map should have been created when
+	// the upgrade was kicked off, but let's be safe.
+	if currentUpgrade.Spec.Status.NodeStatuses == nil {
+		currentUpgrade.Spec.Status.NodeStatuses = make(map[string]provisioncsv3.UpgradeStatus)
 	}
 
-	_, err = uc.csclientset.ContainershipProvisionV3().ClusterUpgrades(constants.ContainershipNamespace).Update(currentUpgradeCopy)
+	// Mark this node as done with appropriate status
+	if nodeTimedOut {
+		log.Infof("%s: Node upgrade %q timed out", upgradeControllerName, node.Name)
+		currentUpgrade.Spec.Status.NodeStatuses[node.Name] = provisioncsv3.UpgradeFailed
+	} else {
+		log.Infof("%s: Node upgrade %q succeeded", upgradeControllerName, node.Name)
+		currentUpgrade.Spec.Status.NodeStatuses[node.Name] = provisioncsv3.UpgradeSuccess
+	}
+
+	next := uc.getNextNode(currentUpgrade)
+	if next == nil {
+		// No more nodes to upgrade, so finish up
+		err = uc.finishUpgrade(currentUpgrade)
+	} else {
+		// Kick off the next node upgrade
+		err = uc.startUpgradeForNode(currentUpgrade, next)
+	}
+
+	return err
+}
+
+// updateClusterUpgradeStatus posts an updated status for the given upgrade object
+func (uc *UpgradeController) updateClusterUpgradeStatus(cup *provisioncsv3.ClusterUpgrade,
+	status *provisioncsv3.ClusterUpgradeStatusSpec) error {
+	cup = cup.DeepCopy()
+	status.DeepCopyInto(&cup.Spec.Status)
+	_, err := uc.csclientset.ContainershipProvisionV3().ClusterUpgrades(constants.ContainershipNamespace).Update(cup)
+	return err
+}
+
+// finishUpgrade finishes the given upgrade by posting back the final upgrade status.
+func (uc *UpgradeController) finishUpgrade(cup *provisioncsv3.ClusterUpgrade) error {
+	clusterStatus := getFinalUpgradeStatus(cup)
+
+	log.Infof("%s: Cluster upgrade finished with status %q", upgradeControllerName, clusterStatus)
+
+	return uc.updateClusterUpgradeStatus(cup, &provisioncsv3.ClusterUpgradeStatusSpec{
+		ClusterStatus:    clusterStatus,
+		NodeStatuses:     cup.Spec.Status.NodeStatuses,
+		CurrentNode:      "",
+		CurrentStartTime: "",
+	})
+}
+
+// startUpgradeForNode kicks off the upgrade process for the given node by updating
+// the ClusterUpgrade CRD appropriately.
+func (uc *UpgradeController) startUpgradeForNode(cup *provisioncsv3.ClusterUpgrade, node *corev1.Node) error {
+	log.Infof("%s: Marking node %s for upgrade", upgradeControllerName, node.Name)
+
+	nodeStatuses := cup.Spec.Status.NodeStatuses
+	if nodeStatuses == nil {
+		nodeStatuses = make(map[string]provisioncsv3.UpgradeStatus)
+	}
+	nodeStatuses[node.Name] = provisioncsv3.UpgradeInProgress
+
+	err := uc.updateClusterUpgradeStatus(cup, &provisioncsv3.ClusterUpgradeStatusSpec{
+		ClusterStatus:    provisioncsv3.UpgradeInProgress,
+		NodeStatuses:     nodeStatuses,
+		CurrentNode:      node.Name,
+		CurrentStartTime: time.Now().UTC().Format(time.UnixDate),
+	})
+
+	// Ensure the syncHandler is called for this node in the future in order
+	// to check for timeout
+	delay := time.Second * time.Duration(cup.Spec.NodeTimeoutSeconds)
+	go uc.enqueueNodeAfterDelay(node, delay)
 
 	return err
 }
 
 // getCurrentUpgrade returns the current in-progress upgrade or nil if no upgrade
 // is in-progress.
-// TODO need to enforce only one InProgress upgrade at a time
-// TODO shared function between agent and coordinator controllers
 func (uc *UpgradeController) getCurrentUpgrade() (*provisioncsv3.ClusterUpgrade, error) {
 	upgrades, err := uc.upgradeLister.ClusterUpgrades(constants.ContainershipNamespace).
 		List(constants.GetContainershipManagedSelector())
@@ -337,7 +425,7 @@ func (uc *UpgradeController) getCurrentUpgrade() (*provisioncsv3.ClusterUpgrade,
 	}
 
 	for _, upgrade := range upgrades {
-		if upgrade.Spec.Status == provisioncsv3.UpgradeInProgress {
+		if upgrade.Spec.Status.ClusterStatus == provisioncsv3.UpgradeInProgress {
 			return upgrade, nil
 		}
 	}
@@ -345,11 +433,11 @@ func (uc *UpgradeController) getCurrentUpgrade() (*provisioncsv3.ClusterUpgrade,
 	return nil, nil
 }
 
-func (uc *UpgradeController) getFinalUpgradeStatus(cup *provisioncsv3.ClusterUpgrade) provisioncsv3.UpgradeStatus {
-	nodes, _ := uc.nodeLister.List(getAllNodesSelector(cup.Spec.LabelSelector))
-	for _, node := range nodes {
-		upgradeAnnotation, _ := tools.GetNodeUpgradeAnnotation(node)
-		if upgradeAnnotation.Status == provisioncsv3.UpgradeFailed {
+// getFinalUpgradeStatus returns the final upgrade status for the given cluster
+// upgrade based on the individual node statuses.
+func getFinalUpgradeStatus(cup *provisioncsv3.ClusterUpgrade) provisioncsv3.UpgradeStatus {
+	for _, status := range cup.Spec.Status.NodeStatuses {
+		if status == provisioncsv3.UpgradeFailed {
 			return provisioncsv3.UpgradeFailed
 		}
 	}
@@ -357,32 +445,11 @@ func (uc *UpgradeController) getFinalUpgradeStatus(cup *provisioncsv3.ClusterUpg
 	return provisioncsv3.UpgradeSuccess
 }
 
-// enqueueUpgrade enqueues an upgrade
-func (uc *UpgradeController) enqueueUpgrade(obj interface{}) {
-	key, err := tools.MetaResourceNamespaceKeyFunc("upgrade", obj)
-	if err != nil {
-		log.Error(err)
-		return
-	}
-
-	uc.workqueue.AddRateLimited(key)
-}
-
-// enqueueNode enqueues a node
-func (uc *UpgradeController) enqueueNode(obj interface{}) {
-	key, err := tools.MetaResourceNamespaceKeyFunc("node", obj)
-	if err != nil {
-		log.Error(err)
-		return
-	}
-
-	uc.workqueue.AddRateLimited(key)
-}
-
 // isUpgradeDone returns true if an upgrade has already been fully processed and has
 // the status of either Successed or Failed
 func isUpgradeDone(cup *provisioncsv3.ClusterUpgrade) bool {
-	if cup.Spec.Status == provisioncsv3.UpgradeSuccess || cup.Spec.Status == provisioncsv3.UpgradeFailed {
+	if cup.Spec.Status.ClusterStatus == provisioncsv3.UpgradeSuccess ||
+		cup.Spec.Status.ClusterStatus == provisioncsv3.UpgradeFailed {
 		return true
 	}
 
@@ -391,7 +458,7 @@ func isUpgradeDone(cup *provisioncsv3.ClusterUpgrade) bool {
 
 // isCurrentNode checks to see if the node being looked at is the current node being processed
 func isCurrentNode(cup *provisioncsv3.ClusterUpgrade, node *corev1.Node) bool {
-	return cup.Spec.CurrentNode == node.Name
+	return cup.Spec.Status.CurrentNode == node.Name
 }
 
 // getNextNode finds the next node to start upgrading or nil if all nodes are
@@ -416,7 +483,16 @@ func (uc *UpgradeController) getNextNode(cup *provisioncsv3.ClusterUpgrade) *cor
 
 // isNext returns true if the given node can go next for this upgrade, else false.
 func isNext(cup *provisioncsv3.ClusterUpgrade, node *corev1.Node) bool {
-	return !tools.NodeIsTargetKubernetesVersion(cup, node) && !isCurrentNode(cup, node)
+	return !isCurrentNode(cup, node) &&
+		!tools.NodeIsTargetKubernetesVersion(cup, node) &&
+		!nodeHasFinishedStatus(cup, node)
+}
+
+// nodeHasFinishedStatus returns true if the given node has a "finished" status,
+// i.e. its status exists and it is  either a success or failed status.
+func nodeHasFinishedStatus(cup *provisioncsv3.ClusterUpgrade, node *corev1.Node) bool {
+	return cup.Spec.Status.NodeStatuses[node.Name] == provisioncsv3.UpgradeSuccess ||
+		cup.Spec.Status.NodeStatuses[node.Name] == provisioncsv3.UpgradeFailed
 }
 
 // addCustomLabelSelectors appends additional selectors to the given selector.

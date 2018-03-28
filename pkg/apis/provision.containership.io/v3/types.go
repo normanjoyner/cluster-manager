@@ -1,8 +1,6 @@
 package v3
 
 import (
-	"time"
-
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"k8s.io/apimachinery/pkg/selection"
@@ -23,15 +21,23 @@ type ClusterUpgrade struct {
 
 // ClusterUpgradeSpec is the spec for a Containership Cloud Cluster Upgrade.
 type ClusterUpgradeSpec struct {
-	ID                      string              `json:"id"`
-	AddedAt                 string              `json:"addedAt"`
-	Description             string              `json:"description"`
-	TargetKubernetesVersion string              `json:"targetKubernetesVersion"`
-	TargetEtcdVersion       string              `json:"targetEtcdVersion"`
-	LabelSelector           []LabelSelectorSpec `json:"labelSelector"`
-	Timeout                 string              `json:"timeout"`
-	Status                  UpgradeStatus       `json:"status"`
-	CurrentNode             string              `json:"currentNode"`
+	ID                      string                   `json:"id"`
+	AddedAt                 string                   `json:"addedAt"`
+	Description             string                   `json:"description"`
+	TargetKubernetesVersion string                   `json:"targetKubernetesVersion"`
+	TargetEtcdVersion       string                   `json:"targetEtcdVersion"`
+	LabelSelector           []LabelSelectorSpec      `json:"labelSelector"`
+	NodeTimeoutSeconds      int                      `json:"nodeTimeoutSeconds"`
+	Status                  ClusterUpgradeStatusSpec `json:"status"`
+}
+
+// ClusterUpgradeStatusSpec is the spec for the current status / state of a
+// Cluster Upgrade. It is never modified by Cloud.
+type ClusterUpgradeStatusSpec struct {
+	ClusterStatus    UpgradeStatus            `json:"clusterStatus"`
+	NodeStatuses     map[string]UpgradeStatus `json:"nodeStatuses"`
+	CurrentNode      string                   `json:"currentNode"`
+	CurrentStartTime string                   `json:"currentStartTime"`
 }
 
 // UpgradeStatus keeps track of where in the upgrade process the cluster is
@@ -45,13 +51,6 @@ const (
 	// UpgradeFailed status gets set when 1 or more nodes in upgrade if unsuccessful
 	UpgradeFailed UpgradeStatus = "Failed"
 )
-
-// NodeUpgradeAnnotation is the upgrade metadata attached to a node
-type NodeUpgradeAnnotation struct {
-	ClusterVersion string        `json:"clusterVersion"`
-	Status         UpgradeStatus `json:"status"`
-	StartTime      time.Time     `json:"startTime"`
-}
 
 // LabelSelectorSpec lets a user add more filters to the nodes they want to update
 type LabelSelectorSpec struct {

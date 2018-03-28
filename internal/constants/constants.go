@@ -47,12 +47,6 @@ const (
 	Quay = "quay"
 )
 
-const (
-	// NodeUpgradeAnnotationKey is the key into the annotations map
-	// on a node that retrieves the node upgrade metadata
-	NodeUpgradeAnnotationKey = "containership.io/upgrade"
-)
-
 // BaseContainershipManagedLabelString is the containership
 // managed label as a string
 const BaseContainershipManagedLabelString = "containership.io/managed=true"

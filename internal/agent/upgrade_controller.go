@@ -1,7 +1,6 @@
 package agent
 
 import (
-	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"time"
@@ -22,7 +21,6 @@ import (
 	"github.com/containership/cloud-agent/internal/log"
 	"github.com/containership/cloud-agent/internal/request"
 	"github.com/containership/cloud-agent/internal/resources/upgradescript"
-	"github.com/containership/cloud-agent/internal/tools"
 
 	provisioncsv3 "github.com/containership/cloud-agent/pkg/apis/provision.containership.io/v3"
 	csclientset "github.com/containership/cloud-agent/pkg/client/clientset/versioned"
@@ -79,25 +77,11 @@ func NewUpgradeController(
 			oldUpgrade := old.(*provisioncsv3.ClusterUpgrade)
 			newUpgrade := new.(*provisioncsv3.ClusterUpgrade)
 			if oldUpgrade.ResourceVersion == newUpgrade.ResourceVersion ||
-				newUpgrade.Spec.CurrentNode != env.NodeName() {
-				// syncInterval update or not the current node so nothing to do
+				newUpgrade.Spec.Status.CurrentNode != env.NodeName() {
+				// Just a syncInterval update or this update does not apply to us
 				return
 			}
 			uc.enqueueUpgrade(new)
-		},
-	})
-
-	// We need to trigger synchronization on node annotation updates
-	nodeInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
-		UpdateFunc: func(old, new interface{}) {
-			oldNode := old.(*corev1.Node)
-			newNode := new.(*corev1.Node)
-			if oldNode.ResourceVersion == newNode.ResourceVersion ||
-				newNode.Name != env.NodeName() {
-				// syncInterval update or not the current node so nothing to do
-				return
-			}
-			uc.enqueueNode(new)
 		},
 	})
 
@@ -164,7 +148,6 @@ func (uc *UpgradeController) processNextWorkItem() bool {
 			return nil
 		}
 
-		// A common syncHandler is called for keys of any type (node or upgrade)
 		err := uc.syncHandler(key)
 		return uc.handleErr(err, key)
 	}(obj)
@@ -223,79 +206,41 @@ func (uc *UpgradeController) enqueueNode(obj interface{}) {
 // For upgrade that means writing the upgrade script to the directory that is being
 // watched by the systemd upgrade process.
 func (uc *UpgradeController) syncHandler(key string) error {
-	log.Infof("%s: processing key=%q", upgradeControllerName, key)
+	log.Debugf("%s: processing key=%q", upgradeControllerName, key)
 
-	upgrade, err := uc.getCurrentUpgrade()
+	_, name, _ := cache.SplitMetaNamespaceKey(key)
+
+	upgrade, err := uc.upgradeLister.ClusterUpgrades(constants.ContainershipNamespace).Get(name)
 	if err != nil {
 		return err
 	}
 	if upgrade == nil {
-		// No active upgrades, so nothing to do
+		// Upgrade no longer exists, nothing to do
+		return nil
 	}
 
-	node, _ := uc.nodeLister.Get(env.NodeName())
+	if upgrade.Spec.Status.NodeStatuses[env.NodeName()] != provisioncsv3.UpgradeInProgress {
+		// It's not our turn to do anything
+		return nil
+	}
 
-	upgradeAnnotation, err := tools.GetNodeUpgradeAnnotation(node)
+	targetVersion := upgrade.Spec.TargetKubernetesVersion
+	upgradeID := upgrade.Spec.ID
+	exists, err := upgradescript.Exists(targetVersion, upgradeID)
 	if err != nil {
 		return err
 	}
 
-	switch {
-	case upgradeAnnotation == nil:
-		// Upgrade hasn't started or we're in an unknown state
-		if tools.NodeIsTargetKubernetesVersion(upgrade, node) {
-			// Nothing to do since we're at the desired version
-			return nil
-		}
-
-		// Kick off upgrade and mark status as InProgress
-		return uc.startUpgrade(node, upgrade)
-
-	case upgradeAnnotation.Status == provisioncsv3.UpgradeInProgress:
-		if tools.NodeIsTargetKubernetesVersion(upgrade, node) {
-			// We must be done upgrading - presumably it succeeded because
-			// we're at the version we expect and we didn't time out.
-			// Finish the upgrade with a Success status.
-			return uc.finishUpgradeWithStatus(node, provisioncsv3.UpgradeSuccess)
-		}
-
-		// TODO add timeout logic so upgrade fails after set period of time
-
-	case upgradeAnnotation.Status == provisioncsv3.UpgradeSuccess:
-		fallthrough
-	case upgradeAnnotation.Status == provisioncsv3.UpgradeFailed:
-		fallthrough
-	default:
-		// Nothing to do
+	if exists {
 		return nil
 	}
 
-	return nil
-}
-
-// getCurrentUpgrade returns the current in-progress upgrade or nil if no upgrade
-// is in-progress.
-// TODO need to enforce only one InProgress upgrade at a time
-// TODO shared function between agent and coordinator controllers
-func (uc *UpgradeController) getCurrentUpgrade() (*provisioncsv3.ClusterUpgrade, error) {
-	upgrades, err := uc.upgradeLister.ClusterUpgrades(constants.ContainershipNamespace).
-		List(constants.GetContainershipManagedSelector())
-	if err != nil {
-		return nil, err
-	}
-
-	for _, upgrade := range upgrades {
-		if upgrade.Spec.Status == provisioncsv3.UpgradeInProgress {
-			return upgrade, nil
-		}
-	}
-
-	return nil, nil
+	return uc.startUpgrade(upgrade)
 }
 
 // startUpgrade kicks off the upgrade process by downloading and writing the
 // upgrade script as well as updating the current node's upgrade status.
-func (uc *UpgradeController) startUpgrade(node *corev1.Node, upgrade *provisioncsv3.ClusterUpgrade) error {
+func (uc *UpgradeController) startUpgrade(upgrade *provisioncsv3.ClusterUpgrade) error {
 	log.Info("Beginning upgrade process")
 
 	// Step 1: Fetch the upgrade script from Cloud
@@ -306,32 +251,15 @@ func (uc *UpgradeController) startUpgrade(node *corev1.Node, upgrade *provisionc
 		return err
 	}
 
-	// Step 2: Mark node as in progress
-	log.Info("Setting node upgrade status to InProgress")
-	err = uc.writeNodeUpgradeAnnotation(node,
-		provisioncsv3.NodeUpgradeAnnotation{
-			upgrade.Spec.TargetKubernetesVersion,
-			provisioncsv3.UpgradeInProgress,
-			time.Now().UTC(),
-		})
-	if err != nil {
-		log.Error("Node annotation write failed:", err)
-		return err
-	}
-
-	// Step 3: Execute the upgrade script
+	// Step 2: Execute the upgrade script
 	log.Info("Writing upgrade script")
 	targetVersion := upgrade.Spec.TargetKubernetesVersion
 	upgradeID := upgrade.Spec.ID
 	return upgradescript.Write(script, targetVersion, upgradeID)
 }
 
-// finishUpgradeWithStatus performs any necessary cleanup and posts the updated
-// status for this node.
-func (uc *UpgradeController) finishUpgradeWithStatus(node *corev1.Node,
-	status provisioncsv3.UpgradeStatus) error {
-	log.Info("Setting node upgrade status to %s", string(status))
-
+// finishUpgrade performs any necessary cleanup and finalizes the upgrade for this node
+func (uc *UpgradeController) finishUpgrade(node *corev1.Node) {
 	// Remove the `current` file first so regardless of any failures after this point
 	// we'll be able to retry if needed by writing a new `current`
 	if err := upgradescript.RemoveCurrent(); err != nil {
@@ -339,20 +267,9 @@ func (uc *UpgradeController) finishUpgradeWithStatus(node *corev1.Node,
 		// failing the upgrade.
 		log.Error("Could not remove `current` upgrade file:", err)
 	}
-
-	upgradeAnnotation, err := tools.GetNodeUpgradeAnnotation(node)
-	if err != nil {
-		return err
-	}
-
-	return uc.writeNodeUpgradeAnnotation(node,
-		provisioncsv3.NodeUpgradeAnnotation{
-			upgradeAnnotation.ClusterVersion,
-			status,
-			upgradeAnnotation.StartTime,
-		})
 }
 
+// downloadUpgradeScript downloads the upgrade script for this node
 func (uc *UpgradeController) downloadUpgradeScript() ([]byte, error) {
 	req, err := request.New(request.CloudServiceProvision,
 		nodeUpgradeScriptEndpointTemplate,
@@ -374,22 +291,4 @@ func (uc *UpgradeController) downloadUpgradeScript() ([]byte, error) {
 	}
 
 	return bytes, nil
-}
-
-// writeNodeUpgradeAnnotation writes the node upgrade annotation
-// struct to the node
-func (uc *UpgradeController) writeNodeUpgradeAnnotation(node *corev1.Node, upgradeAnnotation provisioncsv3.NodeUpgradeAnnotation) error {
-	node = node.DeepCopy()
-
-	annotBytes, err := json.Marshal(upgradeAnnotation)
-	if err != nil {
-		return err
-	}
-
-	annotations := node.ObjectMeta.Annotations
-	annotations[constants.NodeUpgradeAnnotationKey] = string(annotBytes)
-
-	_, err = uc.kubeclientset.Core().Nodes().Update(node)
-
-	return err
 }
