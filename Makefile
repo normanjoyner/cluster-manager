@@ -16,12 +16,6 @@ else
 	COORDINATOR_DOCKERFILE=Dockerfile.coordinator
 endif
 
-# TODO golint has no way to ignore specific files or directories, so we have to
-# manually build a lint list. This workaround can go away and we can use
-# $PKG_LIST when the k8s code generator is updated to follow golang conventions
-# for generated files. See https://github.com/kubernetes/code-generator/issues/30.
-LINT_LIST := $(shell go list ./... | grep -v '/pkg/client')
-
 # TODO generated fakes can get a vet error for a copied lock
 VET_LIST := $(shell go list ./... | grep -v '/pkg/client/clientset/versioned/fake')
 
@@ -33,13 +27,13 @@ fmt-check: ## Check the file format
 	@gofmt -s -e -d ${GO_FILES}
 
 lint: ## Lint the files
-	@golint -set_exit_status ${LINT_LIST}
+	@golint -set_exit_status ${PKG_LIST}
 
 test: ## Run unittests
 	@go test -short ${PKG_LIST}
 
 vet: ## Vet the files
-	@go vet ${LINT_LIST}
+	@go vet ${VET_LIST}
 
 ## Read about data race https://golang.org/doc/articles/race_detector.html
 ## to not test file for race use `// +build !race` at top
