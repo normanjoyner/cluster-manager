@@ -99,8 +99,6 @@ func NewUpgradeController(kubeclientset kubernetes.Interface, clientset csclient
 	uc.nodeLister = nodeInformer.Lister()
 	uc.nodesSynced = nodeInformer.Informer().HasSynced
 
-	log.Info(upgradeControllerName, ": Setting up event handlers")
-
 	return uc
 }
 
