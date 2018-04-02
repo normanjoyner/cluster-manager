@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path"
+	"strings"
 	"time"
 
 	"github.com/spf13/afero"
@@ -35,7 +36,7 @@ import (
 
 const (
 	// Type of agent that runs this controller
-	pluginControllerName = "plugin"
+	pluginControllerName = "PluginController"
 
 	pluginLabelKey = "containership.io/plugin-id"
 
@@ -204,6 +205,7 @@ func (c *PluginController) pluginSyncHandler(key string) error {
 		return err
 	}
 
+	log.Debugf("%s syncing plugin of type %q with implementation %q", pluginControllerName, plugin.Spec.Type, plugin.Spec.Implementation)
 	// Create the plugin manifest files
 	return c.applyPlugin(plugin)
 }
@@ -247,6 +249,42 @@ func runAndLogFromKubectl(kc *kubectl.Kubectl) error {
 	return nil
 }
 
+// deletePluginUsingFiles takes in a plugin id and the plugin path.
+// It then looks at each file in the file directory and if it is a text file
+// it will take the url that is written in the file, and delete using the url.
+// If it is a json file it will use the file to delete the plugin.
+func deletePluginUsingFiles(pluginID, pluginPath string) error {
+	files, err := ioutil.ReadDir(pluginPath)
+	if err != nil {
+		return err
+	}
+
+	for _, f := range files {
+		isTextFile := strings.Contains(f.Name(), ".txt")
+		fullFilename := getPluginFilename(pluginID, f.Name())
+
+		var kc *kubectl.Kubectl
+		if !isTextFile {
+			kc = kubectl.NewDeleteCmd(fullFilename)
+		} else {
+			b, err := ioutil.ReadFile(fullFilename)
+			if err != nil {
+				return err
+			}
+
+			url := string(b)
+			kc = kubectl.NewDeleteCmd(url)
+		}
+
+		err := runAndLogFromKubectl(kc)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
 func (c *PluginController) deletePlugin(name string) error {
 	pluginPath := getPluginPath(name)
 
@@ -256,11 +294,16 @@ func (c *PluginController) deletePlugin(name string) error {
 		// it will try and delete by the containership.io/plugin-id label
 		label := pluginLabelKey + "=" + name
 		kc = kubectl.NewDeleteByLabelCmd(constants.ContainershipNamespace, label)
-	} else {
-		kc = kubectl.NewDeleteCmd(getPluginPath(name))
+
+		err := runAndLogFromKubectl(kc)
+		if err != nil {
+			return err
+		}
+
+		return nil
 	}
 
-	err := runAndLogFromKubectl(kc)
+	err := deletePluginUsingFiles(name, pluginPath)
 	if err != nil {
 		return err
 	}
@@ -273,26 +316,33 @@ func (c *PluginController) deletePlugin(name string) error {
 
 type jsonPluginsResponse struct {
 	Manifests [][]interface{} `json:"manifests"`
+	URLs      []string        `json:"urls"`
 }
 
-// getAndFormatPlugin makes a request to get the plugin manifests from containership
-// cloud, then takes them and splits them up to be written to files
-// under the plugins/:plugin_id.
-// Returns the number of manifests written if error is non-nil.
-func (c *PluginController) getAndFormatPlugin(ID string) (int, error) {
+// getPlugin gets the plugin spec from cloud, or returns an error
+func (c *PluginController) getPlugin(ID string) (*jsonPluginsResponse, error) {
 	path := makePluginManifestPath(ID)
 	bytes, err := makeRequest(path)
 	if err != nil {
-		return 0, err
+		return nil, err
 	}
 
 	var plugin jsonPluginsResponse
 	err = json.Unmarshal(bytes, &plugin)
 	if err != nil {
-		return 0, err
+		return nil, err
 	}
 
-	for index, resources := range plugin.Manifests {
+	return &plugin, nil
+}
+
+// formatPlugin takes the manifests from the plugin spec returned from cloud
+// and splits them up to be written to files under the plugins/:plugin_id. It
+// then returns an array of strings, which are the file paths.
+func formatPlugin(spec containershipv3.PluginSpec, pluginDetails *jsonPluginsResponse) ([]string, error) {
+	manifests := make([]string, 0)
+
+	for index, resources := range pluginDetails.Manifests {
 		manifestBundle := make([]byte, 0)
 		for _, r := range resources {
 			// Re-Marshal the generic object so we can have each
@@ -301,37 +351,44 @@ func (c *PluginController) getAndFormatPlugin(ID string) (int, error) {
 			manifestBundle = append(manifestBundle, unstructuredBytes...)
 		}
 
-		err = writePluginManifests(ID, index, manifestBundle)
+		filename := getPluginFilename(spec.ID, buildPluginFilename(index, "json"))
+
+		err := writePluginManifests(spec.ID, filename, manifestBundle)
 		// we only want to short circuit and return if there was an error
 		// else continue processing the manifests
 		if err != nil {
-			return 0, err
+			return nil, err
 		}
+
+		manifests = append(manifests, filename)
 	}
 
-	return len(plugin.Manifests), nil
+	return manifests, nil
 }
 
 func getPluginPath(id string) string {
 	return path.Join("/plugins", id)
 }
 
-func getPluginFilename(id string, index int) string {
-	return path.Join(getPluginPath(id), fmt.Sprintf("%d.json", index))
+func getPluginFilename(id string, name string) string {
+	return path.Join(getPluginPath(id), name)
 }
 
-// writePluginManifests takes the manifests and writes them to a .json file
-// writing them named as their index since kubectl apply runs files in
-// alphanumeric order
-func writePluginManifests(name string, index int, manifest []byte) error {
+func buildPluginFilename(name int, fileType string) string {
+	return fmt.Sprintf("%d.%s", name, fileType)
+}
+
+// writePluginManifests takes the manifests and writes them to a .json file.
+// They are named as their index so that if `kubectl apply -f` is run on
+// the directory they will be applied in the correct order, since kubectl apply
+// runs files in alphanumeric order
+func writePluginManifests(name string, filename string, manifest []byte) error {
 	path := getPluginPath(name)
 
 	err := osFs.MkdirAll(path, os.ModePerm)
 	if err != nil {
 		return err
 	}
-
-	filename := getPluginFilename(name, index)
 
 	return ioutil.WriteFile(filename, manifest, 0644)
 }
@@ -346,26 +403,46 @@ func cleanUpPluginManifests(name string) {
 // applyPlugin takes the manifests under the plugins id and runs them through
 // kubectl apply
 func (c *PluginController) applyPlugin(plugin *containershipv3.Plugin) error {
-	numManifests, err := c.getAndFormatPlugin(plugin.Spec.ID)
+	pluginDetails, err := c.getPlugin(plugin.Spec.ID)
 	if err != nil {
 		return err
 	}
 
-	if numManifests == 0 {
-		// No manifests were created, so there's nothing to apply. This can
-		// happen, for example, when the plugin implementation is k8s itself.
-		return nil
+	manifests := make([]string, 0)
+	if pluginDetails.Manifests != nil {
+		manifestFiles, err := formatPlugin(plugin.Spec, pluginDetails)
+
+		if err != nil {
+			return err
+		}
+
+		if len(manifestFiles) == 0 {
+			// No manifests were created, so there's nothing to apply. This can
+			// happen, for example, when the plugin implementation is k8s itself.
+			return nil
+		}
+
+		manifests = manifestFiles
 	}
 
-	kc := kubectl.NewApplyCmd(getPluginPath(plugin.Spec.ID))
+	if pluginDetails.URLs != nil {
+		for index, url := range pluginDetails.URLs {
+			writePluginManifests(plugin.Spec.ID, getPluginFilename(plugin.Spec.ID, buildPluginFilename(index, "txt")), []byte(url))
+			manifests = append(manifests, url)
+		}
+	}
 
-	err = kc.Run()
-	c.recorder.Event(plugin, corev1.EventTypeNormal, "Apply", string(kc.Output))
-	if err != nil || len(kc.Error) != 0 {
-		e := string(kc.Error)
+	for _, manifest := range manifests {
+		kc := kubectl.NewApplyCmd(manifest)
 
-		c.recorder.Event(plugin, corev1.EventTypeWarning, "ApplyError", e)
-		return fmt.Errorf("Error creating plugin: %s", e)
+		err = kc.Run()
+		c.recorder.Event(plugin, corev1.EventTypeNormal, "Apply", string(kc.Output))
+		if err != nil || len(kc.Error) != 0 {
+			e := string(kc.Error)
+
+			c.recorder.Event(plugin, corev1.EventTypeWarning, "ApplyError", e)
+			return fmt.Errorf("Error creating plugin: %s", e)
+		}
 	}
 
 	return nil

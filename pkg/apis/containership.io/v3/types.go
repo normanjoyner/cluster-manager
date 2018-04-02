@@ -113,6 +113,8 @@ type PluginSpec struct {
 type PluginType string
 
 const (
+	// CNI is a generic type of supported network plugin
+	CNI PluginType = "cni"
 	// Logs is a generic type of supported plugin
 	Logs PluginType = "logs"
 	// Metrics is a generic type of supported plugin
