@@ -12,6 +12,9 @@ GO_FILES := $(shell find . -type f -not -path './vendor/*' -name '*.go')
 # for generated files. See https://github.com/kubernetes/code-generator/issues/30.
 LINT_LIST := $(shell go list ./... | grep -v '/pkg/client')
 
+# TODO generated fakes can get a vet error for a copied lock
+VET_LIST := $(shell go list ./... | grep -v '/pkg/client/clientset/versioned/fake')
+
 .PHONY: all fmt-check lint test vet release
 
 all: agent coordinator ## (default) Build and deploy agent and coordinator
@@ -26,7 +29,7 @@ test: ## Run unittests
 	@go test -short ${PKG_LIST}
 
 vet: ## Vet the files
-	@go vet ${PKG_LIST}
+	@go vet ${LINT_LIST}
 
 ## Read about data race https://golang.org/doc/articles/race_detector.html
 ## to not test file for race use `// +build !race` at top
