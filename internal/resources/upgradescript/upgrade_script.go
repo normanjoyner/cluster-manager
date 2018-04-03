@@ -10,6 +10,8 @@ import (
 	"github.com/containership/cloud-agent/internal/constants"
 	"github.com/containership/cloud-agent/internal/log"
 	"github.com/containership/cloud-agent/internal/tools/fsutil"
+
+	provisioncsv3 "github.com/containership/cloud-agent/pkg/apis/provision.containership.io/v3"
 )
 
 const (
@@ -30,15 +32,15 @@ const (
 var osFs = afero.NewOsFs()
 
 // Write takes the script data to write to /upgrade/upgradeScriptFilename
-func Write(script []byte, targetVersion, upgradeID string) error {
-	filename := GetUpgradeScriptFullPath(getUpgradeScriptFilename(targetVersion, upgradeID))
+func Write(script []byte, upgradeType provisioncsv3.UpgradeType, targetVersion, upgradeID string) error {
+	filename := GetUpgradeScriptFullPath(getUpgradeScriptFilename(upgradeType, targetVersion, upgradeID))
 	return writeUpgradeScript(osFs, script, filename)
 }
 
 // Exists returns true if the upgrade script exists on disk (i.e.
 // Write() has been called for this upgrade), else false
-func Exists(targetVersion, upgradeID string) (bool, error) {
-	filename := GetUpgradeScriptFullPath(getUpgradeScriptFilename(targetVersion, upgradeID))
+func Exists(upgradeType provisioncsv3.UpgradeType, targetVersion, upgradeID string) (bool, error) {
+	filename := GetUpgradeScriptFullPath(getUpgradeScriptFilename(upgradeType, targetVersion, upgradeID))
 
 	_, err := osFs.Stat(filename)
 	if err != nil {
@@ -136,6 +138,6 @@ func getScriptDir() string {
 }
 
 // getUpgradeScriptFilename returns the file name that will be used for upgrade
-func getUpgradeScriptFilename(targetVersion, upgradeID string) string {
-	return fmt.Sprintf("upgrade-%s-%s.sh", targetVersion, upgradeID)
+func getUpgradeScriptFilename(upgradeType provisioncsv3.UpgradeType, targetVersion, upgradeID string) string {
+	return fmt.Sprintf("upgrade-%s-%s-%s.sh", upgradeType, targetVersion, upgradeID)
 }

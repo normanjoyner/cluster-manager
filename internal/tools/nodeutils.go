@@ -9,7 +9,8 @@ import (
 // NodeIsTargetKubernetesVersion checks if the current node version matches the target version
 // of the cluster upgrade that is being processed. This only checks that the
 // kubelet is up to date, and does not check the static pods.
+// NOTE: this should only be called with upgrades of type Kubernetes
 // TODO: later we should consider doing this check in a safer/more reliable way
 func NodeIsTargetKubernetesVersion(cup *provisioncsv3.ClusterUpgrade, node *corev1.Node) bool {
-	return node.Status.NodeInfo.KubeletVersion == cup.Spec.TargetKubernetesVersion
+	return node.Status.NodeInfo.KubeletVersion == cup.Spec.TargetVersion
 }

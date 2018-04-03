@@ -262,6 +262,20 @@ func (uc *UpgradeController) upgradeSyncHandler(key string) error {
 		return err
 	}
 
+	switch upgrade.Spec.Type {
+	case provisioncsv3.UpgradeTypeKubernetes:
+		// TODO in the future we should cleanly separate logic for different
+		// types as needed. For now, we can just assume Kubernetes upgrades
+		// from this point forward.
+		break
+	case provisioncsv3.UpgradeTypeEtcd:
+		fallthrough
+	default:
+		// Log an error but return nil so we don't retry since there's nothing we can do
+		log.Errorf("%s: ignoring unsupported upgrade type %q", upgradeControllerName, upgrade.Spec.Type)
+		return nil
+	}
+
 	// If upgrade has already been fully processed and either Successed or Failed
 	// we don't need to do anything. We're only listening to Add events so this
 	// should be unlikely, but it can happen e.g. if coordinator restarts.

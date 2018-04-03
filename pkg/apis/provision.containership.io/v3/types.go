@@ -21,14 +21,14 @@ type ClusterUpgrade struct {
 
 // ClusterUpgradeSpec is the spec for a Containership Cloud Cluster Upgrade.
 type ClusterUpgradeSpec struct {
-	ID                      string                   `json:"id"`
-	AddedAt                 string                   `json:"addedAt"`
-	Description             string                   `json:"description"`
-	TargetKubernetesVersion string                   `json:"targetKubernetesVersion"`
-	TargetEtcdVersion       string                   `json:"targetEtcdVersion"`
-	LabelSelector           []LabelSelectorSpec      `json:"labelSelector"`
-	NodeTimeoutSeconds      int                      `json:"nodeTimeoutSeconds"`
-	Status                  ClusterUpgradeStatusSpec `json:"status"`
+	ID                 string                   `json:"id"`
+	Type               UpgradeType              `json:"type"`
+	AddedAt            string                   `json:"addedAt"`
+	Description        string                   `json:"description"`
+	TargetVersion      string                   `json:"targetVersion"`
+	LabelSelector      []LabelSelectorSpec      `json:"labelSelector"`
+	NodeTimeoutSeconds int                      `json:"nodeTimeoutSeconds"`
+	Status             ClusterUpgradeStatusSpec `json:"status"`
 }
 
 // ClusterUpgradeStatusSpec is the spec for the current status / state of a
@@ -39,6 +39,16 @@ type ClusterUpgradeStatusSpec struct {
 	CurrentNode      string                   `json:"currentNode"`
 	CurrentStartTime string                   `json:"currentStartTime"`
 }
+
+// UpgradeType specifies the type of upgrade this CRD corresponds to
+type UpgradeType string
+
+const (
+	// UpgradeTypeKubernetes is for upgrading Kubernetes
+	UpgradeTypeKubernetes UpgradeType = "kubernetes"
+	// UpgradeTypeEtcd is for upgrading etcd (not yet supported)
+	UpgradeTypeEtcd UpgradeType = "etcd"
+)
 
 // UpgradeStatus keeps track of where in the upgrade process the cluster is
 type UpgradeStatus string

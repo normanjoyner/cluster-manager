@@ -219,14 +219,29 @@ func (uc *UpgradeController) syncHandler(key string) error {
 		return nil
 	}
 
+	switch upgrade.Spec.Type {
+	case provisioncsv3.UpgradeTypeKubernetes:
+		// TODO in the future we should cleanly separate logic for different
+		// types as needed. For now, we can just assume Kubernetes upgrades
+		// from this point forward.
+		break
+	case provisioncsv3.UpgradeTypeEtcd:
+		fallthrough
+	default:
+		// Log an error but return nil so we don't retry since there's nothing we can do
+		log.Errorf("%s: ignoring unsupported upgrade type %q", upgradeControllerName, upgrade.Spec.Type)
+		return nil
+	}
+
 	if upgrade.Spec.Status.NodeStatuses[env.NodeName()] != provisioncsv3.UpgradeInProgress {
 		// It's not our turn to do anything
 		return nil
 	}
 
-	targetVersion := upgrade.Spec.TargetKubernetesVersion
+	upgradeType := upgrade.Spec.Type
+	targetVersion := upgrade.Spec.TargetVersion
 	upgradeID := upgrade.Spec.ID
-	exists, err := upgradescript.Exists(targetVersion, upgradeID)
+	exists, err := upgradescript.Exists(upgradeType, targetVersion, upgradeID)
 	if err != nil {
 		return err
 	}
@@ -253,9 +268,10 @@ func (uc *UpgradeController) startUpgrade(upgrade *provisioncsv3.ClusterUpgrade)
 
 	// Step 2: Execute the upgrade script
 	log.Info("Writing upgrade script")
-	targetVersion := upgrade.Spec.TargetKubernetesVersion
+	upgradeType := upgrade.Spec.Type
+	targetVersion := upgrade.Spec.TargetVersion
 	upgradeID := upgrade.Spec.ID
-	return upgradescript.Write(script, targetVersion, upgradeID)
+	return upgradescript.Write(script, upgradeType, targetVersion, upgradeID)
 }
 
 // finishUpgrade performs any necessary cleanup and finalizes the upgrade for this node

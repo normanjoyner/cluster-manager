@@ -87,7 +87,8 @@ var tests = []buildLabelTest{
 		name: "Master node next",
 		input: &provisioncsv3.ClusterUpgrade{
 			Spec: provisioncsv3.ClusterUpgradeSpec{
-				TargetKubernetesVersion: "v1.9.2",
+				Type:          provisioncsv3.UpgradeTypeKubernetes,
+				TargetVersion: "v1.9.2",
 			},
 		},
 		cluster: []runtime.Object{
@@ -100,7 +101,8 @@ var tests = []buildLabelTest{
 		name: "Master node unmanaged",
 		input: &provisioncsv3.ClusterUpgrade{
 			Spec: provisioncsv3.ClusterUpgradeSpec{
-				TargetKubernetesVersion: "v1.9.2",
+				Type:          provisioncsv3.UpgradeTypeKubernetes,
+				TargetVersion: "v1.9.2",
 			},
 		},
 		cluster: []runtime.Object{
@@ -113,7 +115,8 @@ var tests = []buildLabelTest{
 		name: "Master node at desired version. return worker",
 		input: &provisioncsv3.ClusterUpgrade{
 			Spec: provisioncsv3.ClusterUpgradeSpec{
-				TargetKubernetesVersion: "v1.9.2",
+				Type:          provisioncsv3.UpgradeTypeKubernetes,
+				TargetVersion: "v1.9.2",
 			},
 		},
 		cluster: []runtime.Object{
@@ -126,7 +129,8 @@ var tests = []buildLabelTest{
 		name: "Master node at desired version. return next master",
 		input: &provisioncsv3.ClusterUpgrade{
 			Spec: provisioncsv3.ClusterUpgradeSpec{
-				TargetKubernetesVersion: "v1.9.2",
+				Type:          provisioncsv3.UpgradeTypeKubernetes,
+				TargetVersion: "v1.9.2",
 			},
 		},
 		cluster: []runtime.Object{
@@ -139,7 +143,7 @@ var tests = []buildLabelTest{
 		name: "Get node with label selector",
 		input: &provisioncsv3.ClusterUpgrade{
 			Spec: provisioncsv3.ClusterUpgradeSpec{
-				TargetKubernetesVersion: "v1.9.2",
+				TargetVersion: "v1.9.2",
 				LabelSelector: []provisioncsv3.LabelSelectorSpec{
 					{
 						Label:    "custom.label/key",
