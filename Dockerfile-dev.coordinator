@@ -1,0 +1,53 @@
+FROM golang:1.9.3-alpine3.7 as builder
+
+# add tools for debug and development purposes
+RUN apk update && \
+    apk add --no-cache git gcc musl-dev && \
+    apk add glide
+
+ENV SRC_DIR=/go/src/github.com/containership/cloud-agent/
+
+WORKDIR /app
+
+# Glide install before adding rest of source so we can cache the resulting
+# vendor dir
+ADD glide.yaml glide.lock $SRC_DIR
+RUN cd $SRC_DIR && \
+        glide install -v
+
+# Install kubectl
+ARG K8S_VERSION=v1.9.0
+RUN set -x                  && \
+    apk --update upgrade    && \
+    apk add --update ca-certificates openssl && update-ca-certificates && \
+    rm -rf /var/cache/apk/* && \
+    wget -O /kubectl https://storage.googleapis.com/kubernetes-release/release/$K8S_VERSION/bin/linux/amd64/kubectl && \
+    chmod +x /kubectl
+
+# Add the source code:
+COPY . $SRC_DIR
+
+# Build it:
+ARG GIT_DESCRIBE
+ARG GIT_COMMIT
+RUN cd $SRC_DIR && \
+    CGO_ENABLED=0 GOOS=linux GOARCH=amd64 \
+        go build -ldflags \
+        "-X github.com/containership/cloud-agent/internal/buildinfo.gitDescribe=${GIT_DESCRIBE} \
+        -X github.com/containership/cloud-agent/internal/buildinfo.gitCommit=${GIT_COMMIT} \
+        -X github.com/containership/cloud-agent/internal/buildinfo.unixTime=`date '+%s'` \
+        -w" \
+        -a -tags netgo \
+        -o coordinator cmd/cloud_coordinator/coordinator.go && \
+    cp coordinator /app/
+
+
+# Create Docker image of just the binary
+FROM scratch as runner
+COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
+COPY --from=builder /app/coordinator .
+COPY --from=builder /kubectl /etc/kubectl/kubectl
+
+ENV KUBECTL_PATH=/etc/kubectl/kubectl
+
+CMD ["./coordinator", "-logtostderr=true"]

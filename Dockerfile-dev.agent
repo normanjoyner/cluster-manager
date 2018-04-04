@@ -1,0 +1,45 @@
+FROM golang:1.9.3-alpine3.7 as builder
+
+# add tools for debug and development purposes
+RUN apk update && \
+    apk add --no-cache git gcc musl-dev && \
+    apk add glide
+
+ENV SRC_DIR=/go/src/github.com/containership/cloud-agent/
+
+WORKDIR /app
+
+# Glide install before adding rest of source so we can cache the resulting
+# vendor dir
+ADD glide.yaml glide.lock $SRC_DIR
+RUN cd $SRC_DIR && \
+        glide install -v
+
+# Add the source code:
+COPY . $SRC_DIR
+
+# Place login script in known location:
+RUN mkdir -p /scripts && \
+    cp $SRC_DIR/scripts/containership_login.sh /scripts
+
+# Build it:
+ARG GIT_DESCRIBE
+ARG GIT_COMMIT
+RUN cd $SRC_DIR && \
+    CGO_ENABLED=0 GOOS=linux GOARCH=amd64 \
+        go build -ldflags \
+        "-X github.com/containership/cloud-agent/internal/buildinfo.gitDescribe=${GIT_DESCRIBE} \
+        -X github.com/containership/cloud-agent/internal/buildinfo.gitCommit=${GIT_COMMIT} \
+        -X github.com/containership/cloud-agent/internal/buildinfo.unixTime=`date '+%s'` \
+        -w" \
+        -a -tags netgo \
+        -o agent cmd/cloud_agent/agent.go && \
+    cp agent /app/
+
+# Create Docker image of just the binary
+FROM scratch as runner
+COPY --from=builder ./scripts /scripts
+COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
+COPY --from=builder ./app/agent .
+
+CMD ["./agent", "-logtostderr=true"]
