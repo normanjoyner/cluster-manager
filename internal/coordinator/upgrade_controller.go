@@ -345,8 +345,9 @@ func (uc *UpgradeController) nodeSyncHandler(key string) error {
 		}
 	}
 
-	if !nodeTimedOut && !nodeIsTargetVersion {
-		// Upgrade is still processing, nothing to do
+	readyToMoveOn := nodeIsTargetVersion && tools.NodeIsReady(node)
+	if !nodeTimedOut && !readyToMoveOn {
+		// Upgrade is still processing, nothing to no
 		return nil
 	}
 
