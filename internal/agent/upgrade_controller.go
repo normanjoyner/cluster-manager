@@ -5,8 +5,6 @@ import (
 	"io/ioutil"
 	"time"
 
-	corev1 "k8s.io/api/core/v1"
-
 	"k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"
 
@@ -76,9 +74,8 @@ func NewUpgradeController(
 		UpdateFunc: func(old, new interface{}) {
 			oldUpgrade := old.(*provisioncsv3.ClusterUpgrade)
 			newUpgrade := new.(*provisioncsv3.ClusterUpgrade)
-			if oldUpgrade.ResourceVersion == newUpgrade.ResourceVersion ||
-				newUpgrade.Spec.Status.CurrentNode != env.NodeName() {
-				// Just a syncInterval update or this update does not apply to us
+			if oldUpgrade.ResourceVersion == newUpgrade.ResourceVersion {
+				// Just a syncInterval update
 				return
 			}
 			uc.enqueueUpgrade(new)
@@ -233,8 +230,12 @@ func (uc *UpgradeController) syncHandler(key string) error {
 		return nil
 	}
 
-	if upgrade.Spec.Status.NodeStatuses[env.NodeName()] != provisioncsv3.UpgradeInProgress {
-		// It's not our turn to do anything
+	if !uc.thisNodeIsInProgress(upgrade) {
+		// It's not our turn to do anything - ensure that `current` doesn't exist
+		if err := upgradescript.RemoveCurrent(); err != nil {
+			// There's no good option for handling this, so just log it
+			log.Error("Could not remove `current` upgrade file:", err)
+		}
 		return nil
 	}
 
@@ -247,6 +248,11 @@ func (uc *UpgradeController) syncHandler(key string) error {
 	}
 
 	return uc.startUpgrade(upgrade)
+}
+
+func (uc *UpgradeController) thisNodeIsInProgress(upgrade *provisioncsv3.ClusterUpgrade) bool {
+	return upgrade.Spec.Status.CurrentNode == env.NodeName() &&
+		upgrade.Spec.Status.NodeStatuses[env.NodeName()] == provisioncsv3.UpgradeInProgress
 }
 
 // startUpgrade kicks off the upgrade process by downloading and writing the
@@ -268,17 +274,6 @@ func (uc *UpgradeController) startUpgrade(upgrade *provisioncsv3.ClusterUpgrade)
 	targetVersion := upgrade.Spec.TargetVersion
 	upgradeID := upgrade.Spec.ID
 	return upgradescript.Write(script, upgradeType, targetVersion, upgradeID)
-}
-
-// finishUpgrade performs any necessary cleanup and finalizes the upgrade for this node
-func (uc *UpgradeController) finishUpgrade(node *corev1.Node) {
-	// Remove the `current` file first so regardless of any failures after this point
-	// we'll be able to retry if needed by writing a new `current`
-	if err := upgradescript.RemoveCurrent(); err != nil {
-		// There's no good option for handling this, so just continue instead of
-		// failing the upgrade.
-		log.Error("Could not remove `current` upgrade file:", err)
-	}
 }
 
 // downloadUpgradeScript downloads the upgrade script for this node
