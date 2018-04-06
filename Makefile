@@ -6,6 +6,16 @@ PKG := "github.com/containership/$(PROJECT_NAME)"
 PKG_LIST := $(shell glide novendor)
 GO_FILES := $(shell find . -type f -not -path './vendor/*' -name '*.go')
 
+# TODO remove this hack. We need Jenkins Dockerfiles until GKE supports a
+# version of Docker that supports multi-stage builds.
+ifeq ($(JENKINS), 1)
+	AGENT_DOCKERFILE=Dockerfile-jenkins.agent
+	COORDINATOR_DOCKERFILE=Dockerfile-jenkins.coordinator
+else
+	AGENT_DOCKERFILE=Dockerfile.agent
+	COORDINATOR_DOCKERFILE=Dockerfile.coordinator
+endif
+
 # TODO golint has no way to ignore specific files or directories, so we have to
 # manually build a lint list. This workaround can go away and we can use
 # $PKG_LIST when the k8s code generator is updated to follow golang conventions
@@ -90,7 +100,7 @@ build-agent: ## Build the agent in Docker
 	docker image build -t containership/cloud-agent:$(AGENT_IMAGE_TAG) \
 		--build-arg GIT_DESCRIBE=`git describe --dirty` \
 		--build-arg GIT_COMMIT=`git rev-parse --short HEAD` \
-		-f Dockerfile.agent .
+		-f $(AGENT_DOCKERFILE) .
 
 agent: build-agent deploy-agent ## Build and deploy the agent
 
@@ -99,7 +109,7 @@ build-coordinator: ## Build the coordinator in Docker
 	docker image build -t containership/cloud-coordinator:$(COORDINATOR_IMAGE_TAG) \
 		--build-arg GIT_DESCRIBE=`git describe --dirty` \
 		--build-arg GIT_COMMIT=`git rev-parse --short HEAD` \
-		-f Dockerfile.coordinator .
+		-f $(COORDINATOR_DOCKERFILE) .
 
 coordinator: build-coordinator deploy-coordinator ## Build and deploy the coordinator
 

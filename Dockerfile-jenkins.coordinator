@@ -1,4 +1,4 @@
-FROM golang:1.9.3-alpine3.7 as builder
+FROM golang:1.9.3-alpine3.7
 
 # add tools for debug and development purposes
 RUN apk update && \
@@ -40,14 +40,3 @@ RUN cd $SRC_DIR && \
         -a -tags netgo \
         -o coordinator cmd/cloud_coordinator/coordinator.go && \
     cp coordinator /app/
-
-
-# Create Docker image of just the binary
-FROM scratch as runner
-COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
-COPY --from=builder /app/coordinator .
-COPY --from=builder /kubectl /etc/kubectl/kubectl
-
-ENV KUBECTL_PATH=/etc/kubectl/kubectl
-
-CMD ["./coordinator", "-logtostderr=true"]

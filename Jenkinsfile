@@ -12,11 +12,11 @@ pipelineUtils.jenkinsWithNodeTemplate {
     def docker_name_agent = 'cloud-agent'
     def docker_name_coordinator = 'cloud-coordinator'
 
-    def dockerfile_test_agent = 'Dockerfile'
-    def dockerfile_test_coordinator = 'Dockerfile'
+    def dockerfile_test_agent = 'Dockerfile.test'
+    def dockerfile_test_coordinator = 'Dockerfile.test'
 
-    def dockerfile_agent = 'Dockerfile.agent'
-    def dockerfile_coordinator = 'Dockerfile.coordinator'
+    def dockerfile_agent = 'Dockerfile-jenkins.agent'
+    def dockerfile_coordinator = 'Dockerfile-jenkins.coordinator'
 
     def docker_repo_agent = "${docker_org}/${docker_name_agent}"
     def docker_repo_coordinator = "${docker_org}/${docker_name_coordinator}"
