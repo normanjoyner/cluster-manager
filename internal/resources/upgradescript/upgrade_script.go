@@ -39,30 +39,39 @@ func Write(script []byte, upgradeType provisioncsv3.UpgradeType, targetVersion, 
 
 // Exists returns true if the upgrade script exists on disk (i.e.
 // Write() has been called for this upgrade), else false
-func Exists(upgradeType provisioncsv3.UpgradeType, targetVersion, upgradeID string) (bool, error) {
-	filename := GetUpgradeScriptFullPath(getUpgradeScriptFilename(upgradeType, targetVersion, upgradeID))
+func Exists(upgradeType provisioncsv3.UpgradeType, targetVersion, upgradeID string) bool {
+	return exists(osFs, upgradeType, targetVersion, upgradeID)
+}
 
-	_, err := osFs.Stat(filename)
-	if err != nil {
-		if os.IsNotExist(err) {
-			return false, nil
-		}
-		return false, err
-	}
-
-	return true, nil
+// GetUpgradeScriptFullPath returns path to the upgrade script
+func GetUpgradeScriptFullPath(filename string) string {
+	return path.Join(getScriptDir(), filename)
 }
 
 // RemoveCurrent removes the /current file after an upgrade has completed
 func RemoveCurrent() error {
-	return removeCurrentUpgradeScript(osFs)
+	return removeCurrent(osFs)
+}
+
+func exists(fs afero.Fs, upgradeType provisioncsv3.UpgradeType, targetVersion, upgradeID string) bool {
+	filename := GetUpgradeScriptFullPath(getUpgradeScriptFilename(upgradeType, targetVersion, upgradeID))
+
+	return fsutil.FileExists(fs, filename)
+}
+
+// removeCurrent removes the /current file after an upgrade
+// has completed. nil is returned if the file does not exist.
+func removeCurrent(fs afero.Fs) error {
+	currentScriptFilename := GetUpgradeScriptFullPath(currentScriptFile)
+
+	log.Debug("Upgrade file \"current\" is being removed.")
+	// RemoveAll instead of Remove so no error is returned if `current` DNE.
+	return fs.RemoveAll(currentScriptFilename)
 }
 
 // writeUpgradeScript takes the given script and writes it to the path
 // that systemd is watching for it to be ran on the host
 func writeUpgradeScript(fs afero.Fs, script []byte, upgradeScriptFilename string) error {
-	currentScriptFilename := GetUpgradeScriptFullPath(currentScriptFile)
-
 	err := fsutil.EnsureDirExistsWithCorrectPermissions(fs, getScriptDir(), upgradeScriptDirPermissions)
 	if err != nil {
 		return err
@@ -73,7 +82,7 @@ func writeUpgradeScript(fs afero.Fs, script []byte, upgradeScriptFilename string
 		return err
 	}
 
-	err = writePathToCurrent(fs, currentScriptFilename, upgradeScriptFilename)
+	err = writePathToCurrent(fs, upgradeScriptFilename)
 	if err != nil {
 		return err
 	}
@@ -87,10 +96,11 @@ func writeScript(fs afero.Fs, filename string, script []byte) error {
 	return write(fs, filename, upgradeScriptPermissions, script)
 }
 
-// writePathToCurrent takes the filename to /current, and the filename to the
-// upgrade script that needs to be ran
-func writePathToCurrent(fs afero.Fs, filename, upgradeScriptPath string) error {
-	return write(fs, filename, currentUpgradeScriptPermissions, []byte(upgradeScriptPath))
+// writePathToCurrent writes the current upgrade script path to the `current` file
+// at its standard location
+func writePathToCurrent(fs afero.Fs, upgradeScriptPath string) error {
+	currentPath := GetUpgradeScriptFullPath(currentScriptFile)
+	return write(fs, currentPath, currentUpgradeScriptPermissions, []byte(upgradeScriptPath))
 }
 
 // write takes data and writes it to the specified file with the correct permissions
@@ -115,21 +125,6 @@ func write(fs afero.Fs, filename string, permissions os.FileMode, script []byte)
 	}
 
 	return nil
-}
-
-// removeCurrentUpgradeScript removes the /current file after an upgrade
-// has completed. nil is returned if the file does not exist.
-func removeCurrentUpgradeScript(fs afero.Fs) error {
-	currentScriptFilename := GetUpgradeScriptFullPath(currentScriptFile)
-
-	log.Debug("Upgrade file \"current\" is being removed.")
-	// RemoveAll instead of Remove so no error is returned if `current` DNE.
-	return fs.RemoveAll(currentScriptFilename)
-}
-
-// GetUpgradeScriptFullPath returns path to the upgrade script
-func GetUpgradeScriptFullPath(filename string) string {
-	return path.Join(getScriptDir(), filename)
 }
 
 // getScriptDir returns the directory to top level directory for upgrades

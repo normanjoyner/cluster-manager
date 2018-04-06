@@ -241,12 +241,8 @@ func (uc *UpgradeController) syncHandler(key string) error {
 	upgradeType := upgrade.Spec.Type
 	targetVersion := upgrade.Spec.TargetVersion
 	upgradeID := upgrade.Spec.ID
-	exists, err := upgradescript.Exists(upgradeType, targetVersion, upgradeID)
-	if err != nil {
-		return err
-	}
 
-	if exists {
+	if upgradescript.Exists(upgradeType, targetVersion, upgradeID) {
 		return nil
 	}
 
