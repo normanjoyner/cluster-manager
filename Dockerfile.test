@@ -1,5 +1,9 @@
 # This dockerfile is only for Jenkins tests
-FROM iron/go:1.9.3-dev
+FROM golang:1.10.1-alpine3.7
+
+RUN apk update && \
+    apk add --no-cache git gcc musl-dev && \
+    apk add glide make
 
 # add tools for debug and development purposes
 RUN apk update && apk add glide && apk add bash

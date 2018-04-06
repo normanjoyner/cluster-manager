@@ -1,4 +1,4 @@
-FROM golang:1.9.3-alpine3.7
+FROM golang:1.10.1-alpine3.7
 
 # add tools for debug and development purposes
 RUN apk update && \
