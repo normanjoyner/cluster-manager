@@ -39,7 +39,6 @@ spec:
                   fieldPath: spec.nodeName
           image: containership/cloud-agent
           imagePullPolicy: IfNotPresent
-          command: ["./agent", "-logtostderr=true"]
           volumeMounts:
             - name: containership-mount
               mountPath: /etc/containership

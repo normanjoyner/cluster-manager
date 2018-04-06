@@ -29,7 +29,6 @@ spec:
                 name: containership-env-configmap
           image: containership/cloud-coordinator
           imagePullPolicy: IfNotPresent
-          command: ["./coordinator", "-logtostderr=true"]
           volumeMounts:
             - mountPath: /plugins
               name: plugins-volume
