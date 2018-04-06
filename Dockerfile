@@ -18,9 +18,4 @@ RUN cd $SRC_DIR && \
 # Add the source code:
 ADD . $SRC_DIR
 
-# Build it:
-RUN cd $SRC_DIR && \
-    go build -o coordinator cmd/cloud_coordinator/coordinator.go && \
-    cp coordinator /app/
-
 WORKDIR $SRC_DIR
