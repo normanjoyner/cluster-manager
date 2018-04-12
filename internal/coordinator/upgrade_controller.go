@@ -267,12 +267,13 @@ func (uc *UpgradeController) upgradeSyncHandler(key string) error {
 		// TODO in the future we should cleanly separate logic for different
 		// types as needed. For now, we can just assume Kubernetes upgrades
 		// from this point forward.
+		uc.recorder.Eventf(upgrade, corev1.EventTypeNormal, "Accepted", "Upgrade type %q accepted for processing", upgrade.Spec.Type)
 		break
 	case provisioncsv3.UpgradeTypeEtcd:
 		fallthrough
 	default:
-		// Log an error but return nil so we don't retry since there's nothing we can do
-		log.Errorf("%s: ignoring unsupported upgrade type %q", upgradeControllerName, upgrade.Spec.Type)
+		// Record an error but return nil so we don't retry since there's nothing we can do
+		uc.recorder.Eventf(upgrade, corev1.EventTypeWarning, "Ignore", "Unsupported upgrade type %q", upgrade.Spec.Type)
 		return nil
 	}
 
@@ -360,10 +361,10 @@ func (uc *UpgradeController) nodeSyncHandler(key string) error {
 
 	// Mark this node as done with appropriate status
 	if nodeTimedOut {
-		log.Infof("%s: Node upgrade %q timed out", upgradeControllerName, node.Name)
+		uc.recorder.Eventf(currentUpgrade, corev1.EventTypeWarning, "NodeUpgradeFailure", "Node %q upgrade timed out", node.Name)
 		currentUpgrade.Spec.Status.NodeStatuses[node.Name] = provisioncsv3.UpgradeFailed
 	} else {
-		log.Infof("%s: Node upgrade %q succeeded", upgradeControllerName, node.Name)
+		uc.recorder.Eventf(currentUpgrade, corev1.EventTypeNormal, "NodeUpgradeSuccess", "Node %q upgrade succeeded", node.Name)
 		currentUpgrade.Spec.Status.NodeStatuses[node.Name] = provisioncsv3.UpgradeSuccess
 	}
 
@@ -392,7 +393,7 @@ func (uc *UpgradeController) updateClusterUpgradeStatus(cup *provisioncsv3.Clust
 func (uc *UpgradeController) finishUpgrade(cup *provisioncsv3.ClusterUpgrade) error {
 	clusterStatus := getFinalUpgradeStatus(cup)
 
-	log.Infof("%s: Cluster upgrade finished with status %q", upgradeControllerName, clusterStatus)
+	uc.recorder.Eventf(cup, corev1.EventTypeNormal, "ClusterUpgradeComplete", "Cluster upgrade completed with status %q", clusterStatus)
 
 	return uc.updateClusterUpgradeStatus(cup, &provisioncsv3.ClusterUpgradeStatusSpec{
 		ClusterStatus:    clusterStatus,
@@ -405,7 +406,7 @@ func (uc *UpgradeController) finishUpgrade(cup *provisioncsv3.ClusterUpgrade) er
 // startUpgradeForNode kicks off the upgrade process for the given node by updating
 // the ClusterUpgrade CRD appropriately.
 func (uc *UpgradeController) startUpgradeForNode(cup *provisioncsv3.ClusterUpgrade, node *corev1.Node) error {
-	log.Infof("%s: Marking node %s for upgrade", upgradeControllerName, node.Name)
+	uc.recorder.Eventf(cup, corev1.EventTypeNormal, "NodeInProgress", "Marking node %q for upgrade", node.Name)
 
 	nodeStatuses := cup.Spec.Status.NodeStatuses
 	if nodeStatuses == nil {
