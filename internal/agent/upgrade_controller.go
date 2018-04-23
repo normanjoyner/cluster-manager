@@ -33,8 +33,7 @@ const (
 )
 
 const (
-	// TODO finalize this - current version is just for rough testing
-	nodeUpgradeScriptEndpointTemplate = "/organizations/{{.OrganizationID}}/clusters/{{.ClusterID}}/nodes/{{.NodeName}}-upgrade.sh"
+	nodeUpgradeScriptEndpointTemplateBase = "/organizations/{{.OrganizationID}}/clusters/{{.ClusterID}}/nodes/{{.NodeName}}/upgrade"
 )
 
 // UpgradeController is the agent controller which watches for ClusterUpgrade updates
@@ -262,7 +261,7 @@ func (uc *UpgradeController) startUpgrade(upgrade *provisioncsv3.ClusterUpgrade)
 
 	// Step 1: Fetch the upgrade script from Cloud
 	log.Info("Downloading upgrade script")
-	script, err := uc.downloadUpgradeScript()
+	script, err := uc.downloadUpgradeScript(upgrade)
 	if err != nil {
 		log.Error("Download upgrade script failed:", err)
 		return err
@@ -277,11 +276,11 @@ func (uc *UpgradeController) startUpgrade(upgrade *provisioncsv3.ClusterUpgrade)
 }
 
 // downloadUpgradeScript downloads the upgrade script for this node
-func (uc *UpgradeController) downloadUpgradeScript() ([]byte, error) {
-	req, err := request.New(request.CloudServiceProvision,
-		nodeUpgradeScriptEndpointTemplate,
-		"GET",
-		nil)
+func (uc *UpgradeController) downloadUpgradeScript(upgrade *provisioncsv3.ClusterUpgrade) ([]byte, error) {
+	pathTemplate := fmt.Sprintf("%s/%s?version=%s", nodeUpgradeScriptEndpointTemplateBase,
+		upgrade.Spec.Type, upgrade.Spec.TargetVersion)
+
+	req, err := request.New(request.CloudServiceProvision, pathTemplate, "GET", nil)
 	if err != nil {
 		return nil, err
 	}
