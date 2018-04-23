@@ -1,0 +1,36 @@
+---
+# Note that we do not mark this SA as containership-managed in order to avoid
+# deleting it on terminate (while we still need it to finish cleaning up other
+# resources). It will be garbage collected when the containership-core namespace
+# is deleted.
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: containership-admin
+  namespace: containership-core
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: containership-admin
+  labels:
+    containership.io/managed: "true"
+rules:
+  - apiGroups: ["*"]
+    resources: ["*"]
+    verbs: ["*"]
+---
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: ClusterRoleBinding
+metadata:
+  name: containership-admin
+  labels:
+    containership.io/managed: "true"
+subjects:
+  - kind: ServiceAccount
+    name: containership-admin
+    namespace: containership-core
+roleRef:
+  kind: ClusterRole
+  name: containership-admin
+  apiGroup: rbac.authorization.k8s.io
