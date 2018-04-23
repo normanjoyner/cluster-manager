@@ -436,12 +436,17 @@ func (c *PluginController) applyPlugin(plugin *containershipv3.Plugin) error {
 		kc := kubectl.NewApplyCmd(manifest)
 
 		err = kc.Run()
-		c.recorder.Event(plugin, corev1.EventTypeNormal, "Apply", string(kc.Output))
-		if err != nil || len(kc.Error) != 0 {
-			e := string(kc.Error)
 
-			c.recorder.Event(plugin, corev1.EventTypeWarning, "ApplyError", e)
-			return fmt.Errorf("Error creating plugin: %s", e)
+		c.recorder.Event(plugin, corev1.EventTypeNormal, "Apply", string(kc.Output))
+
+		if err != nil || len(kc.Error) != 0 {
+			errMsg := fmt.Sprintf("Error creating plugin: %s", err)
+			if e := string(kc.Error); e != "" {
+				errMsg = fmt.Sprintf("%s, kubectl stderr: %s", errMsg, e)
+			}
+
+			c.recorder.Event(plugin, corev1.EventTypeWarning, "ApplyError", errMsg)
+			return fmt.Errorf("Error creating plugin: %s", errMsg)
 		}
 	}
 
