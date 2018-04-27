@@ -19,6 +19,7 @@ spec:
         containership.io/app: cloud-coordinator
         containership.io/managed: "true"
     spec:
+      serviceAccountName: containership-admin
       volumes:
         - name: plugins-volume
           emptyDir: {}

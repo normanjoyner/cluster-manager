@@ -19,6 +19,7 @@ spec:
         containership.io/app: cloud-agent
         containership.io/managed: "true"
     spec:
+      serviceAccountName: containership-admin
       volumes:
         - name: containership-mount
           hostPath:
