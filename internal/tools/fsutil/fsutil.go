@@ -58,7 +58,6 @@ func CopyFileForcefully(fs afero.Fs, dst, src string, scriptPermissions os.FileM
 	defer dstFile.Close()
 
 	// Open src (don't care about flags here)
-	log.Info("Src file: ", src)
 	srcFile, err := fs.Open(src)
 	if err != nil {
 		return err
