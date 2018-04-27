@@ -24,6 +24,7 @@ type environment struct {
 	organizationID                  string
 	kubeconfig                      string
 	kubectlPath                     string
+	enableClusterUpgrade            bool
 }
 
 const (
@@ -88,6 +89,9 @@ func init() {
 
 	env.kubeconfig = os.Getenv("KUBECONFIG")
 	env.nodeName = os.Getenv("NODE_NAME")
+
+	// Should be set only if a cluster was created through Containership (CKE)
+	env.enableClusterUpgrade = os.Getenv("ENABLE_CLUSTER_UPGRADE") == "true"
 }
 
 // OrganizationID returns Containership Cloud organization id
@@ -153,6 +157,11 @@ func KubectlPath() string {
 // NodeName returns the name of the node that is running the process
 func NodeName() string {
 	return env.nodeName
+}
+
+// IsClusterUpgradeEnabled returns true if cluster upgrade is enabled, else false
+func IsClusterUpgradeEnabled() bool {
+	return env.enableClusterUpgrade
 }
 
 // Dump dumps the environment if we're in development mode

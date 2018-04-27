@@ -47,8 +47,10 @@ func Initialize() {
 	userController = NewUserController(
 		k8sutil.CSAPI().Client(), csInformerFactory)
 
-	cupController = NewUpgradeController(
-		k8sutil.CSAPI().Client(), csInformerFactory, k8sutil.API().Client(), kubeInformerFactory)
+	if env.IsClusterUpgradeEnabled() {
+		cupController = NewUpgradeController(
+			k8sutil.CSAPI().Client(), csInformerFactory, k8sutil.API().Client(), kubeInformerFactory)
+	}
 }
 
 // Run kicks off the informer factories and controller.
@@ -67,7 +69,10 @@ func Run() {
 	csInformerFactory.Start(stopCh)
 
 	go userController.Run(1, stopCh)
-	go cupController.Run(1, stopCh)
+
+	if env.IsClusterUpgradeEnabled() {
+		go cupController.Run(1, stopCh)
+	}
 
 	// if stopCh is closed something went wrong
 	<-stopCh
