@@ -277,8 +277,11 @@ func (uc *UpgradeController) startUpgrade(upgrade *provisioncsv3.ClusterUpgrade)
 
 // downloadUpgradeScript downloads the upgrade script for this node
 func (uc *UpgradeController) downloadUpgradeScript(upgrade *provisioncsv3.ClusterUpgrade) ([]byte, error) {
+	// The provision API expects the version without a leading 'v'. We should
+	// only strip the 'v' when talking to the API.
+	targetVersionWithoutV := upgrade.Spec.TargetVersion[1:]
 	pathTemplate := fmt.Sprintf("%s/%s?version=%s", nodeUpgradeScriptEndpointTemplateBase,
-		upgrade.Spec.Type, upgrade.Spec.TargetVersion)
+		upgrade.Spec.Type, targetVersionWithoutV)
 
 	req, err := request.New(request.CloudServiceProvision, pathTemplate, "GET", nil)
 	if err != nil {
