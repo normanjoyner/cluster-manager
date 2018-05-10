@@ -11,7 +11,7 @@ import:
 - package: github.com/stretchr/testify
   version: v1.2.0
 - package: github.com/spf13/afero
-  version: v1.0.1
+  version: v1.1.0
 - package: github.com/fsnotify/fsnotify
   version: v1.4.7
 - package: github.com/aws/aws-sdk-go

@@ -1,8 +1,8 @@
-hash: 4f2c3e954cbdc78ca4c048b797bc14ce037286e7a09f90783a2e55e0e0964f6e
-updated: 2018-04-06T15:23:05.34493-04:00
+hash: 1e281816cb9e984aec8c89eafcc9f11fd19fd6d32764f399d4d018844ca1034c
+updated: 2018-05-10T15:14:20.128824+02:00
 imports:
 - name: github.com/aws/aws-sdk-go
-  version: 61ac2e639a3e5f940b62693f2f1db515e4f0325e
+  version: 70f8337208b7dfd7940a7e13dca0804464b74274
   subpackages:
   - aws
   - aws/awserr
@@ -86,7 +86,7 @@ imports:
 - name: github.com/json-iterator/go
   version: 13f86432b882000a51c6e610c620974462691a97
 - name: github.com/spf13/afero
-  version: ec3a3111d1e1bdff38a61e09d5a5f5e974905611
+  version: 63644898a8da0bc22138abf860edaf5277b6102e
   subpackages:
   - mem
 - name: github.com/spf13/pflag
@@ -96,7 +96,7 @@ imports:
   subpackages:
   - assert
 - name: go.uber.org/atomic
-  version: 8474b86a5a6f79c443ce4b2992817ff32cf208b8
+  version: 1ea20fb1cbb1cc08cbd0d913a96dead89aa18289
 - name: go.uber.org/multierr
   version: 3c4937480c32f4c13a875a1829af76c98ca3d40a
 - name: go.uber.org/zap
@@ -115,10 +115,13 @@ imports:
   version: 1c05540f6879653db88113bc4a2b70aec4bd491f
   subpackages:
   - context
+  - html
+  - html/atom
   - http2
   - http2/hpack
   - idna
   - lex/httplex
+  - websocket
 - name: golang.org/x/sys
   version: 95c6576299259db960f6c5b9b69ea52422860fce
   subpackages:
@@ -185,7 +188,6 @@ imports:
   - pkg/api/errors
   - pkg/api/meta
   - pkg/api/resource
-  - pkg/api/resource
   - pkg/apis/meta/internalversion
   - pkg/apis/meta/v1
   - pkg/apis/meta/v1/unstructured
@@ -195,8 +197,6 @@ imports:
   - pkg/fields
   - pkg/labels
   - pkg/runtime
-  - pkg/runtime
-  - pkg/runtime/schema
   - pkg/runtime/schema
   - pkg/runtime/serializer
   - pkg/runtime/serializer/json
@@ -206,13 +206,11 @@ imports:
   - pkg/runtime/serializer/versioning
   - pkg/selection
   - pkg/types
-  - pkg/types
   - pkg/util/cache
   - pkg/util/clock
   - pkg/util/diff
   - pkg/util/errors
   - pkg/util/framer
-  - pkg/util/intstr
   - pkg/util/intstr
   - pkg/util/json
   - pkg/util/mergepatch
