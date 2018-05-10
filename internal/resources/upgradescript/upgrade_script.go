@@ -93,38 +93,14 @@ func writeUpgradeScript(fs afero.Fs, script []byte, upgradeScriptFilename string
 // writeScript takes and writes the upgrade script to a named file with
 // the target version, and id of the upgrade
 func writeScript(fs afero.Fs, filename string, script []byte) error {
-	return write(fs, filename, upgradeScriptPermissions, script)
+	return fsutil.WriteNewFile(fs, filename, script, upgradeScriptPermissions)
 }
 
 // writePathToCurrent writes the current upgrade script path to the `current` file
 // at its standard location
 func writePathToCurrent(fs afero.Fs, upgradeScriptPath string) error {
 	currentPath := GetUpgradeScriptFullPath(currentScriptFile)
-	return write(fs, currentPath, currentUpgradeScriptPermissions, []byte(upgradeScriptPath))
-}
-
-// write takes data and writes it to the specified file with the correct permissions
-func write(fs afero.Fs, filename string, permissions os.FileMode, script []byte) error {
-	// Checks to see if the upgrade script already exists so it doesn't get
-	// overwritten, if its in the process of running
-	if fsutil.FileExists(fs, filename) {
-		return fmt.Errorf("upgrade script %s already exists", filename)
-	}
-
-	// Create the upgrade script to write to
-	f, err := fs.OpenFile(filename, os.O_CREATE|os.O_WRONLY, permissions)
-
-	if err != nil {
-		return err
-	}
-	defer f.Close()
-
-	_, err = f.Write(script)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return fsutil.WriteNewFileAtomic(fs, currentPath, []byte(upgradeScriptPath), currentUpgradeScriptPermissions)
 }
 
 // getScriptDir returns the directory to top level directory for upgrades
