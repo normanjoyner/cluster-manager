@@ -8,9 +8,6 @@ import (
 	"k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"
 
-	kubeinformers "k8s.io/client-go/informers"
-	"k8s.io/client-go/kubernetes"
-	corelistersv1 "k8s.io/client-go/listers/core/v1"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
 
@@ -39,13 +36,10 @@ const (
 // UpgradeController is the agent controller which watches for ClusterUpgrade updates
 // and writes update script to host when it is that specific agents turn to update
 type UpgradeController struct {
-	clientset     csclientset.Interface
-	kubeclientset kubernetes.Interface
+	clientset csclientset.Interface
 
 	upgradeLister  pcslisters.ClusterUpgradeLister
 	upgradesSynced cache.InformerSynced
-	nodeLister     corelistersv1.NodeLister
-	nodesSynced    cache.InformerSynced
 
 	workqueue workqueue.RateLimitingInterface
 }
@@ -53,20 +47,16 @@ type UpgradeController struct {
 // NewUpgradeController creates a new agent UpgradeController
 func NewUpgradeController(
 	clientset csclientset.Interface,
-	csInformerFactory csinformers.SharedInformerFactory,
-	kubeclientset kubernetes.Interface,
-	kubeInformerFactory kubeinformers.SharedInformerFactory) *UpgradeController {
+	csInformerFactory csinformers.SharedInformerFactory) *UpgradeController {
 
 	uc := &UpgradeController{
-		clientset:     clientset,
-		kubeclientset: kubeclientset,
-		workqueue:     workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), upgradeControllerName),
+		clientset: clientset,
+		workqueue: workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), upgradeControllerName),
 	}
 
 	// Create an informer from the factory so that we share the underlying
 	// cache with other controllers
 	upgradeInformer := csInformerFactory.ContainershipProvision().V3().ClusterUpgrades()
-	nodeInformer := kubeInformerFactory.Core().V1().Nodes()
 
 	// All event handlers simply add to a workqueue to be processed by a worker
 	upgradeInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
@@ -83,8 +73,6 @@ func NewUpgradeController(
 
 	uc.upgradeLister = upgradeInformer.Lister()
 	uc.upgradesSynced = upgradeInformer.Informer().HasSynced
-	uc.nodeLister = nodeInformer.Lister()
-	uc.nodesSynced = nodeInformer.Informer().HasSynced
 
 	return uc
 }
@@ -99,7 +87,7 @@ func (uc *UpgradeController) Run(numWorkers int, stopCh <-chan struct{}) error {
 	log.Info("Starting Upgrade controller")
 
 	log.Info("Waiting for informer caches to sync")
-	if ok := cache.WaitForCacheSync(stopCh, uc.upgradesSynced, uc.nodesSynced); !ok {
+	if ok := cache.WaitForCacheSync(stopCh, uc.upgradesSynced); !ok {
 		return fmt.Errorf("Failed to wait for caches to sync")
 	}
 
