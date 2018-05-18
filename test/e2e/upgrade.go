@@ -35,10 +35,12 @@ const (
 func createClusterUpgrade(targetVersion string, id string) (*provisioncsv3.ClusterUpgrade, error) {
 	log.Infof("Creating ClusterUpgrade %q with target version %s", id, targetVersion)
 
+	labels := constants.BuildContainershipLabelMap(nil)
+
 	cup, err := k8sutil.CSAPI().Client().ContainershipProvisionV3().ClusterUpgrades(constants.ContainershipNamespace).Create(&provisioncsv3.ClusterUpgrade{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      id,
-			Namespace: constants.ContainershipNamespace,
+			Name:   id,
+			Labels: labels,
 		},
 		Spec: provisioncsv3.ClusterUpgradeSpec{
 			ID:                 id,
