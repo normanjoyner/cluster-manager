@@ -1,6 +1,8 @@
 package synccontroller
 
 import (
+	"fmt"
+
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
@@ -62,6 +64,7 @@ func (c *PluginSyncController) doSync() {
 	err := resources.Sync(c.cloudResource)
 	if err != nil {
 		log.Error("Plugins failed to sync: ", err.Error())
+		return
 	}
 
 	// write the cloud items by ID so we can easily see if anything needs
@@ -82,10 +85,15 @@ func (c *PluginSyncController) doSync() {
 			continue
 		}
 
-		// TODO we would normally check for if the cloud object is different
-		// from the cached object, but since we are not currently
-		// supporting updating plugins we don't need to
-
+		pluginCR := item[0]
+		if equal, err := c.cloudResource.IsEqual(cloudItem, pluginCR); err == nil && !equal {
+			log.Debugf("Cloud Plugin %s does not match CR - updating", cloudItem.ID)
+			err = c.Update(cloudItem, pluginCR)
+			if err != nil {
+				log.Error("Plugin Update failed: ", err.Error())
+			}
+			continue
+		}
 	}
 
 	allCRs, err := c.lister.List(labels.NewSelector())
@@ -124,6 +132,30 @@ func (c *PluginSyncController) Create(p containershipv3.PluginSpec) error {
 		"Detected missing CR")
 
 	return nil
+}
+
+// Update takes a plugin spec and updates the associated Plugin CR spec
+// with the new values
+func (c *PluginSyncController) Update(p containershipv3.PluginSpec, obj interface{}) error {
+	plugin, ok := obj.(*containershipv3.Plugin)
+	if !ok {
+		return fmt.Errorf("Error trying to use a non Plugin CR object to update a Plugin CR")
+	}
+
+	c.recorder.Event(plugin, corev1.EventTypeNormal, "PluginUpdate",
+		"Detected change in Cloud, updating")
+
+	pCopy := plugin.DeepCopy()
+	pCopy.Spec = p
+
+	_, err := c.clientset.ContainershipV3().Plugins(constants.ContainershipNamespace).Update(pCopy)
+
+	if err != nil {
+		c.recorder.Eventf(plugin, corev1.EventTypeWarning, "PluginUpdateError",
+			"Error updating: %s", err.Error())
+	}
+
+	return err
 }
 
 // Delete takes a name or the CRD and deletes it

@@ -9,6 +9,7 @@ metadata:
 data:
   CONTAINERSHIP_CLOUD_ENVIRONMENT: "development"
   CONTAINERSHIP_CLOUD_API_BASE_URL: "https://stage-api.containership.io"
+  CONTAINERSHIP_CLOUD_PROVISION_BASE_URL: "https://stage-provision.containership.io"
 
   CONTAINERSHIP_CLOUD_SYNC_INTERVAL_SEC: "15s"
   AGENT_INFORMER_SYNC_INTERVAL_SEC: "30s"

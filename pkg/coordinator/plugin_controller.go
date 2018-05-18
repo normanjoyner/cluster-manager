@@ -83,7 +83,18 @@ func NewPluginController(kubeclientset kubernetes.Interface, clientset csclients
 
 	// namespace informer listens for add events an queues the namespace
 	pluginInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
-		AddFunc:    pc.enqueuePlugin,
+		AddFunc: pc.enqueuePlugin,
+		UpdateFunc: func(old, new interface{}) {
+			newPlugin := new.(*containershipv3.Plugin)
+			oldPlugin := old.(*containershipv3.Plugin)
+			if newPlugin.ResourceVersion == oldPlugin.ResourceVersion {
+				// Periodic resync will send update events for all known Plugins.
+				// Two different versions of the same Plugin will always have different RVs.
+				return
+			}
+
+			pc.enqueuePlugin(newPlugin)
+		},
 		DeleteFunc: pc.enqueuePlugin,
 	})
 
