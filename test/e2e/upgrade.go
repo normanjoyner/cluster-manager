@@ -118,15 +118,14 @@ func pollUpgrade(upgradeName string) provisioncsv3.UpgradeStatus {
 
 // TODO arguments
 func run() error {
-	for i := 0; ; i++ {
+	for seq := 0; ; seq++ {
 		// TODO list of versions to cycle through as arg, don't just hardcode
 		// and flip between two
 		targetVersion := "v1.10.2"
-		if i%2 != 0 {
+		if seq%2 != 0 {
 			targetVersion = "v1.10.1"
 		}
 
-		seq := 0
 		id := fmt.Sprintf("%s-%d", targetVersion, seq)
 		_, err := createClusterUpgrade(targetVersion, id)
 		if err != nil {
