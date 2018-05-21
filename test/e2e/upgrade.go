@@ -34,7 +34,7 @@ func main() {
 const (
 	pollIntervalSeconds      = 5
 	nodeTimeoutSeconds       = 90
-	nodeTimeoutBufferSeconds = 20
+	nodeTimeoutBufferSeconds = 30
 )
 
 func init() {
