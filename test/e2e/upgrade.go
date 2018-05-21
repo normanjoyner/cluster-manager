@@ -1,6 +1,7 @@
 package main
 
 import (
+	"crypto/rand"
 	"flag"
 	"fmt"
 	"os"
@@ -129,32 +130,44 @@ func pollUpgrade(upgradeName string) provisioncsv3.UpgradeStatus {
 
 // TODO arguments
 func run() error {
-	for seq := 0; ; seq++ {
-		// TODO list of versions to cycle through as arg, don't just hardcode
-		// and flip between two
-		targetVersion := "v1.10.2"
-		if seq%2 != 0 {
-			targetVersion = "v1.10.1"
-		}
+	targetVersions := []string{"v1.10.2", "v1.10.1"}
+	sequenceNumber := 0
+	for {
+		for _, targetVersion := range targetVersions {
+			uuid := generateRandomUUID()
+			id := fmt.Sprintf("%s-%d-%s", targetVersion, sequenceNumber, uuid)
+			_, err := createClusterUpgrade(targetVersion, id)
+			if err != nil {
+				return err
+			}
 
-		id := fmt.Sprintf("%s-%d", targetVersion, seq)
-		_, err := createClusterUpgrade(targetVersion, id)
-		if err != nil {
-			return err
-		}
+			log.Infof("Polling upgrade %q until done", id)
+			if result := pollUpgrade(id); result == provisioncsv3.UpgradeFailed {
+				err = fmt.Errorf("Upgrade %q failed", id)
+			}
 
-		log.Infof("Polling upgrade %q until done", id)
-		if result := pollUpgrade(id); result == provisioncsv3.UpgradeFailed {
-			err = fmt.Errorf("Upgrade %q failed", id)
-		}
+			// Clean up if cleanup is enabled
+			if !noCleanup {
+				deleteClusterUpgrade(id)
+			}
 
-		// Clean up if cleanup is enabled
-		if !noCleanup {
-			deleteClusterUpgrade(id)
-		}
+			if err != nil {
+				return err
+			}
 
-		if err != nil {
-			return err
+			sequenceNumber++
 		}
 	}
+}
+
+// generateRandomUUID generates a random UUID. It is actually just random; that
+// is, it does not conform to any real spec.
+func generateRandomUUID() string {
+	b := make([]byte, 16)
+	_, err := rand.Read(b)
+	if err != nil {
+		panic(err)
+	}
+
+	return fmt.Sprintf("%x-%x-%x-%x-%x", b[0:4], b[4:6], b[6:8], b[8:10], b[10:])
 }
