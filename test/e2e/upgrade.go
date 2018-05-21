@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"os"
 	"time"
@@ -12,6 +13,10 @@ import (
 	"github.com/containership/cloud-agent/internal/log"
 
 	provisioncsv3 "github.com/containership/cloud-agent/pkg/apis/provision.containership.io/v3"
+)
+
+var (
+	noCleanup bool
 )
 
 func main() {
@@ -31,8 +36,14 @@ const (
 	nodeTimeoutBufferSeconds = 20
 )
 
+func init() {
+	flag.BoolVar(&noCleanup, "no-cleanup", false, "skip cleaning up any created resources")
+}
+
 // TODO put this somewhere useful
 func createClusterUpgrade(targetVersion string, id string) (*provisioncsv3.ClusterUpgrade, error) {
+	flag.Parse()
+
 	log.Infof("Creating ClusterUpgrade %q with target version %s", id, targetVersion)
 
 	labels := constants.BuildContainershipLabelMap(nil)
@@ -137,8 +148,10 @@ func run() error {
 			err = fmt.Errorf("Upgrade %q failed", id)
 		}
 
-		// Clean up
-		deleteClusterUpgrade(id)
+		// Clean up if cleanup is enabled
+		if !noCleanup {
+			deleteClusterUpgrade(id)
+		}
 
 		if err != nil {
 			return err
