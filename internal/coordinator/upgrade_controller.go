@@ -295,7 +295,8 @@ func (uc *UpgradeController) upgradeSyncHandler(key string) error {
 	// by marking the first applicable node as in-progress.
 	node := uc.getNextNode(upgrade)
 	if node == nil {
-		return nil
+		// We're already at the target version, so just finish the upgrade.
+		return uc.finishUpgrade(upgrade)
 	}
 
 	return uc.startUpgradeForNode(upgrade, node)
@@ -448,7 +449,9 @@ func (uc *UpgradeController) getCurrentUpgrade() (*provisioncsv3.ClusterUpgrade,
 }
 
 // getFinalUpgradeStatus returns the final upgrade status for the given cluster
-// upgrade based on the individual node statuses.
+// upgrade based on the individual node statuses. If no node statuses are
+// present (e.g. because this is called for a ClusterUpgrade for which we're
+// already at the target version), then this function returns Success
 func getFinalUpgradeStatus(cup *provisioncsv3.ClusterUpgrade) provisioncsv3.UpgradeStatus {
 	for _, status := range cup.Spec.Status.NodeStatuses {
 		if status == provisioncsv3.UpgradeFailed {
