@@ -130,7 +130,7 @@ func pollUpgrade(upgradeName string) provisioncsv3.UpgradeStatus {
 
 // TODO arguments
 func run() error {
-	targetVersions := []string{"v1.10.2", "v1.10.1"}
+	targetVersions := []string{"v1.10.3", "v1.10.1"}
 	sequenceNumber := 0
 	for {
 		for _, targetVersion := range targetVersions {
