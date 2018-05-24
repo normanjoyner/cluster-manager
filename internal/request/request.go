@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"net/http"
+	"net/http/httputil"
 	"text/template"
 	"time"
 
@@ -102,20 +103,40 @@ func (r *Requester) MakeRequest() (*http.Response, error) {
 
 	res, err := client.Do(req)
 	if err != nil {
-		log.Debugf("Failed request: %+v", *req)
+		dumpRequest(req, true)
 		return res, err
 	}
 
-	// Log the error code and request here and we'll log the response body
-	// in Unmarshal
+	// The request succeeded, but the status code may be bad
 	if res.StatusCode < http.StatusOK ||
 		res.StatusCode >= http.StatusMultipleChoices {
 		log.Debugf("%s responded with %d (%s)", r.service.String(), res.StatusCode,
 			http.StatusText(res.StatusCode))
-		log.Debugf("Request: %+v", *req)
+
+		// We can't dump the request body because it was already read
+		dumpRequest(req, false)
+		dumpResponse(res)
 
 		return res, fmt.Errorf("Request returned with status code %d", res.StatusCode)
 	}
 
 	return res, nil
+}
+
+// dumpRequest attempts to dump an HTTP request for debug purposes
+func dumpRequest(req *http.Request, dumpBody bool) {
+	dump, err := httputil.DumpRequestOut(req, dumpBody)
+	if err != nil {
+		dump = []byte(fmt.Sprintf("Error dumping request: %s", err))
+	}
+	log.Debugf("Request: %q", string(dump))
+}
+
+// dumpRequest attempts to dump an HTTP response for debug purposes
+func dumpResponse(res *http.Response) {
+	dump, err := httputil.DumpResponse(res, true)
+	if err != nil {
+		dump = []byte(fmt.Sprintf("Error dumping response: %s", err))
+	}
+	log.Debugf("Response: %q", string(dump))
 }
