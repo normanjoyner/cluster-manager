@@ -14,20 +14,11 @@ import (
 // Requester returns an object that can be used for making requests to the
 // containership cloud api
 type Requester struct {
-	url    string
-	method string
-	body   []byte
+	service CloudService
+	url     string
+	method  string
+	body    []byte
 }
-
-// CloudService indicates the cloud service a request is associated with
-type CloudService int
-
-const (
-	// CloudServiceAPI is the Cloud API service
-	CloudServiceAPI CloudService = iota
-	// CloudServiceProvision is the Cloud Provision service
-	CloudServiceProvision
-)
 
 var urlParams = map[string]string{
 	"OrganizationID": env.OrganizationID(),
@@ -54,9 +45,10 @@ func New(service CloudService, path, method string, body []byte) (*Requester, er
 	p := w.String()
 
 	return &Requester{
-		url:    appendToBaseURL(service, p),
-		method: method,
-		body:   body,
+		service: service,
+		url:     appendToBaseURL(service, p),
+		method:  method,
+		body:    body,
 	}, nil
 }
 
@@ -118,7 +110,7 @@ func (r *Requester) MakeRequest() (*http.Response, error) {
 	// in Unmarshal
 	if res.StatusCode < http.StatusOK ||
 		res.StatusCode >= http.StatusMultipleChoices {
-		log.Debugf("Cloud API responded with %d (%s)", res.StatusCode,
+		log.Debugf("%s responded with %d (%s)", r.service.String(), res.StatusCode,
 			http.StatusText(res.StatusCode))
 		log.Debugf("Request: %+v", *req)
 
