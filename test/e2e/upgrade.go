@@ -17,12 +17,30 @@ import (
 )
 
 var (
-	noCleanup bool
+	cleanup bool
+	loop    bool
 )
 
 func main() {
-	// TODO options instead of hardcoding everything
-	if err := run(); err != nil {
+	flag.Parse()
+	targetVersions := flag.Args()
+
+	if len(targetVersions) == 0 {
+		printUsage("At least one target version must be specified")
+		os.Exit(1)
+	}
+
+	// We could pull in the kubeadm utils to check for valid versions, but that
+	// seems like overkill. Since the leading 'v' has been a source of trouble,
+	// at least make sure that's there.
+	for _, version := range targetVersions {
+		if version[0] != 'v' {
+			printUsage("Version strings must start with 'v'")
+			os.Exit(1)
+		}
+	}
+
+	if err := run(targetVersions, loop); err != nil {
 		log.Errorf("Test failed: %s", err)
 		os.Exit(1)
 	}
@@ -37,14 +55,19 @@ const (
 	nodeTimeoutBufferSeconds = 30
 )
 
+func printUsage(details string) {
+	// Don't use logger for usage because it looks weird and dumps stack trace
+	fmt.Fprintf(os.Stderr, "Usage: go run upgrade.go <version-1> <version-2> ...\n")
+	fmt.Fprintf(os.Stderr, "%s\n", details)
+}
+
 func init() {
-	flag.BoolVar(&noCleanup, "no-cleanup", false, "skip cleaning up any created resources")
+	flag.BoolVar(&loop, "loop", true, "whether to loop over list of versions")
+	flag.BoolVar(&cleanup, "cleanup", true, "clean up any created resources")
 }
 
 // TODO put this somewhere useful
 func createClusterUpgrade(targetVersion string, id string) (*provisioncsv3.ClusterUpgrade, error) {
-	flag.Parse()
-
 	log.Infof("Creating ClusterUpgrade %q with target version %s", id, targetVersion)
 
 	labels := constants.BuildContainershipLabelMap(nil)
@@ -128,9 +151,7 @@ func pollUpgrade(upgradeName string) provisioncsv3.UpgradeStatus {
 	}
 }
 
-// TODO arguments
-func run() error {
-	targetVersions := []string{"v1.10.3", "v1.10.1"}
+func run(targetVersions []string, loop bool) error {
 	sequenceNumber := 0
 	for {
 		for _, targetVersion := range targetVersions {
@@ -147,12 +168,16 @@ func run() error {
 			}
 
 			// Clean up if cleanup is enabled
-			if !noCleanup {
+			if cleanup {
 				deleteClusterUpgrade(id)
 			}
 
 			if err != nil {
 				return err
+			}
+
+			if !loop {
+				return nil
 			}
 
 			sequenceNumber++
