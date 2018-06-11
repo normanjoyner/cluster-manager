@@ -50,9 +50,15 @@ func main() {
 }
 
 const (
-	pollIntervalSeconds      = 5
-	nodeTimeoutSeconds       = 90
-	nodeTimeoutBufferSeconds = 30
+	pollIntervalSeconds = 5
+
+	// Actual timeout used in ClusterUpgrade. Upgrade retries 10x with 30s delay
+	// between retries, so (30s + ~30s upgrade time) * 10 seems fair.
+	nodeTimeoutSeconds = 600
+
+	// Grace period after actual timeout to decide that this is a test failure
+	// because a node did not get marked as finished.
+	nodeTimeoutBufferSeconds = 60
 )
 
 func printUsage(details string) {
