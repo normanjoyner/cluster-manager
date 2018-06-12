@@ -113,8 +113,12 @@ type PluginSpec struct {
 type PluginType string
 
 const (
+	// CloudControllerManager is a plugin type for interacting with a cloud provider
+	CloudControllerManager PluginType = "cloud_controller_manager"
 	// CNI is a generic type of supported network plugin
 	CNI PluginType = "cni"
+	// CSI is a generic type of plugin for interacting with a cloud providers storage
+	CSI PluginType = "csi"
 	// Logs is a generic type of supported plugin
 	Logs PluginType = "logs"
 	// Metrics is a generic type of supported plugin
