@@ -4,10 +4,10 @@ import (
 	"flag"
 	"runtime"
 
-	"github.com/containership/cloud-agent/internal/agent"
-	"github.com/containership/cloud-agent/internal/buildinfo"
-	"github.com/containership/cloud-agent/internal/env"
-	"github.com/containership/cloud-agent/internal/log"
+	"github.com/containership/cloud-agent/pkg/agent"
+	"github.com/containership/cloud-agent/pkg/buildinfo"
+	"github.com/containership/cloud-agent/pkg/env"
+	"github.com/containership/cloud-agent/pkg/log"
 )
 
 func main() {

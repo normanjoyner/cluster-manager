@@ -9,9 +9,9 @@ import (
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/containership/cloud-agent/internal/constants"
-	"github.com/containership/cloud-agent/internal/k8sutil"
-	"github.com/containership/cloud-agent/internal/log"
+	"github.com/containership/cloud-agent/pkg/constants"
+	"github.com/containership/cloud-agent/pkg/k8sutil"
+	"github.com/containership/cloud-agent/pkg/log"
 
 	provisioncsv3 "github.com/containership/cloud-agent/pkg/apis/provision.containership.io/v3"
 )

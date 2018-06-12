@@ -188,7 +188,7 @@ imports:
   - pkg/api/errors
   - pkg/api/meta
   - pkg/api/resource
-  - pkg/apis/meta/internalversion
+  - pkg/apis/meta/pkgversion
   - pkg/apis/meta/v1
   - pkg/apis/meta/v1/unstructured
   - pkg/apis/meta/v1beta1
@@ -254,7 +254,7 @@ imports:
   - informers/events/v1beta1
   - informers/extensions
   - informers/extensions/v1beta1
-  - informers/internalinterfaces
+  - informers/pkginterfaces
   - informers/networking
   - informers/networking/v1
   - informers/policy

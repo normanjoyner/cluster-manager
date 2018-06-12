@@ -33,9 +33,9 @@ ARG GIT_COMMIT
 RUN cd $SRC_DIR && \
     CGO_ENABLED=0 GOOS=linux GOARCH=amd64 \
         go build -ldflags \
-        "-X github.com/containership/cloud-agent/internal/buildinfo.gitDescribe=${GIT_DESCRIBE} \
-        -X github.com/containership/cloud-agent/internal/buildinfo.gitCommit=${GIT_COMMIT} \
-        -X github.com/containership/cloud-agent/internal/buildinfo.unixTime=`date '+%s'` \
+        "-X github.com/containership/cloud-agent/pkg/buildinfo.gitDescribe=${GIT_DESCRIBE} \
+        -X github.com/containership/cloud-agent/pkg/buildinfo.gitCommit=${GIT_COMMIT} \
+        -X github.com/containership/cloud-agent/pkg/buildinfo.unixTime=`date '+%s'` \
         -w" \
         -a -tags netgo \
         -o coordinator cmd/cloud_coordinator/coordinator.go && \

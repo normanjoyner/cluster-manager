@@ -90,7 +90,7 @@ pipelineUtils.jenkinsWithNodeTemplate {
         format: {
             stage('Test - Formating') {
                 container('docker') {
-                    dockerUtils.runShellCommand(docker_test_image_id_agent, '! gofmt -d -s internal pkg cmd 2>&1 | read')
+                    dockerUtils.runShellCommand(docker_test_image_id_agent, '! gofmt -d -s pkg cmd 2>&1 | read')
                 }
             }
         }
