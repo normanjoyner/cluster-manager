@@ -31,7 +31,7 @@ func TestMetadataGet(t *testing.T) {
 
 func executeRequest(req *http.Request) *httptest.ResponseRecorder {
 	rr := httptest.NewRecorder()
-	a.Router.ServeHTTP(rr, req)
+	a.router.ServeHTTP(rr, req)
 
 	return rr
 }

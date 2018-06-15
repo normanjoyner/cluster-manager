@@ -12,7 +12,7 @@ import (
 
 // CSServer defines the server
 type CSServer struct {
-	Router *mux.Router
+	router *mux.Router
 }
 
 // New creates a new server
@@ -32,10 +32,10 @@ func (cs *CSServer) Run() {
 }
 
 func (cs *CSServer) initialize() {
-	cs.Router = mux.NewRouter()
+	cs.router = mux.NewRouter()
 	cs.initializeRoutes()
 }
 
 func (cs *CSServer) run(addr string) {
-	log.Fatal(http.ListenAndServe(addr, cs.Router))
+	log.Fatal(http.ListenAndServe(addr, cs.router))
 }

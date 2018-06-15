@@ -19,6 +19,7 @@ type Requester struct {
 	url     string
 	method  string
 	body    []byte
+	req     *http.Request
 }
 
 var urlParams = map[string]string{
@@ -30,57 +31,49 @@ var urlParams = map[string]string{
 // New returns a Requester with the endpoint and type or request set that is
 // needed to be made
 func New(service CloudService, path, method string, body []byte) (*Requester, error) {
-	tmpl, err := template.New("test").Parse(path)
+	p, err := getPath(path)
+	if err != nil {
+		return nil, err
+	}
+
+	url := appendToBaseURL(service, p)
+	req, err := http.NewRequest(
+		method,
+		url,
+		bytes.NewBuffer(body),
+	)
 
 	if err != nil {
 		return nil, err
+	}
+
+	return &Requester{
+		service: service,
+		req:     req,
+	}, nil
+}
+
+func getPath(path string) (string, error) {
+	tmpl, err := template.New("test").Parse(path)
+	if err != nil {
+		return "", err
 	}
 
 	var w bytes.Buffer
 	err = tmpl.Execute(&w, urlParams)
-
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 
-	p := w.String()
-
-	return &Requester{
-		service: service,
-		url:     appendToBaseURL(service, p),
-		method:  method,
-		body:    body,
-	}, nil
-}
-
-// URL returns the url that has been set for requests
-func (r *Requester) URL() string {
-	return r.url
-}
-
-// Method returns the method that has been set for request
-func (r *Requester) Method() string {
-	return r.method
-}
-
-// Body returns the current body set for a request
-func (r *Requester) Body() []byte {
-	return r.body
+	return w.String(), nil
 }
 
 func appendToBaseURL(service CloudService, path string) string {
-	var base string
-	switch service {
-	case CloudServiceAPI:
-		base = env.APIBaseURL()
-	case CloudServiceProvision:
-		base = env.ProvisionBaseURL()
-	}
-
+	base := service.BaseURL()
 	return fmt.Sprintf("%s/v3%s", base, path)
 }
 
-func addHeaders(req *http.Request) {
+func addAuth(req *http.Request) {
 	req.Header.Set("Authorization", fmt.Sprintf("JWT %v", env.CloudClusterAPIKey()))
 }
 
@@ -90,20 +83,30 @@ func createClient() *http.Client {
 	}
 }
 
+// AddHeader allows the user to add custom headers to the req property of a requester
+func (r *Requester) AddHeader(key, value string) {
+	r.req.Header.Set(key, value)
+}
+
+// Do makes a request using the req property of the requester
+func (r *Requester) Do() (*http.Response, error) {
+	client := createClient()
+
+	return r.parseResponse(client.Do(r.req))
+}
+
 // MakeRequest builds a request that is able to speak with the Containership API
 func (r *Requester) MakeRequest() (*http.Response, error) {
-	req, err := http.NewRequest(
-		r.method,
-		r.url,
-		bytes.NewBuffer(r.body),
-	)
-	addHeaders(req)
+	addAuth(r.req)
 
 	client := createClient()
 
-	res, err := client.Do(req)
+	return r.parseResponse(client.Do(r.req))
+}
+
+func (r *Requester) parseResponse(res *http.Response, err error) (*http.Response, error) {
 	if err != nil {
-		dumpRequest(req, true)
+		dumpRequest(r.req, true)
 		return res, err
 	}
 
@@ -114,7 +117,7 @@ func (r *Requester) MakeRequest() (*http.Response, error) {
 			http.StatusText(res.StatusCode))
 
 		// We can't dump the request body because it was already read
-		dumpRequest(req, false)
+		dumpRequest(r.req, false)
 		dumpResponse(res)
 
 		return res, fmt.Errorf("Request returned with status code %d", res.StatusCode)

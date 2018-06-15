@@ -16,6 +16,7 @@ type environment struct {
 	coordinatorInformerSyncInterval time.Duration
 	cloudClusterAPIKey              string
 	apiBaseURL                      string
+	authBaseURL                     string
 	provisionBaseURL                string
 	clusterID                       string
 	csCloudEnvironment              string
@@ -61,6 +62,11 @@ func init() {
 	env.apiBaseURL = os.Getenv("CONTAINERSHIP_CLOUD_API_BASE_URL")
 	if env.apiBaseURL == "" {
 		env.apiBaseURL = "https://api.containership.io"
+	}
+
+	env.authBaseURL = os.Getenv("CONTAINERSHIP_CLOUD_AUTH_BASE_URL")
+	if env.authBaseURL == "" {
+		env.authBaseURL = "https://auth.containership.io"
 	}
 
 	env.provisionBaseURL = os.Getenv("CONTAINERSHIP_CLOUD_PROVISION_BASE_URL")
@@ -112,6 +118,11 @@ func CloudClusterAPIKey() string {
 // APIBaseURL returns Containership Cloud API url
 func APIBaseURL() string {
 	return env.apiBaseURL
+}
+
+// AuthBaseURL returns Containership Cloud Auth url
+func AuthBaseURL() string {
+	return env.authBaseURL
 }
 
 // ProvisionBaseURL returns Containership Cloud Provision url

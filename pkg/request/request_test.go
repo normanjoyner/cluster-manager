@@ -15,24 +15,11 @@ func TestNew(t *testing.T) {
 	path := "/path"
 	method := "GET"
 	//body := nil
-	n, err := New(CloudServiceAPI, "/path", "GET", nil)
+	_, err := New(CloudServiceAPI, path, method, nil)
 
 	if err != nil {
 		t.Errorf("Requester client errored on create: %v", err)
 	}
-
-	if url := n.URL(); url != appendToBaseURL(CloudServiceAPI, path) {
-		t.Errorf("Requester client path is %s, expected to be %s", url, path)
-	}
-
-	if m := n.Method(); m != method {
-		t.Errorf("Requester client path is %s, expected to be %s", m, method)
-	}
-
-	if b := n.Body(); b != nil {
-		t.Errorf("Requester client path is %s, expected to be nil", b)
-	}
-
 }
 
 func TestAppendToBaseURL(t *testing.T) {
@@ -62,7 +49,7 @@ func TestAddHeaders(t *testing.T) {
 		bytes.NewBuffer(make([]byte, 0)),
 	)
 
-	addHeaders(req)
+	addAuth(req)
 
 	//TODO: update to JWT prefix
 	if req.Header.Get("Authorization") != fmt.Sprintf("JWT %v", os.Getenv("CONTAINERSHIP_CLOUD_CLUSTER_API_KEY")) {

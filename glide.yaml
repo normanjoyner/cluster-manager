@@ -20,3 +20,5 @@ import:
   version: v1.7.1
 - package: github.com/davecgh/go-spew
   version: ^1.1.0
+- package: github.com/dgrijalva/jwt-go
+  version: ^3.2.0

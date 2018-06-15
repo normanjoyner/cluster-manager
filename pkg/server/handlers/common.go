@@ -11,8 +11,8 @@ type Metadata struct{}
 // Terminate is exported for access to handler methods
 type Terminate struct{}
 
-// respondWithError is a shared function to have handler respond with error
-func respondWithError(w http.ResponseWriter, code int, message string) {
+// RespondWithError is a shared function to have handler respond with error
+func RespondWithError(w http.ResponseWriter, code int, message string) {
 	respondWithJSON(w, code, map[string]string{"error": message})
 }
 
