@@ -221,9 +221,26 @@ func (c *PluginController) pluginSyncHandler(key string) error {
 	return c.applyPlugin(plugin)
 }
 
-// TODO: abstract out resources so we can pull in plugin url here
-func makePluginManifestPath(ID string) string {
-	return fmt.Sprintf("/organizations/{{.OrganizationID}}/clusters/{{.ClusterID}}/plugins/%s", ID)
+func makePluginManifestPath(plugin *containershipv3.Plugin) string {
+	previousVersion := getPreviousVersion(plugin)
+	return fmt.Sprintf("/organizations/{{.OrganizationID}}/clusters/{{.ClusterID}}/plugins/%s?previousVersion=%s", plugin.Spec.ID, previousVersion)
+}
+
+func getPreviousVersion(plugin *containershipv3.Plugin) string {
+	annotation, ok := plugin.Annotations[constants.PluginHistoryAnnotation]
+	if !ok {
+		return ""
+	}
+
+	history := make([]containershipv3.PluginSpec, 0)
+	err := json.Unmarshal([]byte(annotation), &history)
+
+	if err != nil || len(history) == 0 {
+		return ""
+	}
+
+	lastRevision := history[len(history)-1]
+	return lastRevision.Version
 }
 
 func makeRequest(path string) ([]byte, error) {
@@ -331,8 +348,8 @@ type jsonPluginsResponse struct {
 }
 
 // getPlugin gets the plugin spec from cloud, or returns an error
-func (c *PluginController) getPlugin(ID string) (*jsonPluginsResponse, error) {
-	path := makePluginManifestPath(ID)
+func (c *PluginController) getPlugin(p *containershipv3.Plugin) (*jsonPluginsResponse, error) {
+	path := makePluginManifestPath(p)
 	bytes, err := makeRequest(path)
 	if err != nil {
 		return nil, err
@@ -414,7 +431,7 @@ func cleanUpPluginManifests(name string) {
 // applyPlugin takes the manifests under the plugins id and runs them through
 // kubectl apply
 func (c *PluginController) applyPlugin(plugin *containershipv3.Plugin) error {
-	pluginDetails, err := c.getPlugin(plugin.Spec.ID)
+	pluginDetails, err := c.getPlugin(plugin)
 	if err != nil {
 		return err
 	}

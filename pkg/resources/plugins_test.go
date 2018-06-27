@@ -24,7 +24,7 @@ var plugin1spec = containershipv3.PluginSpec{
 	ID:             "1",
 	Description:    "description 1",
 	Type:           "type",
-	Version:        "version",
+	Version:        "1.0.0",
 	Implementation: "implementation",
 }
 
@@ -32,7 +32,7 @@ var plugin2spec = containershipv3.PluginSpec{
 	ID:             "2",
 	Description:    "description 2",
 	Type:           "type",
-	Version:        "version",
+	Version:        "1.0.2",
 	Implementation: "implementation",
 }
 

@@ -47,6 +47,12 @@ const (
 	Quay = "quay"
 )
 
+// Containership managed annotations
+const (
+	// PluginHistoryAnnotation is used to keep track of previous versions of a plugin
+	PluginHistoryAnnotation = "containership.io/plugin-history"
+)
+
 // BaseContainershipManagedLabelString is the containership
 // managed label as a string
 const BaseContainershipManagedLabelString = "containership.io/managed=true"

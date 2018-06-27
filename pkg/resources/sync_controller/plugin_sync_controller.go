@@ -1,6 +1,7 @@
 package synccontroller
 
 import (
+	"encoding/json"
 	"fmt"
 
 	corev1 "k8s.io/api/core/v1"
@@ -147,6 +148,7 @@ func (c *PluginSyncController) Update(p containershipv3.PluginSpec, obj interfac
 
 	pCopy := plugin.DeepCopy()
 	pCopy.Spec = p
+	setPluginHistoryAnnotation(plugin, pCopy)
 
 	_, err := c.clientset.ContainershipV3().Plugins(constants.ContainershipNamespace).Update(pCopy)
 
@@ -156,6 +158,30 @@ func (c *PluginSyncController) Update(p containershipv3.PluginSpec, obj interfac
 	}
 
 	return err
+}
+
+func setPluginHistoryAnnotation(plugin *containershipv3.Plugin, pCopy *containershipv3.Plugin) {
+	history := make([]containershipv3.PluginSpec, 0)
+	ann, ok := plugin.Annotations[constants.PluginHistoryAnnotation]
+	var err error
+	if ok && ann != "" {
+		err = json.Unmarshal([]byte(ann), &history)
+	}
+
+	// If there is an error unmarshalling the history we want to clear it and
+	// start fresh with the new history that is formatted correctly
+	if err != nil {
+		history = make([]containershipv3.PluginSpec, 0)
+	}
+
+	history = append(history, plugin.Spec)
+	sHistory, _ := json.Marshal(history)
+
+	if pCopy.Annotations == nil {
+		pCopy.Annotations = make(map[string]string, 0)
+	}
+
+	pCopy.Annotations[constants.PluginHistoryAnnotation] = string(sHistory)
 }
 
 // Delete takes a name or the CRD and deletes it
