@@ -1,5 +1,6 @@
 # git
 .git
+.gitignore
 
 # glide
 /vendor
@@ -8,5 +9,19 @@
 .vagrant
 Vagrantfile
 
+# Docker
+.dockerignore
+Dockerfile*
+
+# Jenkins
+Jenkinsfile
+
 # misc
 *.log
+*.conf
+/deploy
+LICENSE
+README*
+
+# local dev
+/bin

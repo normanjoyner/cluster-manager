@@ -20,3 +20,7 @@
 
 # misc
 *.log
+*.conf
+
+# local dev
+/bin
