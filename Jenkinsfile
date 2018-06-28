@@ -69,7 +69,7 @@ pipelineUtils.jenkinsWithNodeTemplate {
         lint: {
             stage('Test - Linting') {
                 container('docker') {
-                    dockerUtils.runShellCommand(docker_test_image_id_agent, 'go get -u github.com/golang/lint/golint && PATH=$PATH:/gocode/bin && make lint')
+                    dockerUtils.runShellCommand(docker_test_image_id_agent, 'go get -u github.com/golang/lint/golint && PATH=$PATH:/go/bin && make lint')
                 }
             }
         },
@@ -120,9 +120,9 @@ pipelineUtils.jenkinsWithNodeTemplate {
 
                     // create minimal dockerfile
                     sh 'echo "FROM scratch" >> Dockerfile.agent-scratch'
-                    sh 'echo "ADD ./containership-login.sh /scripts" >> Dockerfile.agent-scratch'
-                    sh 'echo "ADD ./ca-certificates.crt /etc/ssl/certs/ca-certificates.crt" >> Dockerfile.agent-scratch'
-                    sh 'echo "ADD ./agent ." >> Dockerfile.agent-scratch'
+                    sh 'echo "COPY ./containership-login.sh /scripts" >> Dockerfile.agent-scratch'
+                    sh 'echo "COPY ./ca-certificates.crt /etc/ssl/certs/ca-certificates.crt" >> Dockerfile.agent-scratch'
+                    sh 'echo "COPY ./agent ." >> Dockerfile.agent-scratch'
                     sh 'echo "CMD [\\"./agent\\", \\"-logtostderr=true\\"]" >> Dockerfile.agent-scratch'
 
                     dockerUtils.buildImage("${docker_repo_agent}:${docker_image_tag}", "./Dockerfile.agent-scratch")
@@ -143,9 +143,9 @@ pipelineUtils.jenkinsWithNodeTemplate {
 
                     // create minimal dockerfile
                     sh 'echo "FROM scratch" >> Dockerfile.coordinator-scratch'
-                    sh 'echo "ADD ./coordinator ." >> Dockerfile.coordinator-scratch'
-                    sh 'echo "ADD ./kubectl /etc/kubectl/kubectl" >> Dockerfile.coordinator-scratch'
-                    sh 'echo "ADD ./ca-certificates.crt /etc/ssl/certs/ca-certificates.crt" >> Dockerfile.coordinator-scratch'
+                    sh 'echo "COPY ./coordinator ." >> Dockerfile.coordinator-scratch'
+                    sh 'echo "COPY ./kubectl /etc/kubectl/kubectl" >> Dockerfile.coordinator-scratch'
+                    sh 'echo "COPY ./ca-certificates.crt /etc/ssl/certs/ca-certificates.crt" >> Dockerfile.coordinator-scratch'
                     sh 'echo "ENV KUBECTL_PATH=/etc/kubectl/kubectl" >> Dockerfile.coordinator-scratch'
                     sh 'echo "CMD [\\"./coordinator\\", \\"-logtostderr=true\\"]" >> Dockerfile.coordinator-scratch'
 

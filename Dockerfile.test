@@ -1,25 +1,25 @@
-# This dockerfile is only for Jenkins tests
+# This Dockerfile is only for Jenkins tests
 FROM golang:1.10.1-alpine3.7
 
+# Add build tools
 RUN apk update && \
-    apk add --no-cache git gcc musl-dev && \
-    apk add glide make
+    apk add --no-cache git gcc musl-dev glide
 
-# add tools for debug and development purposes
-RUN apk update && apk add glide && apk add bash
-
-ENV SRC_DIR=/gocode/src/github.com/containership/cloud-agent/
-ENV GOPATH=/gocode
+ENV SRC_DIR=/go/src/github.com/containership/cloud-agent/
 
 WORKDIR /app
 
 # Glide install before adding rest of source so we can cache the resulting
 # vendor dir
-ADD glide.yaml glide.lock $SRC_DIR
+COPY glide.yaml glide.lock $SRC_DIR
 RUN cd $SRC_DIR && \
         glide install -v
 
 # Add the source code:
-ADD . $SRC_DIR
+COPY . $SRC_DIR
+
+# These are only required for running Jenkins tests. This layer/dependency
+# lives way down here because all previous layers are shared with prod builds.
+RUN apk add --no-cache bash make
 
 WORKDIR $SRC_DIR
