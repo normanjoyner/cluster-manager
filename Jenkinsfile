@@ -93,6 +93,13 @@ pipelineUtils.jenkinsWithNodeTemplate {
                     dockerUtils.runShellCommand(docker_test_image_id_agent, 'make fmt-check')
                 }
             }
+        },
+        verify: {
+            stage('Test - Verifying Generated Code') {
+                container('docker') {
+                    dockerUtils.runShellCommand(docker_test_image_id_agent, 'go get -u github.com/golang/glog github.com/spf13/pflag golang.org/x/tools/imports && make verify')
+                }
+            }
         }
     )
 
