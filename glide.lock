@@ -1,8 +1,8 @@
-hash: e34975ecc65121dc8ee2bad58a3d56b4611612e6082703a4cb2b6ad11987ab1e
-updated: 2018-06-14T16:15:43.630579651-04:00
+hash: 29da44958fe6897e1d31c69d3a0f86003d476d02b66f4a07086c57999ad39fcc
+updated: 2018-06-29T15:08:11.26579-04:00
 imports:
 - name: github.com/aws/aws-sdk-go
-  version: 92c96c4f5ad419f2a72401c2f606d51e010cc110
+  version: 5e98666858b97db54a61044bb1150d3b81436860
   subpackages:
   - aws
   - aws/awserr
@@ -57,7 +57,7 @@ imports:
   subpackages:
   - lru
 - name: github.com/golang/protobuf
-  version: 1643683e1b54a9e88ad26d98f81400c8c9d9f4f9
+  version: b4deda0973fb4c70b50d226b1af49f3da59f5265
   subpackages:
   - proto
   - ptypes
@@ -87,13 +87,19 @@ imports:
 - name: github.com/jmespath/go-jmespath
   version: dd801d4f4ce7ac746e7e7b4489d2fa600b3b096b
 - name: github.com/json-iterator/go
-  version: 13f86432b882000a51c6e610c620974462691a97
+  version: f2b4162afba35581b6d4a50d3b8f34e33c144682
+- name: github.com/modern-go/concurrent
+  version: bacd9c7ef1dd9b15be4a9909b8ac7a4e313eec94
+- name: github.com/modern-go/reflect2
+  version: 05fbef0ca5da472bbf96c9322b84a53edc03c9fd
+- name: github.com/pkg/errors
+  version: 645ef00459ed84a119197bfb8d8205042c6df63d
 - name: github.com/spf13/afero
   version: 63644898a8da0bc22138abf860edaf5277b6102e
   subpackages:
   - mem
 - name: github.com/spf13/pflag
-  version: 4c012f6dcd9546820e378d0bdda4d8fc772cdfea
+  version: 583c0c0531f06d5278b7d917446061adc344b5cd
 - name: github.com/stretchr/testify
   version: b91bfb9ebec76498946beb6af7c0230c7cc7ba6c
   subpackages:
@@ -385,7 +391,7 @@ imports:
 - name: k8s.io/code-generator
   version: 7ead8f38b01cf8653249f5af80ce7b2c8aba12e2
 - name: k8s.io/kube-openapi
-  version: 50ae88d24ede7b8bad68e23c805b5d3da5c8abaf
+  version: 91cfa479c814065e420cee7ed227db0f63a5854e
   subpackages:
   - pkg/util/proto
 testImports:
