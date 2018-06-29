@@ -21,7 +21,7 @@ package v3
 import (
 	time "time"
 
-	containership_io_v3 "github.com/containership/cloud-agent/pkg/apis/containership.io/v3"
+	containershipiov3 "github.com/containership/cloud-agent/pkg/apis/containership.io/v3"
 	versioned "github.com/containership/cloud-agent/pkg/client/clientset/versioned"
 	internalinterfaces "github.com/containership/cloud-agent/pkg/client/informers/externalversions/internalinterfaces"
 	v3 "github.com/containership/cloud-agent/pkg/client/listers/containership.io/v3"
@@ -70,7 +70,7 @@ func NewFilteredUserInformer(client versioned.Interface, namespace string, resyn
 				return client.ContainershipV3().Users(namespace).Watch(options)
 			},
 		},
-		&containership_io_v3.User{},
+		&containershipiov3.User{},
 		resyncPeriod,
 		indexers,
 	)
@@ -81,7 +81,7 @@ func (f *userInformer) defaultInformer(client versioned.Interface, resyncPeriod 
 }
 
 func (f *userInformer) Informer() cache.SharedIndexInformer {
-	return f.factory.InformerFor(&containership_io_v3.User{}, f.defaultInformer)
+	return f.factory.InformerFor(&containershipiov3.User{}, f.defaultInformer)
 }
 
 func (f *userInformer) Lister() v3.UserLister {

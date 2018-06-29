@@ -21,7 +21,7 @@ package v3
 import (
 	time "time"
 
-	containership_io_v3 "github.com/containership/cloud-agent/pkg/apis/containership.io/v3"
+	containershipiov3 "github.com/containership/cloud-agent/pkg/apis/containership.io/v3"
 	versioned "github.com/containership/cloud-agent/pkg/client/clientset/versioned"
 	internalinterfaces "github.com/containership/cloud-agent/pkg/client/informers/externalversions/internalinterfaces"
 	v3 "github.com/containership/cloud-agent/pkg/client/listers/containership.io/v3"
@@ -70,7 +70,7 @@ func NewFilteredRegistryInformer(client versioned.Interface, namespace string, r
 				return client.ContainershipV3().Registries(namespace).Watch(options)
 			},
 		},
-		&containership_io_v3.Registry{},
+		&containershipiov3.Registry{},
 		resyncPeriod,
 		indexers,
 	)
@@ -81,7 +81,7 @@ func (f *registryInformer) defaultInformer(client versioned.Interface, resyncPer
 }
 
 func (f *registryInformer) Informer() cache.SharedIndexInformer {
-	return f.factory.InformerFor(&containership_io_v3.Registry{}, f.defaultInformer)
+	return f.factory.InformerFor(&containershipiov3.Registry{}, f.defaultInformer)
 }
 
 func (f *registryInformer) Lister() v3.RegistryLister {

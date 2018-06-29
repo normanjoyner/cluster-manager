@@ -24,9 +24,9 @@ import (
 	time "time"
 
 	versioned "github.com/containership/cloud-agent/pkg/client/clientset/versioned"
-	containership_io "github.com/containership/cloud-agent/pkg/client/informers/externalversions/containership.io"
+	containershipio "github.com/containership/cloud-agent/pkg/client/informers/externalversions/containership.io"
 	internalinterfaces "github.com/containership/cloud-agent/pkg/client/informers/externalversions/internalinterfaces"
-	provision_containership_io "github.com/containership/cloud-agent/pkg/client/informers/externalversions/provision.containership.io"
+	provisioncontainershipio "github.com/containership/cloud-agent/pkg/client/informers/externalversions/provision.containership.io"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
@@ -124,14 +124,14 @@ type SharedInformerFactory interface {
 	ForResource(resource schema.GroupVersionResource) (GenericInformer, error)
 	WaitForCacheSync(stopCh <-chan struct{}) map[reflect.Type]bool
 
-	Containership() containership_io.Interface
-	ContainershipProvision() provision_containership_io.Interface
+	Containership() containershipio.Interface
+	ContainershipProvision() provisioncontainershipio.Interface
 }
 
-func (f *sharedInformerFactory) Containership() containership_io.Interface {
-	return containership_io.New(f, f.namespace, f.tweakListOptions)
+func (f *sharedInformerFactory) Containership() containershipio.Interface {
+	return containershipio.New(f, f.namespace, f.tweakListOptions)
 }
 
-func (f *sharedInformerFactory) ContainershipProvision() provision_containership_io.Interface {
-	return provision_containership_io.New(f, f.namespace, f.tweakListOptions)
+func (f *sharedInformerFactory) ContainershipProvision() provisioncontainershipio.Interface {
+	return provisioncontainershipio.New(f, f.namespace, f.tweakListOptions)
 }

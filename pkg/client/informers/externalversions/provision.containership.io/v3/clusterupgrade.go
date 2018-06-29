@@ -21,7 +21,7 @@ package v3
 import (
 	time "time"
 
-	provision_containership_io_v3 "github.com/containership/cloud-agent/pkg/apis/provision.containership.io/v3"
+	provisioncontainershipiov3 "github.com/containership/cloud-agent/pkg/apis/provision.containership.io/v3"
 	versioned "github.com/containership/cloud-agent/pkg/client/clientset/versioned"
 	internalinterfaces "github.com/containership/cloud-agent/pkg/client/informers/externalversions/internalinterfaces"
 	v3 "github.com/containership/cloud-agent/pkg/client/listers/provision.containership.io/v3"
@@ -70,7 +70,7 @@ func NewFilteredClusterUpgradeInformer(client versioned.Interface, namespace str
 				return client.ContainershipProvisionV3().ClusterUpgrades(namespace).Watch(options)
 			},
 		},
-		&provision_containership_io_v3.ClusterUpgrade{},
+		&provisioncontainershipiov3.ClusterUpgrade{},
 		resyncPeriod,
 		indexers,
 	)
@@ -81,7 +81,7 @@ func (f *clusterUpgradeInformer) defaultInformer(client versioned.Interface, res
 }
 
 func (f *clusterUpgradeInformer) Informer() cache.SharedIndexInformer {
-	return f.factory.InformerFor(&provision_containership_io_v3.ClusterUpgrade{}, f.defaultInformer)
+	return f.factory.InformerFor(&provisioncontainershipiov3.ClusterUpgrade{}, f.defaultInformer)
 }
 
 func (f *clusterUpgradeInformer) Lister() v3.ClusterUpgradeLister {

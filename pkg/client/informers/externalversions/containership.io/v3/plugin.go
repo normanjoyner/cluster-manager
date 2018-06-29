@@ -21,7 +21,7 @@ package v3
 import (
 	time "time"
 
-	containership_io_v3 "github.com/containership/cloud-agent/pkg/apis/containership.io/v3"
+	containershipiov3 "github.com/containership/cloud-agent/pkg/apis/containership.io/v3"
 	versioned "github.com/containership/cloud-agent/pkg/client/clientset/versioned"
 	internalinterfaces "github.com/containership/cloud-agent/pkg/client/informers/externalversions/internalinterfaces"
 	v3 "github.com/containership/cloud-agent/pkg/client/listers/containership.io/v3"
@@ -70,7 +70,7 @@ func NewFilteredPluginInformer(client versioned.Interface, namespace string, res
 				return client.ContainershipV3().Plugins(namespace).Watch(options)
 			},
 		},
-		&containership_io_v3.Plugin{},
+		&containershipiov3.Plugin{},
 		resyncPeriod,
 		indexers,
 	)
@@ -81,7 +81,7 @@ func (f *pluginInformer) defaultInformer(client versioned.Interface, resyncPerio
 }
 
 func (f *pluginInformer) Informer() cache.SharedIndexInformer {
-	return f.factory.InformerFor(&containership_io_v3.Plugin{}, f.defaultInformer)
+	return f.factory.InformerFor(&containershipiov3.Plugin{}, f.defaultInformer)
 }
 
 func (f *pluginInformer) Lister() v3.PluginLister {
