@@ -3,6 +3,8 @@ package k8sutil
 import (
 	"time"
 
+	"github.com/pkg/errors"
+
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kubeinformers "k8s.io/client-go/informers"
@@ -27,62 +29,34 @@ type KubeAPI struct {
 
 var kubeAPI *KubeAPI
 
-func init() {
-	var err error
+// Initialize creates all necessary clientsets for interacting
+// with various Kubernetes APIs
+func Initialize() error {
 	config, err := determineConfig()
 	if err != nil {
-		log.Error(err.Error())
-		return
+		return errors.Wrap(err, "determine Kubernetes config failed")
 	}
 
 	clientset, err := newKubeClient(config)
 	if err != nil {
-		log.Error(err.Error())
+		return errors.Wrap(err, "create Kubernetes clientset failed")
 	}
 
 	csclientset, err := newCSClient(config)
 	if err != nil {
-		log.Error(err.Error())
+		return errors.Wrap(err, "create Containership clientset failed")
 	}
 
 	extclientset, err := newKubeExtensionsAPI(config)
 	if err != nil {
-		log.Error(err.Error())
+		return errors.Wrap(err, "create Kubernetes extensions clientset failed")
 	}
 
 	kubeAPI = &KubeAPI{clientset, config}
 	csAPI = &CSKubeAPI{csclientset, config}
 	kubeExtensionsAPI = &KubeExtensionsAPI{extclientset, config}
-}
 
-// determineConfig determines if we are running in a cluster or out side
-// and gets the appropriate configuration to talk with kubernetes
-func determineConfig() (*rest.Config, error) {
-	kubeconfigPath := env.Kubeconfig()
-	var config *rest.Config
-	var err error
-
-	// determine whether to use in cluster config or out of cluster config
-	// if kuebconfigPath is not specified, default to in cluster config
-	// otherwise, use out of cluster config
-	if kubeconfigPath == "" {
-		log.Info("Using in cluster k8s config")
-		config, err = rest.InClusterConfig()
-	} else {
-		log.Info("Using out of cluster k8s config:", kubeconfigPath)
-
-		config, err = clientcmd.BuildConfigFromFlags("", kubeconfigPath)
-	}
-
-	if err != nil {
-		return nil, err
-	}
-
-	return config, nil
-}
-
-func newKubeClient(config *rest.Config) (*kubernetes.Clientset, error) {
-	return kubernetes.NewForConfig(config)
+	return nil
 }
 
 // API returns an instance of the KubeAPI
@@ -162,4 +136,34 @@ func (k KubeAPI) DeleteContainershipServiceAccounts(namespace string) error {
 // DeleteNamespace deletes the namespace with the given name
 func (k KubeAPI) DeleteNamespace(name string) error {
 	return k.Client().CoreV1().Namespaces().Delete(name, &metav1.DeleteOptions{})
+}
+
+// determineConfig determines if we are running in a cluster or outside
+// and gets the appropriate configuration to talk with Kubernetes.
+func determineConfig() (*rest.Config, error) {
+	kubeconfigPath := env.Kubeconfig()
+	var config *rest.Config
+	var err error
+
+	// determine whether to use in cluster config or out of cluster config
+	// if kubeconfigPath is not specified, default to in cluster config
+	// otherwise, use out of cluster config
+	if kubeconfigPath == "" {
+		log.Info("Using in cluster k8s config")
+		config, err = rest.InClusterConfig()
+	} else {
+		log.Info("Using out of cluster k8s config: ", kubeconfigPath)
+
+		config, err = clientcmd.BuildConfigFromFlags("", kubeconfigPath)
+	}
+
+	if err != nil {
+		return nil, err
+	}
+
+	return config, nil
+}
+
+func newKubeClient(config *rest.Config) (*kubernetes.Clientset, error) {
+	return kubernetes.NewForConfig(config)
 }

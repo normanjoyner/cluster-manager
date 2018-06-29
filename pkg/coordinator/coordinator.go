@@ -23,6 +23,10 @@ var (
 
 // Initialize creates the informer factories, controller, and synchronizer.
 func Initialize() {
+	if err := k8sutil.Initialize(); err != nil {
+		log.Fatal("Could not initialize k8sutil: ", err)
+	}
+
 	// Register our scheme with main k8s scheme so we can forward custom events
 	// properly
 	csscheme.AddToScheme(scheme.Scheme)
