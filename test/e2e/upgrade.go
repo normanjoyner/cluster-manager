@@ -40,6 +40,10 @@ func main() {
 		}
 	}
 
+	if err := k8sutil.Initialize(); err != nil {
+		log.Fatal("Could not initialize k8sutil: ", err)
+	}
+
 	if err := run(targetVersions, loop); err != nil {
 		log.Errorf("Test failed: %s", err)
 		os.Exit(1)
