@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Kubernetes Authors.
+Copyright The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -62,7 +62,7 @@ func (c *FakeUsers) List(opts v1.ListOptions) (result *v3.UserList, err error) {
 	if label == nil {
 		label = labels.Everything()
 	}
-	list := &v3.UserList{}
+	list := &v3.UserList{ListMeta: obj.(*v3.UserList).ListMeta}
 	for _, item := range obj.(*v3.UserList).Items {
 		if label.Matches(labels.Set(item.Labels)) {
 			list.Items = append(list.Items, item)
