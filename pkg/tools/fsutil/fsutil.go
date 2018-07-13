@@ -30,6 +30,21 @@ func FileExists(fs afero.Fs, file string) bool {
 	return stat.Mode().IsRegular()
 }
 
+// IsEmpty returns true if the directory passed in contains no files
+func IsEmpty(name string) (bool, error) {
+	f, err := os.Open(name)
+	if err != nil {
+		return false, err
+	}
+	defer f.Close()
+
+	_, err = f.Readdirnames(1)
+	if err == io.EOF {
+		return true, nil
+	}
+	return false, err // Either not empty or error, suits both cases
+}
+
 // EnsureDirExistsWithCorrectPermissions ensures the dir exists with the
 // correct permissions
 func EnsureDirExistsWithCorrectPermissions(fs afero.Fs, dir string, perms os.FileMode) error {

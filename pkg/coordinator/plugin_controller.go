@@ -6,9 +6,9 @@ import (
 	"io/ioutil"
 	"os"
 	"path"
-	"strings"
 	"time"
 
+	"github.com/pkg/errors"
 	"github.com/spf13/afero"
 
 	"github.com/containership/cloud-agent/pkg/constants"
@@ -16,13 +16,15 @@ import (
 	"github.com/containership/cloud-agent/pkg/log"
 	"github.com/containership/cloud-agent/pkg/request"
 	"github.com/containership/cloud-agent/pkg/tools"
+	"github.com/containership/cloud-agent/pkg/tools/fsutil"
 
 	containershipv3 "github.com/containership/cloud-agent/pkg/apis/containership.io/v3"
 	csclientset "github.com/containership/cloud-agent/pkg/client/clientset/versioned"
 	csinformers "github.com/containership/cloud-agent/pkg/client/informers/externalversions"
 	cslisters "github.com/containership/cloud-agent/pkg/client/listers/containership.io/v3"
 
-	"k8s.io/apimachinery/pkg/api/errors"
+	kubeerror "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"
 
@@ -31,7 +33,10 @@ import (
 	"k8s.io/client-go/tools/record"
 	"k8s.io/client-go/util/workqueue"
 
+	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	watch "k8s.io/apimachinery/pkg/watch"
 )
 
 const (
@@ -49,6 +54,8 @@ const (
 // setup
 type PluginController struct {
 	// kubeclientset is a standard kubernetes clientset
+	kubeclientset kubernetes.Interface
+	// clientset is a clientset for containership API group
 	clientset csclientset.Interface
 
 	pluginLister  cslisters.PluginLister
@@ -73,9 +80,10 @@ func NewPluginController(kubeclientset kubernetes.Interface, clientset csclients
 	rateLimiter := workqueue.NewItemExponentialFailureRateLimiter(pluginDelayBetweenRetries, pluginDelayBetweenRetries)
 
 	pc := &PluginController{
-		clientset: clientset,
-		workqueue: workqueue.NewNamedRateLimitingQueue(rateLimiter, "Plugin"),
-		recorder:  tools.CreateAndStartRecorder(kubeclientset, pluginControllerName),
+		kubeclientset: kubeclientset,
+		clientset:     clientset,
+		workqueue:     workqueue.NewNamedRateLimitingQueue(rateLimiter, "Plugin"),
+		recorder:      tools.CreateAndStartRecorder(kubeclientset, pluginControllerName),
 	}
 
 	// Instantiate resource informers
@@ -197,7 +205,7 @@ func (c *PluginController) handleErr(err error, key interface{}) error {
 
 	c.workqueue.Forget(key)
 	log.Infof("Dropping Plugin %q out of the queue: %v", key, err)
-	return err
+	return errors.Wrap(err, "syncing plugin failed")
 }
 
 // pluginSyncHandler uses kubectl to apply the plugin manifest if a plugin CRD
@@ -209,11 +217,11 @@ func (c *PluginController) pluginSyncHandler(key string) error {
 
 	if err != nil {
 		// If the plugin CRD does not exist delete the plugin manifest files
-		if errors.IsNotFound(err) {
+		if kubeerror.IsNotFound(err) {
 			return c.deletePlugin(name)
 		}
 
-		return err
+		return errors.Wrap(err, "getting plugin failed with error other than not found")
 	}
 
 	log.Debugf("%s syncing plugin of type %q with implementation %q", pluginControllerName, plugin.Spec.Type, plugin.Spec.Implementation)
@@ -221,9 +229,9 @@ func (c *PluginController) pluginSyncHandler(key string) error {
 	return c.applyPlugin(plugin)
 }
 
-func makePluginManifestPath(plugin *containershipv3.Plugin) string {
+func getPluginEndpoint(plugin *containershipv3.Plugin) string {
 	previousVersion := getPreviousVersion(plugin)
-	return fmt.Sprintf("/organizations/{{.OrganizationID}}/clusters/{{.ClusterID}}/plugins/%s?previousVersion=%s", plugin.Spec.ID, previousVersion)
+	return fmt.Sprintf("/organizations/{{.OrganizationID}}/clusters/{{.ClusterID}}/plugins/%s?previous_version=%s", plugin.Spec.ID, previousVersion)
 }
 
 func getPreviousVersion(plugin *containershipv3.Plugin) string {
@@ -281,32 +289,21 @@ func runAndLogFromKubectl(kc *kubectl.Kubectl) error {
 // It then looks at each file in the file directory and if it is a text file
 // it will take the url that is written in the file, and delete using the url.
 // If it is a json file it will use the file to delete the plugin.
-func deletePluginUsingFiles(pluginID, pluginPath string) error {
+func deletePluginUsingFiles(pluginID, pluginPath string, fileManager pluginFileManager) error {
 	files, err := ioutil.ReadDir(pluginPath)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "unable to read plugin path directory")
 	}
 
 	for _, f := range files {
-		isTextFile := strings.Contains(f.Name(), ".txt")
-		fullFilename := getPluginFilename(pluginID, f.Name())
+		fullFilename := fileManager.pluginManifestsFilePath(f.Name())
 
 		var kc *kubectl.Kubectl
-		if !isTextFile {
-			kc = kubectl.NewDeleteCmd(fullFilename)
-		} else {
-			b, err := ioutil.ReadFile(fullFilename)
-			if err != nil {
-				return err
-			}
+		kc = kubectl.NewDeleteCmd(fullFilename)
 
-			url := string(b)
-			kc = kubectl.NewDeleteCmd(url)
-		}
-
-		err := runAndLogFromKubectl(kc)
+		err = runAndLogFromKubectl(kc)
 		if err != nil {
-			return err
+			return errors.Wrap(err, "deleting plugin using files failed")
 		}
 	}
 
@@ -314,7 +311,10 @@ func deletePluginUsingFiles(pluginID, pluginPath string) error {
 }
 
 func (c *PluginController) deletePlugin(name string) error {
-	pluginPath := getPluginPath(name)
+	fileManager := pluginFileManager{
+		name,
+	}
+	pluginPath := fileManager.pluginDir()
 
 	var kc *kubectl.Kubectl
 	if stat, err := os.Stat(pluginPath); os.IsNotExist(err) || !stat.IsDir() {
@@ -325,37 +325,45 @@ func (c *PluginController) deletePlugin(name string) error {
 
 		err := runAndLogFromKubectl(kc)
 		if err != nil {
-			return err
+			return errors.Wrap(err, "deleting plugin using labels failed")
 		}
 
 		return nil
 	}
 
-	err := deletePluginUsingFiles(name, pluginPath)
+	err := deletePluginUsingFiles(name, pluginPath, fileManager)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "delete plugin failed")
 	}
 
 	// attempts to clean up the manifest directory that was created,
 	// if there is an error it's ignored
-	cleanUpPluginManifests(name)
+	fileManager.cleanUpPluginManifests()
 	return nil
 }
 
 type jsonPluginsResponse struct {
 	Manifests [][]interface{} `json:"manifests"`
-	URLs      []string        `json:"urls"`
+	Jobs      jobs            `json:"jobs,omitempty"`
+}
+
+type jobs struct {
+	PreApply  []*batchv1.Job `json:"pre_apply,omitempty"`
+	PostApply []*batchv1.Job `json:"post_apply,omitempty"`
 }
 
 // getPlugin gets the plugin spec from cloud, or returns an error
 func (c *PluginController) getPlugin(p *containershipv3.Plugin) (*jsonPluginsResponse, error) {
-	path := makePluginManifestPath(p)
+	path := getPluginEndpoint(p)
 	bytes, err := makeRequest(path)
 	if err != nil {
 		return nil, err
 	}
 
 	var plugin jsonPluginsResponse
+	plugin.Jobs.PreApply = make([]*batchv1.Job, 0)
+	plugin.Jobs.PostApply = make([]*batchv1.Job, 0)
+
 	err = json.Unmarshal(bytes, &plugin)
 	if err != nil {
 		return nil, err
@@ -367,7 +375,7 @@ func (c *PluginController) getPlugin(p *containershipv3.Plugin) (*jsonPluginsRes
 // formatPlugin takes the manifests from the plugin spec returned from cloud
 // and splits them up to be written to files under the plugins/:plugin_id. It
 // then returns an array of strings, which are the file paths.
-func formatPlugin(spec containershipv3.PluginSpec, pluginDetails *jsonPluginsResponse) ([]string, error) {
+func formatPlugin(spec containershipv3.PluginSpec, pluginDetails *jsonPluginsResponse, fileManager pluginFileManager) ([]string, error) {
 	manifests := make([]string, 0)
 
 	for index, resources := range pluginDetails.Manifests {
@@ -379,9 +387,9 @@ func formatPlugin(spec containershipv3.PluginSpec, pluginDetails *jsonPluginsRes
 			manifestBundle = append(manifestBundle, unstructuredBytes...)
 		}
 
-		filename := getPluginFilename(spec.ID, buildPluginFilename(index, "json"))
+		filename := fileManager.pluginManifestsFilePath(buildPluginFilename(index, "json"))
 
-		err := writePluginManifests(spec.ID, filename, manifestBundle)
+		err := writePluginManifests(filename, manifestBundle)
 		// we only want to short circuit and return if there was an error
 		// else continue processing the manifests
 		if err != nil {
@@ -394,12 +402,36 @@ func formatPlugin(spec containershipv3.PluginSpec, pluginDetails *jsonPluginsRes
 	return manifests, nil
 }
 
-func getPluginPath(id string) string {
-	return path.Join("/plugins", id)
+func pluginBaseDir() string {
+	return "/plugins"
 }
 
-func getPluginFilename(id string, name string) string {
-	return path.Join(getPluginPath(id), name)
+// pluginFileManager uses the plugins id to create and mantain the plugin
+// directory for applying and updating plugins
+type pluginFileManager struct {
+	ID string
+}
+
+func (p pluginFileManager) initializePluginDirectories() error {
+	md := p.pluginManifestsDir()
+	err := osFs.MkdirAll(md, os.ModePerm)
+	if err != nil {
+		return errors.Wrap(err, "initializing plugin directories failed")
+	}
+
+	return nil
+}
+
+func (p pluginFileManager) pluginDir() string {
+	return path.Join(pluginBaseDir(), p.ID)
+}
+
+func (p pluginFileManager) pluginManifestsDir() string {
+	return path.Join(p.pluginDir(), "manifests")
+}
+
+func (p pluginFileManager) pluginManifestsFilePath(name string) string {
+	return path.Join(p.pluginManifestsDir(), name)
 }
 
 func buildPluginFilename(name int, fileType string) string {
@@ -410,19 +442,15 @@ func buildPluginFilename(name int, fileType string) string {
 // They are named as their index so that if `kubectl apply -f` is run on
 // the directory they will be applied in the correct order, since kubectl apply
 // runs files in alphanumeric order
-func writePluginManifests(name string, filename string, manifest []byte) error {
-	path := getPluginPath(name)
-
-	err := osFs.MkdirAll(path, os.ModePerm)
-	if err != nil {
-		return err
-	}
-
+func writePluginManifests(filename string, manifest []byte) error {
 	return ioutil.WriteFile(filename, manifest, 0644)
 }
 
-func cleanUpPluginManifests(name string) {
-	err := osFs.RemoveAll(getPluginPath(name))
+// cleanUpPluginManifests is a best effort function to clean up a plugins
+// directory by removing all manifests written for the plugin.
+// we log the error but don't return it, or retry
+func (p pluginFileManager) cleanUpPluginManifests() {
+	err := osFs.RemoveAll(p.pluginDir())
 	if err != nil {
 		log.Error(err)
 	}
@@ -433,52 +461,148 @@ func cleanUpPluginManifests(name string) {
 func (c *PluginController) applyPlugin(plugin *containershipv3.Plugin) error {
 	pluginDetails, err := c.getPlugin(plugin)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "get request to Containership api failed")
 	}
 
-	manifests := make([]string, 0)
+	fileManager := pluginFileManager{
+		plugin.Spec.ID,
+	}
+	fileManager.cleanUpPluginManifests()
+	fileManager.initializePluginDirectories()
+
 	if pluginDetails.Manifests != nil {
-		manifestFiles, err := formatPlugin(plugin.Spec, pluginDetails)
+		_, err := formatPlugin(plugin.Spec, pluginDetails, fileManager)
 
 		if err != nil {
-			return err
-		}
-
-		if len(manifestFiles) == 0 {
-			// No manifests were created, so there's nothing to apply. This can
-			// happen, for example, when the plugin implementation is k8s itself.
-			return nil
-		}
-
-		manifests = manifestFiles
-	}
-
-	if pluginDetails.URLs != nil {
-		for index, url := range pluginDetails.URLs {
-			writePluginManifests(plugin.Spec.ID, getPluginFilename(plugin.Spec.ID, buildPluginFilename(index, "txt")), []byte(url))
-			manifests = append(manifests, url)
+			return errors.Wrap(err, "formatting manifests for plugin failed")
 		}
 	}
 
-	for _, manifest := range manifests {
-		kc := kubectl.NewApplyCmd(manifest)
+	// apply jobs for applying before manifests
+	err = c.runJob(pluginDetails.Jobs.PreApply, plugin)
+	if err != nil {
+		return errors.Wrap(err, "running pre apply jobs failed")
+	}
 
-		err = kc.Run()
+	err = c.applyManifests(fileManager, plugin)
+	if err != nil {
+		return errors.Wrap(err, "applying manifests failed")
+	}
 
-		c.recorder.Event(plugin, corev1.EventTypeNormal, "Apply", string(kc.Output))
-
-		if err != nil || len(kc.Error) != 0 {
-			errMsg := fmt.Sprintf("Error creating plugin: %s", err)
-			if e := string(kc.Error); e != "" {
-				errMsg = fmt.Sprintf("%s, kubectl stderr: %s", errMsg, e)
-			}
-
-			c.recorder.Event(plugin, corev1.EventTypeWarning, "ApplyError", errMsg)
-			return fmt.Errorf("Error creating plugin: %s", errMsg)
-		}
+	// apply jobs for clean up after manifests
+	err = c.runJob(pluginDetails.Jobs.PostApply, plugin)
+	if err != nil {
+		return errors.Wrap(err, "running post apply jobs failed")
 	}
 
 	return nil
+}
+
+func (c *PluginController) applyManifests(fileManager pluginFileManager, plugin *containershipv3.Plugin) error {
+	manifests := fileManager.pluginManifestsDir()
+	if empty, err := fsutil.IsEmpty(manifests); err != nil {
+		return errors.Wrap(err, "checking plugin directory for is empty failed")
+	} else if empty {
+		return nil
+	}
+
+	kc := kubectl.NewApplyCmd(manifests)
+
+	err := kc.Run()
+
+	c.recorder.Event(plugin, corev1.EventTypeNormal, "Apply", string(kc.Output))
+
+	if err != nil {
+		errMsg := fmt.Sprintf("Error creating plugin: %s", err)
+		if e := string(kc.Error); e != "" {
+			errMsg = fmt.Sprintf("%s, kubectl stderr: %s", errMsg, e)
+		}
+
+		c.recorder.Event(plugin, corev1.EventTypeWarning, "ApplyError", errMsg)
+		return fmt.Errorf("Error creating plugin: %s", errMsg)
+	}
+
+	return nil
+}
+
+func (c *PluginController) runJob(jobs []*batchv1.Job, plugin *containershipv3.Plugin) error {
+	if len(jobs) <= 0 {
+		return nil
+	}
+
+	var jobErr error
+	for _, job := range jobs {
+		if job.Spec.ActiveDeadlineSeconds == nil {
+			return fmt.Errorf("ActiveDeadlineSeconds needs to be specified for any plugin job")
+		}
+
+		if job.Spec.BackoffLimit == nil {
+			limit := int32(1)
+			job.Spec.BackoffLimit = &limit
+		}
+
+		_, err := c.kubeclientset.BatchV1().Jobs(constants.ContainershipNamespace).Create(job)
+		if err != nil {
+			return errors.Wrap(err, "creating job failed")
+		}
+
+		w, err := c.kubeclientset.BatchV1().Jobs(constants.ContainershipNamespace).Watch(metav1.ListOptions{
+			FieldSelector: fields.OneTermEqualSelector("metadata.name", job.Name).String(),
+		})
+		if err != nil {
+			return errors.Wrap(err, "getting watcher for job failed")
+		}
+
+		ch := w.ResultChan()
+		for event := range ch {
+			j, ok := event.Object.(*batchv1.Job)
+			if !ok {
+				continue
+			}
+
+			switch event.Type {
+			case watch.Modified:
+				if len(j.Status.Conditions) > 0 {
+					failed, reason, _ := jobDidFail(j)
+					// If a job is not able to finish from exceeding BackoffLimit or ActiveDeadlineSeconds
+					// it will change its status to failed
+					if failed {
+						jobErr = fmt.Errorf("Job finished with failed status %s", reason)
+					}
+
+					w.Stop()
+				}
+			case watch.Deleted:
+				// if job is deleted we should stop watching
+				w.Stop()
+			default:
+				log.Debugf("Plugin job '%s' received event of type %q", job.Name, event.Type)
+			}
+		}
+
+		// deleting is best effort, if it fails that's fine, also
+		// the process shouldn't be blocking
+		propagationPolicy := metav1.DeletePropagationForeground
+		go c.kubeclientset.BatchV1().Jobs(constants.ContainershipNamespace).Delete(job.Name, &metav1.DeleteOptions{
+			PropagationPolicy: &propagationPolicy,
+		})
+	}
+
+	return jobErr
+}
+
+func jobDidFail(job *batchv1.Job) (bool, string, error) {
+	if len(job.Status.Conditions) == 0 {
+		return false, "", fmt.Errorf("Job must have at least one status condition to check to determine failure")
+	}
+
+	for _, condition := range job.Status.Conditions {
+		if condition.Type == batchv1.JobFailed {
+			return true, condition.Reason, nil
+		}
+	}
+
+	return false, "", nil
 }
 
 // enqueuePlugin enqueues the plugin on add or delete
