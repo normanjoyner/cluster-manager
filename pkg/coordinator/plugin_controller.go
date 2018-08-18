@@ -12,6 +12,7 @@ import (
 	"github.com/spf13/afero"
 
 	"github.com/containership/cloud-agent/pkg/constants"
+	"github.com/containership/cloud-agent/pkg/env"
 	"github.com/containership/cloud-agent/pkg/k8sutil/kubectl"
 	"github.com/containership/cloud-agent/pkg/log"
 	"github.com/containership/cloud-agent/pkg/request"
@@ -222,6 +223,10 @@ func (c *PluginController) pluginSyncHandler(key string) error {
 		}
 
 		return errors.Wrap(err, "getting plugin failed with error other than not found")
+	}
+
+	if plugin.Spec.Type == constants.ClusterManagementPluginType && env.IsClusterManagementPluginSyncDisabled() {
+		return nil
 	}
 
 	log.Debugf("%s syncing plugin of type %q with implementation %q", pluginControllerName, plugin.Spec.Type, plugin.Spec.Implementation)
