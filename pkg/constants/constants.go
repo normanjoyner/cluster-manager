@@ -11,12 +11,17 @@ import (
 )
 
 const (
-	// ContainershipNamespace is that namespace in which all containership
+	// ContainershipNamespace is the namespace in which all containership
 	// resources will live
 	ContainershipNamespace = "containership-core"
 	// ContainershipServiceAccountName is the name of containership controlled
 	// service account in every namespace
 	ContainershipServiceAccountName = "containership"
+)
+
+const (
+	// ContainershipNodeIDLabelKey is the label key for the Containership node ID on nodes
+	ContainershipNodeIDLabelKey = "containership.io/node-id"
 )
 
 const (
