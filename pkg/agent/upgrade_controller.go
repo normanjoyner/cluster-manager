@@ -5,11 +5,15 @@ import (
 	"io/ioutil"
 	"time"
 
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"
 
+	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
+
+	"github.com/pkg/errors"
 
 	"github.com/containership/cloud-agent/pkg/constants"
 	"github.com/containership/cloud-agent/pkg/env"
@@ -18,7 +22,6 @@ import (
 	"github.com/containership/cloud-agent/pkg/resources/upgradescript"
 
 	provisioncsv3 "github.com/containership/cloud-agent/pkg/apis/provision.containership.io/v3"
-	csclientset "github.com/containership/cloud-agent/pkg/client/clientset/versioned"
 	csinformers "github.com/containership/cloud-agent/pkg/client/informers/externalversions"
 	pcslisters "github.com/containership/cloud-agent/pkg/client/listers/provision.containership.io/v3"
 )
@@ -29,14 +32,12 @@ const (
 	maxRetriesUpgradeController = 5
 )
 
-const (
-	nodeUpgradeScriptEndpointTemplateBase = "/organizations/{{.OrganizationID}}/clusters/{{.ClusterID}}/nodes/{{.NodeName}}/upgrade"
-)
-
 // UpgradeController is the agent controller which watches for ClusterUpgrade updates
 // and writes update script to host when it is that specific agents turn to update
 type UpgradeController struct {
-	clientset csclientset.Interface
+	// The k8s clientset isn't used by any Informers; it's only required for fetching
+	// Node data on the fly
+	kubeclientset kubernetes.Interface
 
 	upgradeLister  pcslisters.ClusterUpgradeLister
 	upgradesSynced cache.InformerSynced
@@ -46,12 +47,12 @@ type UpgradeController struct {
 
 // NewUpgradeController creates a new agent UpgradeController
 func NewUpgradeController(
-	clientset csclientset.Interface,
+	kubeclientset kubernetes.Interface,
 	csInformerFactory csinformers.SharedInformerFactory) *UpgradeController {
 
 	uc := &UpgradeController{
-		clientset: clientset,
-		workqueue: workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), upgradeControllerName),
+		kubeclientset: kubeclientset,
+		workqueue:     workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), upgradeControllerName),
 	}
 
 	// Create an informer from the factory so that we share the underlying
@@ -265,11 +266,17 @@ func (uc *UpgradeController) startUpgrade(upgrade *provisioncsv3.ClusterUpgrade)
 
 // downloadUpgradeScript downloads the upgrade script for this node
 func (uc *UpgradeController) downloadUpgradeScript(upgrade *provisioncsv3.ClusterUpgrade) ([]byte, error) {
+	node, err := uc.kubeclientset.CoreV1().Nodes().Get(env.NodeName(), metav1.GetOptions{})
+	if err != nil {
+		return nil, errors.Wrap(err, "downloadUpgradeScript get node failed")
+	}
+	nodeID := node.Labels[constants.ContainershipNodeIDLabelKey]
+
 	// The provision API expects the version without a leading 'v'. We should
 	// only strip the 'v' when talking to the API.
 	targetVersionWithoutV := upgrade.Spec.TargetVersion[1:]
-	pathTemplate := fmt.Sprintf("%s/%s?version=%s", nodeUpgradeScriptEndpointTemplateBase,
-		upgrade.Spec.Type, targetVersionWithoutV)
+	pathTemplate := fmt.Sprintf("/organizations/{{.OrganizationID}}/clusters/{{.ClusterID}}/nodes/%s/upgrade/%s?version=%s",
+		nodeID, upgrade.Spec.Type, targetVersionWithoutV)
 
 	req, err := request.New(request.CloudServiceProvision, pathTemplate, "GET", nil)
 	if err != nil {

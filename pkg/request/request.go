@@ -25,7 +25,6 @@ type Requester struct {
 var urlParams = map[string]string{
 	"OrganizationID": env.OrganizationID(),
 	"ClusterID":      env.ClusterID(),
-	"NodeName":       env.NodeName(),
 }
 
 // New returns a Requester with the endpoint and type or request set that is

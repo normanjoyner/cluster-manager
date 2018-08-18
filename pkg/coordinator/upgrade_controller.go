@@ -371,7 +371,8 @@ func (uc *UpgradeController) nodeSyncHandler(key string) error {
 
 	// Post the node status as running regardless of success or failure because
 	// this cloud status is only used to determine if a node is running or not.
-	tryPostNodeCloudStatusRunning(node.Name)
+	nodeID := node.Labels[constants.ContainershipNodeIDLabelKey]
+	tryPostNodeCloudStatusRunning(nodeID)
 
 	next := uc.getNextNode(currentUpgrade)
 	if next == nil {
@@ -387,14 +388,14 @@ func (uc *UpgradeController) nodeSyncHandler(key string) error {
 
 // tryPostNodeCloudStatusRunning tries to post given node status to cloud as
 // running and silently ignores any errors that may occur.
-func tryPostNodeCloudStatusRunning(nodeName string) {
+func tryPostNodeCloudStatusRunning(nodeID string) {
 	status := NodeCloudStatusMessage{
 		Status: NodeCloudStatus{
 			Type:    NodeCloudStatusRunning,
 			Percent: "1",
 		},
 	}
-	_ = PostNodeCloudStatusMessageWithRetry(nodeName, &status, 3)
+	_ = PostNodeCloudStatusMessageWithRetry(nodeID, &status, 3)
 }
 
 // updateClusterUpgradeStatus posts an updated status for the given upgrade object

@@ -49,8 +49,7 @@ func Initialize() {
 		k8sutil.CSAPI().Client(), csInformerFactory)
 
 	if env.IsClusterUpgradeEnabled() {
-		cupController = NewUpgradeController(
-			k8sutil.CSAPI().Client(), csInformerFactory)
+		cupController = NewUpgradeController(k8sutil.API().Client(), csInformerFactory)
 	}
 }
 
