@@ -25,6 +25,11 @@ const (
 )
 
 const (
+	// ClusterManagementPluginType is the name of the cluster management plugin type
+	ClusterManagementPluginType = "cluster_management"
+)
+
+const (
 	// ContainershipMount is the base Containership mount
 	ContainershipMount = "/etc/containership"
 )

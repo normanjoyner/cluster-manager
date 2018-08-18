@@ -11,21 +11,22 @@ import (
 )
 
 type environment struct {
-	csCloudSyncInterval             time.Duration
-	agentInformerSyncInterval       time.Duration
-	coordinatorInformerSyncInterval time.Duration
-	cloudClusterAPIKey              string
-	apiBaseURL                      string
-	authBaseURL                     string
-	provisionBaseURL                string
-	clusterID                       string
-	csCloudEnvironment              string
-	csServerPort                    string
-	nodeName                        string
-	organizationID                  string
-	kubeconfig                      string
-	kubectlPath                     string
-	enableClusterUpgrade            bool
+	csCloudSyncInterval                time.Duration
+	agentInformerSyncInterval          time.Duration
+	coordinatorInformerSyncInterval    time.Duration
+	cloudClusterAPIKey                 string
+	apiBaseURL                         string
+	authBaseURL                        string
+	provisionBaseURL                   string
+	clusterID                          string
+	csCloudEnvironment                 string
+	csServerPort                       string
+	nodeName                           string
+	organizationID                     string
+	kubeconfig                         string
+	kubectlPath                        string
+	enableClusterUpgrade               bool
+	disableClusterManagementPluginSync bool
 }
 
 const (
@@ -98,6 +99,8 @@ func init() {
 
 	// Should be set only if a cluster was created through Containership (CKE)
 	env.enableClusterUpgrade = os.Getenv("ENABLE_CLUSTER_UPGRADE") == "true"
+
+	env.disableClusterManagementPluginSync = os.Getenv("DISABLE_CLUSTER_MANAGEMENT_PLUGIN_SYNC") == "true"
 }
 
 // OrganizationID returns Containership Cloud organization id
@@ -173,6 +176,11 @@ func NodeName() string {
 // IsClusterUpgradeEnabled returns true if cluster upgrade is enabled, else false
 func IsClusterUpgradeEnabled() bool {
 	return env.enableClusterUpgrade
+}
+
+// IsClusterManagementPluginSyncDisabled returns true if syncing of cluster management plugin is disabled
+func IsClusterManagementPluginSyncDisabled() bool {
+	return env.disableClusterManagementPluginSync
 }
 
 // Dump dumps the environment if we're in development mode
