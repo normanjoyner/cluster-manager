@@ -4,13 +4,13 @@ import (
 	"encoding/json"
 	"fmt"
 
-	containershipv3 "github.com/containership/cloud-agent/pkg/apis/containership.io/v3"
+	csv3 "github.com/containership/cloud-agent/pkg/apis/containership.io/v3"
 )
 
 // CsPlugins defines the Containership Cloud Plugins resource
 type CsPlugins struct {
 	cloudResource
-	cache []containershipv3.PluginSpec
+	cache []csv3.PluginSpec
 }
 
 // NewCsPlugins constructs a new CsPlugins
@@ -19,7 +19,7 @@ func NewCsPlugins() *CsPlugins {
 		cloudResource: cloudResource{
 			endpoint: "/organizations/{{.OrganizationID}}/clusters/{{.ClusterID}}/plugins",
 		},
-		cache: make([]containershipv3.PluginSpec, 0),
+		cache: make([]csv3.PluginSpec, 0),
 	}
 }
 
@@ -30,18 +30,18 @@ func (us *CsPlugins) UnmarshalToCache(bytes []byte) error {
 }
 
 // Cache return the containership plugins cache
-func (us *CsPlugins) Cache() []containershipv3.PluginSpec {
+func (us *CsPlugins) Cache() []csv3.PluginSpec {
 	return us.cache
 }
 
 // IsEqual compares a PluginSpec to another Plugin
 func (us *CsPlugins) IsEqual(specObj interface{}, parentSpecObj interface{}) (bool, error) {
-	spec, ok := specObj.(containershipv3.PluginSpec)
+	spec, ok := specObj.(csv3.PluginSpec)
 	if !ok {
 		return false, fmt.Errorf("The object is not of type PluginSpec")
 	}
 
-	plugin, ok := parentSpecObj.(*containershipv3.Plugin)
+	plugin, ok := parentSpecObj.(*csv3.Plugin)
 	if !ok {
 		return false, fmt.Errorf("The object is not of type Plugin")
 	}

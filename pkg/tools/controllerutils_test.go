@@ -5,7 +5,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	containershipv3 "github.com/containership/cloud-agent/pkg/apis/containership.io/v3"
+	csv3 "github.com/containership/cloud-agent/pkg/apis/containership.io/v3"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -46,7 +46,7 @@ func TestSplitMetaResourceNamespaceKeyFuncWithOnePart(t *testing.T) {
 }
 
 func TestMetaResourceNamespaceKeyFunc(t *testing.T) {
-	obj := &containershipv3.Registry{
+	obj := &csv3.Registry{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "name",
 			Namespace: "namespace",

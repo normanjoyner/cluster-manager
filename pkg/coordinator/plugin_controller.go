@@ -19,7 +19,7 @@ import (
 	"github.com/containership/cloud-agent/pkg/tools"
 	"github.com/containership/cloud-agent/pkg/tools/fsutil"
 
-	containershipv3 "github.com/containership/cloud-agent/pkg/apis/containership.io/v3"
+	csv3 "github.com/containership/cloud-agent/pkg/apis/containership.io/v3"
 	csclientset "github.com/containership/cloud-agent/pkg/client/clientset/versioned"
 	csinformers "github.com/containership/cloud-agent/pkg/client/informers/externalversions"
 	cslisters "github.com/containership/cloud-agent/pkg/client/listers/containership.io/v3"
@@ -94,8 +94,8 @@ func NewPluginController(kubeclientset kubernetes.Interface, clientset csclients
 	pluginInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc: pc.enqueuePlugin,
 		UpdateFunc: func(old, new interface{}) {
-			newPlugin := new.(*containershipv3.Plugin)
-			oldPlugin := old.(*containershipv3.Plugin)
+			newPlugin := new.(*csv3.Plugin)
+			oldPlugin := old.(*csv3.Plugin)
 			if newPlugin.ResourceVersion == oldPlugin.ResourceVersion {
 				// Periodic resync will send update events for all known Plugins.
 				// Two different versions of the same Plugin will always have different RVs.
@@ -234,18 +234,18 @@ func (c *PluginController) pluginSyncHandler(key string) error {
 	return c.applyPlugin(plugin)
 }
 
-func getPluginEndpoint(plugin *containershipv3.Plugin) string {
+func getPluginEndpoint(plugin *csv3.Plugin) string {
 	previousVersion := getPreviousVersion(plugin)
 	return fmt.Sprintf("/organizations/{{.OrganizationID}}/clusters/{{.ClusterID}}/plugins/%s?previous_version=%s", plugin.Spec.ID, previousVersion)
 }
 
-func getPreviousVersion(plugin *containershipv3.Plugin) string {
+func getPreviousVersion(plugin *csv3.Plugin) string {
 	annotation, ok := plugin.Annotations[constants.PluginHistoryAnnotation]
 	if !ok {
 		return ""
 	}
 
-	history := make([]containershipv3.PluginSpec, 0)
+	history := make([]csv3.PluginSpec, 0)
 	err := json.Unmarshal([]byte(annotation), &history)
 
 	if err != nil || len(history) == 0 {
@@ -358,7 +358,7 @@ type jobs struct {
 }
 
 // getPlugin gets the plugin spec from cloud, or returns an error
-func (c *PluginController) getPlugin(p *containershipv3.Plugin) (*jsonPluginsResponse, error) {
+func (c *PluginController) getPlugin(p *csv3.Plugin) (*jsonPluginsResponse, error) {
 	path := getPluginEndpoint(p)
 	bytes, err := makeRequest(path)
 	if err != nil {
@@ -380,7 +380,7 @@ func (c *PluginController) getPlugin(p *containershipv3.Plugin) (*jsonPluginsRes
 // formatPlugin takes the manifests from the plugin spec returned from cloud
 // and splits them up to be written to files under the plugins/:plugin_id. It
 // then returns an array of strings, which are the file paths.
-func formatPlugin(spec containershipv3.PluginSpec, pluginDetails *jsonPluginsResponse, fileManager pluginFileManager) ([]string, error) {
+func formatPlugin(spec csv3.PluginSpec, pluginDetails *jsonPluginsResponse, fileManager pluginFileManager) ([]string, error) {
 	manifests := make([]string, 0)
 
 	for index, resources := range pluginDetails.Manifests {
@@ -463,7 +463,7 @@ func (p pluginFileManager) cleanUpPluginManifests() {
 
 // applyPlugin takes the manifests under the plugins id and runs them through
 // kubectl apply
-func (c *PluginController) applyPlugin(plugin *containershipv3.Plugin) error {
+func (c *PluginController) applyPlugin(plugin *csv3.Plugin) error {
 	pluginDetails, err := c.getPlugin(plugin)
 	if err != nil {
 		return errors.Wrap(err, "get request to Containership api failed")
@@ -503,7 +503,7 @@ func (c *PluginController) applyPlugin(plugin *containershipv3.Plugin) error {
 	return nil
 }
 
-func (c *PluginController) applyManifests(fileManager pluginFileManager, plugin *containershipv3.Plugin) error {
+func (c *PluginController) applyManifests(fileManager pluginFileManager, plugin *csv3.Plugin) error {
 	manifests := fileManager.pluginManifestsDir()
 	if empty, err := fsutil.IsEmpty(manifests); err != nil {
 		return errors.Wrap(err, "checking plugin directory for is empty failed")
@@ -530,7 +530,7 @@ func (c *PluginController) applyManifests(fileManager pluginFileManager, plugin 
 	return nil
 }
 
-func (c *PluginController) runJob(jobs []*batchv1.Job, plugin *containershipv3.Plugin) error {
+func (c *PluginController) runJob(jobs []*batchv1.Job, plugin *csv3.Plugin) error {
 	if len(jobs) <= 0 {
 		return nil
 	}

@@ -12,7 +12,7 @@ import (
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
 
-	containershipv3 "github.com/containership/cloud-agent/pkg/apis/containership.io/v3"
+	csv3 "github.com/containership/cloud-agent/pkg/apis/containership.io/v3"
 	csclientset "github.com/containership/cloud-agent/pkg/client/clientset/versioned"
 	csinformers "github.com/containership/cloud-agent/pkg/client/informers/externalversions"
 	cslisters "github.com/containership/cloud-agent/pkg/client/listers/containership.io/v3"
@@ -67,8 +67,8 @@ func NewUserController(
 	userInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc: c.enqueueUser,
 		UpdateFunc: func(old, new interface{}) {
-			newUser := new.(*containershipv3.User)
-			oldUser := old.(*containershipv3.User)
+			newUser := new.(*csv3.User)
+			oldUser := old.(*csv3.User)
 			if oldUser.ResourceVersion == newUser.ResourceVersion {
 				// This must be a syncInterval update - nothing has changed so
 				// do nothing
@@ -259,7 +259,7 @@ func (c *UserController) writeAuthorizedUsers() error {
 	}
 
 	// Convert Users to UserSpecs
-	users := make([]containershipv3.UserSpec, 0)
+	users := make([]csv3.UserSpec, 0)
 	for _, u := range userPointers {
 		users = append(users, u.Spec)
 	}

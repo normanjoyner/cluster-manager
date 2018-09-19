@@ -8,21 +8,21 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	containershipv3 "github.com/containership/cloud-agent/pkg/apis/containership.io/v3"
+	csv3 "github.com/containership/cloud-agent/pkg/apis/containership.io/v3"
 	"github.com/containership/cloud-agent/pkg/constants"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 type historyAnnotationTest struct {
-	inputPlugin *containershipv3.Plugin
+	inputPlugin *csv3.Plugin
 	expect      string
 }
 
 var setAnnotation = []historyAnnotationTest{
 	{
-		inputPlugin: &containershipv3.Plugin{
-			Spec: containershipv3.PluginSpec{
+		inputPlugin: &csv3.Plugin{
+			Spec: csv3.PluginSpec{
 				ID:             "id",
 				Version:        "1.0.0",
 				Description:    "description",
@@ -33,13 +33,13 @@ var setAnnotation = []historyAnnotationTest{
 		expect: "[{\"id\":\"id\",\"added_at\":\"\",\"description\":\"description\",\"type\":\"type\",\"version\":\"1.0.0\",\"implementation\":\"implementation\"}]",
 	},
 	{
-		inputPlugin: &containershipv3.Plugin{
+		inputPlugin: &csv3.Plugin{
 			ObjectMeta: metav1.ObjectMeta{
 				Annotations: map[string]string{
 					"containership.io/plugin-history": "[{\"id\":\"id\",\"added_at\":\"\",\"description\":\"description\",\"type\":\"type\",\"version\":\"1.0.0\",\"implementation\":\"implementation\"}]",
 				},
 			},
-			Spec: containershipv3.PluginSpec{
+			Spec: csv3.PluginSpec{
 				ID:             "id",
 				Version:        "1.0.1",
 				Description:    "description",
@@ -50,13 +50,13 @@ var setAnnotation = []historyAnnotationTest{
 		expect: "[{\"id\":\"id\",\"added_at\":\"\",\"description\":\"description\",\"type\":\"type\",\"version\":\"1.0.0\",\"implementation\":\"implementation\"},{\"id\":\"id\",\"added_at\":\"\",\"description\":\"description\",\"type\":\"type\",\"version\":\"1.0.1\",\"implementation\":\"implementation\"}]",
 	},
 	{
-		inputPlugin: &containershipv3.Plugin{
+		inputPlugin: &csv3.Plugin{
 			ObjectMeta: metav1.ObjectMeta{
 				Annotations: map[string]string{
 					"containership.io/plugin-history": "[{\"id\":\"id\",\"added_at\":\"\",\"description\":\"description\",\"type\":\"type\",\"version\":\"1.0.0\",\"implementation\":\"implementation\"},{\"id\":\"id\",\"added_at\":\"\",\"description\":\"description\",\"type\":\"type\",\"version\":\"1.0.1\",\"implementation\":\"implementation\"}]",
 				},
 			},
-			Spec: containershipv3.PluginSpec{
+			Spec: csv3.PluginSpec{
 				ID:             "id",
 				Version:        "1.0.2",
 				Description:    "description",

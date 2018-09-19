@@ -18,7 +18,7 @@ import (
 
 	provisioncsv3 "github.com/containership/cloud-agent/pkg/apis/provision.containership.io/v3"
 	csclientset "github.com/containership/cloud-agent/pkg/client/clientset/versioned"
-	fakecontainershipv3 "github.com/containership/cloud-agent/pkg/client/clientset/versioned/fake"
+	fakecsv3 "github.com/containership/cloud-agent/pkg/client/clientset/versioned/fake"
 	csinformers "github.com/containership/cloud-agent/pkg/client/informers/externalversions"
 )
 
@@ -246,7 +246,7 @@ func initializeFakeKubeclient() (kubernetes.Interface, kubeinformers.SharedInfor
 }
 
 func initializeFakeContainershipClient() (csclientset.Interface, csinformers.SharedInformerFactory) {
-	csclientset := fakecontainershipv3.NewSimpleClientset()
+	csclientset := fakecsv3.NewSimpleClientset()
 	interval := env.CoordinatorInformerSyncInterval()
 
 	csInformerFactory = csinformers.NewSharedInformerFactory(csclientset, interval)

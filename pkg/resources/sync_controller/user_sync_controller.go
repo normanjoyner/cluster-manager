@@ -8,7 +8,7 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/kubernetes"
 
-	containershipv3 "github.com/containership/cloud-agent/pkg/apis/containership.io/v3"
+	csv3 "github.com/containership/cloud-agent/pkg/apis/containership.io/v3"
 	csclientset "github.com/containership/cloud-agent/pkg/client/clientset/versioned"
 	csinformers "github.com/containership/cloud-agent/pkg/client/informers/externalversions"
 	cslisters "github.com/containership/cloud-agent/pkg/client/listers/containership.io/v3"
@@ -118,8 +118,8 @@ func (c *UserSyncController) doSync() {
 }
 
 // Create takes a user spec in cache and creates the CRD
-func (c *UserSyncController) Create(u containershipv3.UserSpec) error {
-	user, err := c.clientset.ContainershipV3().Users(constants.ContainershipNamespace).Create(&containershipv3.User{
+func (c *UserSyncController) Create(u csv3.UserSpec) error {
+	user, err := c.clientset.ContainershipV3().Users(constants.ContainershipNamespace).Create(&csv3.User{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: u.ID,
 		},
@@ -144,8 +144,8 @@ func (c *UserSyncController) Delete(namespace, name string) error {
 
 // Update takes a user spec in cache and updates a User CRD spec with the same
 // ID with that value
-func (c *UserSyncController) Update(u containershipv3.UserSpec, obj interface{}) error {
-	user, ok := obj.(*containershipv3.User)
+func (c *UserSyncController) Update(u csv3.UserSpec, obj interface{}) error {
+	user, ok := obj.(*csv3.User)
 	if !ok {
 		return fmt.Errorf("Error trying to use a non User CRD object to update a User CRD")
 	}

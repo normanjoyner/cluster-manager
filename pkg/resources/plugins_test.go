@@ -5,22 +5,22 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	containershipv3 "github.com/containership/cloud-agent/pkg/apis/containership.io/v3"
+	csv3 "github.com/containership/cloud-agent/pkg/apis/containership.io/v3"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 type buildIsEqualTest struct {
-	inputSpec   containershipv3.PluginSpec
-	inputObject *containershipv3.Plugin
+	inputSpec   csv3.PluginSpec
+	inputObject *csv3.Plugin
 	expected    bool
 	message     string
 }
 
-var emptyPluginSpec = containershipv3.PluginSpec{}
-var emptyPlugin = &containershipv3.Plugin{}
+var emptyPluginSpec = csv3.PluginSpec{}
+var emptyPlugin = &csv3.Plugin{}
 
-var plugin1spec = containershipv3.PluginSpec{
+var plugin1spec = csv3.PluginSpec{
 	ID:             "1",
 	Description:    "description 1",
 	Type:           "type",
@@ -28,7 +28,7 @@ var plugin1spec = containershipv3.PluginSpec{
 	Implementation: "implementation",
 }
 
-var plugin2spec = containershipv3.PluginSpec{
+var plugin2spec = csv3.PluginSpec{
 	ID:             "2",
 	Description:    "description 2",
 	Type:           "type",
@@ -36,7 +36,7 @@ var plugin2spec = containershipv3.PluginSpec{
 	Implementation: "implementation",
 }
 
-var plugin1 = &containershipv3.Plugin{
+var plugin1 = &csv3.Plugin{
 	ObjectMeta: metav1.ObjectMeta{
 		Name:      "plugin1",
 		Namespace: "containership",
@@ -44,7 +44,7 @@ var plugin1 = &containershipv3.Plugin{
 	Spec: plugin1spec,
 }
 
-var plugin2 = &containershipv3.Plugin{
+var plugin2 = &csv3.Plugin{
 	ObjectMeta: metav1.ObjectMeta{
 		Name:      "plugin2",
 		Namespace: "containership",

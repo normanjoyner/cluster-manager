@@ -5,15 +5,15 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	containershipv3 "github.com/containership/cloud-agent/pkg/apis/containership.io/v3"
+	csv3 "github.com/containership/cloud-agent/pkg/apis/containership.io/v3"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-var emptyRegistrySpec = containershipv3.RegistrySpec{}
-var emptyRegistry = &containershipv3.Registry{}
+var emptyRegistrySpec = csv3.RegistrySpec{}
+var emptyRegistry = &csv3.Registry{}
 
-var registry1spec = containershipv3.RegistrySpec{
+var registry1spec = csv3.RegistrySpec{
 	ID:            "1",
 	Description:   "description 1",
 	Organization:  "1234-234-567",
@@ -23,7 +23,7 @@ var registry1spec = containershipv3.RegistrySpec{
 	Owner:         "",
 }
 
-var registry2spec = containershipv3.RegistrySpec{
+var registry2spec = csv3.RegistrySpec{
 	ID:            "2",
 	Description:   "description 2",
 	Organization:  "4321-657-4566",
@@ -33,7 +33,7 @@ var registry2spec = containershipv3.RegistrySpec{
 	Owner:         "",
 }
 
-var registry1 = &containershipv3.Registry{
+var registry1 = &csv3.Registry{
 	ObjectMeta: metav1.ObjectMeta{
 		Name:      "registry1",
 		Namespace: "containership",
@@ -41,7 +41,7 @@ var registry1 = &containershipv3.Registry{
 	Spec: registry1spec,
 }
 
-var registry2 = &containershipv3.Registry{
+var registry2 = &csv3.Registry{
 	ObjectMeta: metav1.ObjectMeta{
 		Name:      "registry2",
 		Namespace: "containership",

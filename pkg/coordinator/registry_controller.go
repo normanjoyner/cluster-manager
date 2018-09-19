@@ -17,7 +17,7 @@ import (
 	"k8s.io/client-go/tools/record"
 	"k8s.io/client-go/util/workqueue"
 
-	containershipv3 "github.com/containership/cloud-agent/pkg/apis/containership.io/v3"
+	csv3 "github.com/containership/cloud-agent/pkg/apis/containership.io/v3"
 	csclientset "github.com/containership/cloud-agent/pkg/client/clientset/versioned"
 	csinformers "github.com/containership/cloud-agent/pkg/client/informers/externalversions"
 	cslisters "github.com/containership/cloud-agent/pkg/client/listers/containership.io/v3"
@@ -556,7 +556,7 @@ func (c *RegistryController) namespaceSyncHandler(key string) error {
 func (c *RegistryController) enqueueRegistry(obj interface{}) {
 	// If the registry is not being modified in the containership
 	// namespace we don't care about the event (shouldn't happen)
-	if registry, ok := obj.(*containershipv3.Registry); !ok || registry.Namespace != constants.ContainershipNamespace {
+	if registry, ok := obj.(*csv3.Registry); !ok || registry.Namespace != constants.ContainershipNamespace {
 		return
 	}
 
@@ -630,7 +630,7 @@ func (c *RegistryController) queueSecretOwnerRegistryIfApplicable(obj interface{
 
 // newSecret creates a new Secret for a Registry resource. It sets name
 // to be the same as its parent registry to couple them together
-func newSecret(registry *containershipv3.Registry) *corev1.Secret {
+func newSecret(registry *csv3.Registry) *corev1.Secret {
 	rs := registry.Spec
 	rdt := rs.AuthToken.Type
 

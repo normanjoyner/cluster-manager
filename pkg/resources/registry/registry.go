@@ -4,7 +4,7 @@ import (
 	"encoding/base64"
 	"strings"
 
-	containershipv3 "github.com/containership/cloud-agent/pkg/apis/containership.io/v3"
+	csv3 "github.com/containership/cloud-agent/pkg/apis/containership.io/v3"
 
 	"github.com/containership/cloud-agent/pkg/constants"
 )
@@ -21,7 +21,7 @@ const (
 // Generator allows us to access and return registry logic
 // in the same way for all registries
 type Generator interface {
-	CreateAuthToken() (containershipv3.AuthTokenDef, error)
+	CreateAuthToken() (csv3.AuthTokenDef, error)
 }
 
 // Default is the type of registry if they don't need special logic
@@ -63,8 +63,8 @@ func (d Default) Endpoint() string {
 }
 
 // CreateAuthToken returns a base64 encrypted token to use as an Auth token
-func (d Default) CreateAuthToken() (containershipv3.AuthTokenDef, error) {
-	return containershipv3.AuthTokenDef{
+func (d Default) CreateAuthToken() (csv3.AuthTokenDef, error) {
+	return csv3.AuthTokenDef{
 		Token:    base64.StdEncoding.EncodeToString([]byte(strings.Join([]string{d.Username(), d.Password()}, ":"))),
 		Endpoint: d.Endpoint(),
 		Type:     DockerJSON,

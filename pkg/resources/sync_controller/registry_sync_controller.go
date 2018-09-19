@@ -9,7 +9,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
 
-	containershipv3 "github.com/containership/cloud-agent/pkg/apis/containership.io/v3"
+	csv3 "github.com/containership/cloud-agent/pkg/apis/containership.io/v3"
 	csclientset "github.com/containership/cloud-agent/pkg/client/clientset/versioned"
 	csinformers "github.com/containership/cloud-agent/pkg/client/informers/externalversions"
 	cslisters "github.com/containership/cloud-agent/pkg/client/listers/containership.io/v3"
@@ -59,7 +59,7 @@ func NewRegistry(kubeclientset kubernetes.Interface, clientset csclientset.Inter
 
 	registryInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
 		UpdateFunc: func(old, new interface{}) {
-			newReg := new.(*containershipv3.Registry)
+			newReg := new.(*csv3.Registry)
 			// check to make sure that there is a watch on the
 			// registries token if needed
 			if _, ok := c.tokenRegenerationByID[newReg.Name]; !ok && newReg.Spec.Provider == constants.EC2Registry {
@@ -139,14 +139,14 @@ func (c *RegistrySyncController) doSync() {
 }
 
 // Create takes a registry spec in cache and creates the CRD
-func (c *RegistrySyncController) Create(u containershipv3.RegistrySpec) error {
+func (c *RegistrySyncController) Create(u csv3.RegistrySpec) error {
 	token, err := c.cloudResource.GetAuthToken(u)
 	if err != nil {
 		return err
 	}
 
 	u.AuthToken = token
-	newReg, err := c.clientset.ContainershipV3().Registries(constants.ContainershipNamespace).Create(&containershipv3.Registry{
+	newReg, err := c.clientset.ContainershipV3().Registries(constants.ContainershipNamespace).Create(&csv3.Registry{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: u.ID,
 		},
@@ -203,7 +203,7 @@ func safeClose(t chan bool) {
 // watchToken takes a registry and waits, before the token on a registry becomes
 // invalid it deletes the registry. Once deleted it will be recreated on the
 // next sync with a new AuthToken
-func (c *RegistrySyncController) watchToken(r *containershipv3.Registry) chan bool {
+func (c *RegistrySyncController) watchToken(r *csv3.Registry) chan bool {
 	stop := make(chan bool)
 
 	go func() {

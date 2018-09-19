@@ -4,13 +4,13 @@ import (
 	"encoding/json"
 	"fmt"
 
-	containershipv3 "github.com/containership/cloud-agent/pkg/apis/containership.io/v3"
+	csv3 "github.com/containership/cloud-agent/pkg/apis/containership.io/v3"
 )
 
 // CsUsers defines the Containership Cloud Users resource
 type CsUsers struct {
 	cloudResource
-	cache []containershipv3.UserSpec
+	cache []csv3.UserSpec
 }
 
 // NewCsUsers constructs a new CsUsers
@@ -19,7 +19,7 @@ func NewCsUsers() *CsUsers {
 		cloudResource: cloudResource{
 			endpoint: "/organizations/{{.OrganizationID}}/users",
 		},
-		cache: make([]containershipv3.UserSpec, 0),
+		cache: make([]csv3.UserSpec, 0),
 	}
 }
 
@@ -30,22 +30,22 @@ func (us *CsUsers) UnmarshalToCache(bytes []byte) error {
 }
 
 // Cache return the containership users cache
-func (us *CsUsers) Cache() []containershipv3.UserSpec {
+func (us *CsUsers) Cache() []csv3.UserSpec {
 	return us.cache
 }
 
-func sshKeyAreEqual(ukey containershipv3.SSHKeySpec, key containershipv3.SSHKeySpec) bool {
+func sshKeyAreEqual(ukey csv3.SSHKeySpec, key csv3.SSHKeySpec) bool {
 	return ukey.Name == key.Name &&
 		ukey.Fingerprint == key.Fingerprint &&
 		ukey.Key == key.Key
 }
 
-func sshKeysEqualCompare(specSSHKeys []containershipv3.SSHKeySpec, userSSHKeysByID map[string]containershipv3.SSHKeySpec) bool {
+func sshKeysEqualCompare(specSSHKeys []csv3.SSHKeySpec, userSSHKeysByID map[string]csv3.SSHKeySpec) bool {
 	if len(specSSHKeys) != len(userSSHKeysByID) {
 		return false
 	}
 
-	specSSHKeysByID := make(map[string]containershipv3.SSHKeySpec, 0)
+	specSSHKeysByID := make(map[string]csv3.SSHKeySpec, 0)
 	for _, key := range specSSHKeys {
 		specSSHKeysByID[key.ID] = key
 	}
@@ -61,12 +61,12 @@ func sshKeysEqualCompare(specSSHKeys []containershipv3.SSHKeySpec, userSSHKeysBy
 
 // IsEqual compares a UserSpec to another User
 func (us *CsUsers) IsEqual(specObj interface{}, parentSpecObj interface{}) (bool, error) {
-	spec, ok := specObj.(containershipv3.UserSpec)
+	spec, ok := specObj.(csv3.UserSpec)
 	if !ok {
 		return false, fmt.Errorf("The object is not of type UserSpec")
 	}
 
-	user, ok := parentSpecObj.(*containershipv3.User)
+	user, ok := parentSpecObj.(*csv3.User)
 	if !ok {
 		return false, fmt.Errorf("The object is not of type User")
 	}
@@ -79,7 +79,7 @@ func (us *CsUsers) IsEqual(specObj interface{}, parentSpecObj interface{}) (bool
 		return false, nil
 	}
 
-	byID := make(map[string]containershipv3.SSHKeySpec, 0)
+	byID := make(map[string]csv3.SSHKeySpec, 0)
 	for _, key := range user.Spec.SSHKeys {
 		byID[key.ID] = key
 	}

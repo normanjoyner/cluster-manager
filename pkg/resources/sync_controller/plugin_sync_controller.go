@@ -9,7 +9,7 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/kubernetes"
 
-	containershipv3 "github.com/containership/cloud-agent/pkg/apis/containership.io/v3"
+	csv3 "github.com/containership/cloud-agent/pkg/apis/containership.io/v3"
 	csclientset "github.com/containership/cloud-agent/pkg/client/clientset/versioned"
 	csinformers "github.com/containership/cloud-agent/pkg/client/informers/externalversions"
 	cslisters "github.com/containership/cloud-agent/pkg/client/listers/containership.io/v3"
@@ -116,8 +116,8 @@ func (c *PluginSyncController) doSync() {
 }
 
 // Create takes a plugin spec in cache and creates the CRD
-func (c *PluginSyncController) Create(p containershipv3.PluginSpec) error {
-	plugin, err := c.clientset.ContainershipV3().Plugins(constants.ContainershipNamespace).Create(&containershipv3.Plugin{
+func (c *PluginSyncController) Create(p csv3.PluginSpec) error {
+	plugin, err := c.clientset.ContainershipV3().Plugins(constants.ContainershipNamespace).Create(&csv3.Plugin{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: p.ID,
 		},
@@ -137,8 +137,8 @@ func (c *PluginSyncController) Create(p containershipv3.PluginSpec) error {
 
 // Update takes a plugin spec and updates the associated Plugin CR spec
 // with the new values
-func (c *PluginSyncController) Update(p containershipv3.PluginSpec, obj interface{}) error {
-	plugin, ok := obj.(*containershipv3.Plugin)
+func (c *PluginSyncController) Update(p csv3.PluginSpec, obj interface{}) error {
+	plugin, ok := obj.(*csv3.Plugin)
 	if !ok {
 		return fmt.Errorf("Error trying to use a non Plugin CR object to update a Plugin CR")
 	}
@@ -160,8 +160,8 @@ func (c *PluginSyncController) Update(p containershipv3.PluginSpec, obj interfac
 	return err
 }
 
-func setPluginHistoryAnnotation(plugin *containershipv3.Plugin, pCopy *containershipv3.Plugin) {
-	history := make([]containershipv3.PluginSpec, 0)
+func setPluginHistoryAnnotation(plugin *csv3.Plugin, pCopy *csv3.Plugin) {
+	history := make([]csv3.PluginSpec, 0)
 	ann, ok := plugin.Annotations[constants.PluginHistoryAnnotation]
 	var err error
 	if ok && ann != "" {
@@ -171,7 +171,7 @@ func setPluginHistoryAnnotation(plugin *containershipv3.Plugin, pCopy *container
 	// If there is an error unmarshalling the history we want to clear it and
 	// start fresh with the new history that is formatted correctly
 	if err != nil {
-		history = make([]containershipv3.PluginSpec, 0)
+		history = make([]csv3.PluginSpec, 0)
 	}
 
 	history = append(history, plugin.Spec)
