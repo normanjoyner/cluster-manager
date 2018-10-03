@@ -17,6 +17,9 @@ const (
 	// ContainershipServiceAccountName is the name of containership controlled
 	// service account in every namespace
 	ContainershipServiceAccountName = "containership"
+	// KubernetesControlPlaneNamespace is the namespace that the control plane
+	// components for Kubernetes are ran in
+	KubernetesControlPlaneNamespace = "kube-system"
 )
 
 const (

@@ -1,6 +1,7 @@
 package coordinator
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/containership/cloud-agent/pkg/env"
@@ -30,7 +31,7 @@ type buildLabelTest struct {
 
 var masterNodeTrue = &v1.Node{
 	ObjectMeta: metav1.ObjectMeta{
-		Name: "Master True",
+		Name: "master-true",
 		Labels: map[string]string{
 			"containership.io/managed":       "true",
 			"node-role.kubernetes.io/master": "",
@@ -40,7 +41,7 @@ var masterNodeTrue = &v1.Node{
 
 var masterNodeUnmanaged = &v1.Node{
 	ObjectMeta: metav1.ObjectMeta{
-		Name: "Master True, unmanaged",
+		Name: "master-true-unmanaged",
 		Labels: map[string]string{
 			"node-role.kubernetes.io/master": "",
 		},
@@ -49,7 +50,7 @@ var masterNodeUnmanaged = &v1.Node{
 
 var workerNode = &v1.Node{
 	ObjectMeta: metav1.ObjectMeta{
-		Name: "Worker, Master flag DNE",
+		Name: "worker-master-flag-dne",
 		Labels: map[string]string{
 			"containership.io/managed": "true",
 		},
@@ -58,7 +59,7 @@ var workerNode = &v1.Node{
 
 var masterNodeWithVersion = &v1.Node{
 	ObjectMeta: metav1.ObjectMeta{
-		Name: "Master w/ version",
+		Name: "master-with-version",
 		Labels: map[string]string{
 			"containership.io/managed":       "true",
 			"node-role.kubernetes.io/master": "",
@@ -73,11 +74,69 @@ var masterNodeWithVersion = &v1.Node{
 
 var masterNodeWithLabel = &v1.Node{
 	ObjectMeta: metav1.ObjectMeta{
-		Name: "Master with label",
+		Name: "master-with-label",
 		Labels: map[string]string{
 			"containership.io/managed":       "true",
 			"node-role.kubernetes.io/master": "",
 			"custom.label/key":               "value",
+		},
+	},
+}
+
+const APIServer = "kube-apiserver"
+const ControllerManager = "kube-controller-manager"
+const Scheduler = "kube-scheduler"
+
+var controlPlane = []*v1.Pod{
+	&v1.Pod{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: APIServer,
+			Namespace: "kube-system",
+			Labels: map[string]string{
+				"tier":       "control-panel",
+			},
+		},
+		Spec: v1.PodSpec{
+			Containers: []v1.Container{
+				{
+					Name: APIServer,
+					Image: APIServer + ":v1.9.2",
+				},
+			},
+		},
+	},
+	&v1.Pod{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: ControllerManager,
+			Namespace: "kube-system",
+			Labels: map[string]string{
+				"tier":       "control-panel",
+			},
+		},
+		Spec: v1.PodSpec{
+			Containers: []v1.Container{
+				{
+					Name: ControllerManager,
+					Image: ControllerManager + ":v1.9.2",
+				},
+			},
+		},
+	},
+	&v1.Pod{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: Scheduler,
+			Namespace: "kube-system",
+			Labels: map[string]string{
+				"tier":       "control-panel",
+			},
+		},
+		Spec: v1.PodSpec{
+			Containers: []v1.Container{
+				{
+					Name: Scheduler,
+					Image: Scheduler + ":v1.9.2",
+				},
+			},
 		},
 	},
 }
@@ -170,6 +229,7 @@ func TestGetNextNode(t *testing.T) {
 
 		nodeInformer := kubeInformerFactory.Core().V1().Nodes()
 		initializeStore(nodeInformer, test.cluster)
+		initializeFakeControlPlane(kubeInformerFactory, test.cluster)
 
 		result := cupController.getNextNode(test.input)
 		assert.Equal(t, test.expected, result, test.name)
@@ -196,6 +256,38 @@ func initializeFakeContainershipClient() (csclientset.Interface, csinformers.Sha
 
 func initializeStore(informer kubeinformerscorev1.NodeInformer, objs []runtime.Object) {
 	for _, obj := range objs {
-		informer.Informer().GetStore().Add(obj)
+		err := informer.Informer().GetStore().Add(obj)
+		fmt.Println(err)
+	}
+}
+
+func initializeFakeControlPlane(kubeInformerFactory kubeinformers.SharedInformerFactory, cluster []runtime.Object) {
+	podInformer := kubeInformerFactory.Core().V1().Pods()
+	for _, obj := range cluster {
+		node, ok := obj.(*v1.Node)
+		if !ok {
+			continue
+		}
+
+		if _, ok := node.Labels["node-role.kubernetes.io/master"]; !ok {
+			continue
+		}
+
+		nodeName := node.Name
+		objs := make([]runtime.Object, 0)
+		for _, pod := range controlPlane {
+			podC := pod.DeepCopy()
+			podC.Name = podC.Name + "-" + nodeName
+			objs = append(objs, podC)
+		}
+
+		initializePodStore(podInformer, objs)
+	}
+}
+
+func initializePodStore(informer kubeinformerscorev1.PodInformer, objs []runtime.Object) {
+	for _, obj := range objs {
+		err := informer.Informer().GetStore().Add(obj)
+		fmt.Println(err)
 	}
 }

@@ -48,6 +48,8 @@ type UpgradeController struct {
 	upgradesSynced cache.InformerSynced
 	nodeLister     corelistersv1.NodeLister
 	nodesSynced    cache.InformerSynced
+	podLister      corelistersv1.PodLister
+	podsSynced     cache.InformerSynced
 
 	// workqueue is a rate limited work queue. This is used to queue work to be
 	// processed instead of performing it as soon as a change happens. This
@@ -74,6 +76,7 @@ func NewUpgradeController(kubeclientset kubernetes.Interface, clientset csclient
 	// Instantiate resource informers
 	upgradeInformer := csInformerFactory.ContainershipProvision().V3().ClusterUpgrades()
 	nodeInformer := kubeInformerFactory.Core().V1().Nodes()
+	podInformer := kubeInformerFactory.Core().V1().Pods()
 
 	log.Info(upgradeControllerName, ": Setting up event handlers")
 
@@ -92,12 +95,26 @@ func NewUpgradeController(kubeclientset kubernetes.Interface, clientset csclient
 		},
 	})
 
+	podInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
+		UpdateFunc: func(old, new interface{}) {
+			oldPod := old.(*corev1.Pod)
+			newPod := new.(*corev1.Pod)
+
+			if newPod.Namespace != constants.KubernetesControlPlaneNamespace || oldPod.ResourceVersion == newPod.ResourceVersion {
+				return
+			}
+			uc.enqueuePod(new)
+		},
+	})
+
 	// Listers are used for cache inspection and Synced functions
 	// are used to wait for cache synchronization
 	uc.upgradeLister = upgradeInformer.Lister()
 	uc.upgradesSynced = upgradeInformer.Informer().HasSynced
 	uc.nodeLister = nodeInformer.Lister()
 	uc.nodesSynced = nodeInformer.Informer().HasSynced
+	uc.podsSynced = podInformer.Informer().HasSynced
+	uc.podLister = podInformer.Lister()
 
 	return uc
 }
@@ -116,7 +133,8 @@ func (uc *UpgradeController) Run(numWorkers int, stopCh chan struct{}) {
 	if ok := cache.WaitForCacheSync(
 		stopCh,
 		uc.upgradesSynced,
-		uc.nodesSynced); !ok {
+		uc.nodesSynced,
+		uc.podsSynced); !ok {
 		// If this channel is unable to wait for caches to sync we stop both
 		// the containership controller, and the upgrade controller
 		close(stopCh)
@@ -238,6 +256,33 @@ func (uc *UpgradeController) enqueueNode(obj interface{}) {
 	uc.workqueue.AddRateLimited(key)
 }
 
+// enqueuePod enqueues the node that the pod is running on if the pod has
+// a tier label with the value of control-plane
+func (uc *UpgradeController) enqueuePod(obj interface{}) {
+	pod, ok := obj.(*corev1.Pod)
+	if !ok {
+		return
+	}
+
+	if pod.Labels["tier"] != "control-plane" {
+		return
+	}
+
+	node, err := uc.nodeLister.Get(pod.Spec.NodeName)
+	if err != nil {
+		log.Error(err)
+		return
+	}
+
+	key, err := tools.MetaResourceNamespaceKeyFunc("node", node)
+	if err != nil {
+		log.Error(err)
+		return
+	}
+
+	uc.workqueue.AddRateLimited(key)
+}
+
 // enqueueNodeAfterDelay enqueues a node after a given delay. It is intended to
 // be called asynchronously.
 func (uc *UpgradeController) enqueueNodeAfterDelay(node *corev1.Node, d time.Duration) {
@@ -335,8 +380,12 @@ func (uc *UpgradeController) nodeSyncHandler(key string) error {
 	// on that mutated state. To avoid race conditions, we must only operate on
 	// a copy of the state.
 	currentUpgrade = currentUpgrade.DeepCopy()
+	pods, err := uc.podLister.Pods(constants.KubernetesControlPlaneNamespace).List(labels.NewSelector())
+	if err != nil {
+		return err
+	}
 
-	nodeIsTargetVersion := tools.NodeIsTargetKubernetesVersion(currentUpgrade, node)
+	nodeIsTargetVersion := tools.NodeIsTargetKubernetesVersion(currentUpgrade, node, pods)
 	nodeTimedOut := false
 	if !nodeIsTargetVersion {
 		// Check for timeout
@@ -499,15 +548,17 @@ func isCurrentNode(cup *provisioncsv3.ClusterUpgrade, node *corev1.Node) bool {
 // finished upgrading.
 func (uc *UpgradeController) getNextNode(cup *provisioncsv3.ClusterUpgrade) *corev1.Node {
 	masters, _ := uc.nodeLister.List(getMasterSelector(cup.Spec.LabelSelector))
+	pods, _ := uc.podLister.Pods(constants.KubernetesControlPlaneNamespace).List(labels.NewSelector())
+
 	for _, master := range masters {
-		if isNext(cup, master) {
+		if isNext(cup, master, pods) {
 			return master
 		}
 	}
 
 	workers, _ := uc.nodeLister.List(getWorkerSelector(cup.Spec.LabelSelector))
 	for _, worker := range workers {
-		if isNext(cup, worker) {
+		if isNext(cup, worker, pods) {
 			return worker
 		}
 	}
@@ -516,9 +567,9 @@ func (uc *UpgradeController) getNextNode(cup *provisioncsv3.ClusterUpgrade) *cor
 }
 
 // isNext returns true if the given node can go next for this upgrade, else false.
-func isNext(cup *provisioncsv3.ClusterUpgrade, node *corev1.Node) bool {
+func isNext(cup *provisioncsv3.ClusterUpgrade, node *corev1.Node, pods []*corev1.Pod) bool {
 	return !isCurrentNode(cup, node) &&
-		!tools.NodeIsTargetKubernetesVersion(cup, node) &&
+		!tools.NodeIsTargetKubernetesVersion(cup, node, pods) &&
 		!nodeHasFinishedStatus(cup, node)
 }
 
