@@ -76,7 +76,7 @@ func getLogLevelFromEnvironment() zapcore.Level {
 // isDevelopmentEnvironment returns true if we're in a dev environment, else false
 func isDevelopmentEnvironment() bool {
 	cloudEnv := strings.ToLower(os.Getenv("CONTAINERSHIP_CLOUD_ENVIRONMENT"))
-	return cloudEnv == "development"
+	return cloudEnv == "development" || cloudEnv == "stage"
 }
 
 // Fatal implements the fatal logging level

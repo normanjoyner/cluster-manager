@@ -183,9 +183,9 @@ func IsClusterManagementPluginSyncDisabled() bool {
 	return env.disableClusterManagementPluginSync
 }
 
-// Dump dumps the environment if we're in development mode
+// Dump dumps the environment if we're in a development or stage environment
 func Dump() {
-	if env.csCloudEnvironment == "development" {
+	if env.csCloudEnvironment == "development" || env.csCloudEnvironment == "stage" {
 		dump := spew.Sdump(env)
 		log.Debug(dump)
 	}
