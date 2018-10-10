@@ -61,6 +61,10 @@ func NewUpgradeController(
 
 	// All event handlers simply add to a workqueue to be processed by a worker
 	upgradeInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
+		// Need to listen for Add events for the case where the agent is not running
+		// when ClusterUpgrade CR is updated (catch initial list operation when starting)
+		AddFunc: uc.enqueueUpgrade,
+
 		UpdateFunc: func(old, new interface{}) {
 			oldUpgrade := old.(*provisioncsv3.ClusterUpgrade)
 			newUpgrade := new.(*provisioncsv3.ClusterUpgrade)
