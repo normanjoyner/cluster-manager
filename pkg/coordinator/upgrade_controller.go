@@ -19,14 +19,14 @@ import (
 	"k8s.io/client-go/tools/record"
 	"k8s.io/client-go/util/workqueue"
 
-	"github.com/containership/cloud-agent/pkg/constants"
-	"github.com/containership/cloud-agent/pkg/log"
-	"github.com/containership/cloud-agent/pkg/tools"
+	"github.com/containership/cluster-manager/pkg/constants"
+	"github.com/containership/cluster-manager/pkg/log"
+	"github.com/containership/cluster-manager/pkg/tools"
 
-	provisioncsv3 "github.com/containership/cloud-agent/pkg/apis/provision.containership.io/v3"
-	csclientset "github.com/containership/cloud-agent/pkg/client/clientset/versioned"
-	csinformers "github.com/containership/cloud-agent/pkg/client/informers/externalversions"
-	pcslisters "github.com/containership/cloud-agent/pkg/client/listers/provision.containership.io/v3"
+	provisioncsv3 "github.com/containership/cluster-manager/pkg/apis/provision.containership.io/v3"
+	csclientset "github.com/containership/cluster-manager/pkg/client/clientset/versioned"
+	csinformers "github.com/containership/cluster-manager/pkg/client/informers/externalversions"
+	pcslisters "github.com/containership/cluster-manager/pkg/client/listers/provision.containership.io/v3"
 )
 
 const (

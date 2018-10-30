@@ -16,9 +16,9 @@ import (
 	"k8s.io/client-go/tools/record"
 	"k8s.io/client-go/util/workqueue"
 
-	"github.com/containership/cloud-agent/pkg/constants"
-	"github.com/containership/cloud-agent/pkg/log"
-	"github.com/containership/cloud-agent/pkg/tools"
+	"github.com/containership/cluster-manager/pkg/constants"
+	"github.com/containership/cluster-manager/pkg/log"
+	"github.com/containership/cluster-manager/pkg/tools"
 )
 
 const (

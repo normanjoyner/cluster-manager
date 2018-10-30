@@ -19,11 +19,11 @@ limitations under the License.
 package fake
 
 import (
-	clientset "github.com/containership/cloud-agent/pkg/client/clientset/versioned"
-	containershipv3 "github.com/containership/cloud-agent/pkg/client/clientset/versioned/typed/containership.io/v3"
-	fakecontainershipv3 "github.com/containership/cloud-agent/pkg/client/clientset/versioned/typed/containership.io/v3/fake"
-	containershipprovisionv3 "github.com/containership/cloud-agent/pkg/client/clientset/versioned/typed/provision.containership.io/v3"
-	fakecontainershipprovisionv3 "github.com/containership/cloud-agent/pkg/client/clientset/versioned/typed/provision.containership.io/v3/fake"
+	clientset "github.com/containership/cluster-manager/pkg/client/clientset/versioned"
+	containershipv3 "github.com/containership/cluster-manager/pkg/client/clientset/versioned/typed/containership.io/v3"
+	fakecontainershipv3 "github.com/containership/cluster-manager/pkg/client/clientset/versioned/typed/containership.io/v3/fake"
+	containershipprovisionv3 "github.com/containership/cluster-manager/pkg/client/clientset/versioned/typed/provision.containership.io/v3"
+	fakecontainershipprovisionv3 "github.com/containership/cluster-manager/pkg/client/clientset/versioned/typed/provision.containership.io/v3/fake"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/discovery"

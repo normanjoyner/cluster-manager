@@ -19,7 +19,7 @@ limitations under the License.
 package v3
 
 import (
-	internalinterfaces "github.com/containership/cloud-agent/pkg/client/informers/externalversions/internalinterfaces"
+	internalinterfaces "github.com/containership/cluster-manager/pkg/client/informers/externalversions/internalinterfaces"
 )
 
 // Interface provides access to all the informers in this group version.

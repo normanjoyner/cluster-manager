@@ -3,7 +3,7 @@ package server
 import (
 	"net/http"
 
-	"github.com/containership/cloud-agent/pkg/server/handlers"
+	"github.com/containership/cluster-manager/pkg/server/handlers"
 )
 
 // initializeRoutes sets up all routes

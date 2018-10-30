@@ -5,7 +5,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
-	provisioncontainershipio "github.com/containership/cloud-agent/pkg/apis/provision.containership.io"
+	provisioncontainershipio "github.com/containership/cluster-manager/pkg/apis/provision.containership.io"
 )
 
 // SchemeGroupVersion is group version used to register these objects

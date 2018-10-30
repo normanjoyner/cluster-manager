@@ -19,8 +19,8 @@ limitations under the License.
 package v3
 
 import (
-	v3 "github.com/containership/cloud-agent/pkg/apis/containership.io/v3"
-	scheme "github.com/containership/cloud-agent/pkg/client/clientset/versioned/scheme"
+	v3 "github.com/containership/cluster-manager/pkg/apis/containership.io/v3"
+	scheme "github.com/containership/cluster-manager/pkg/client/clientset/versioned/scheme"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	types "k8s.io/apimachinery/pkg/types"
 	watch "k8s.io/apimachinery/pkg/watch"

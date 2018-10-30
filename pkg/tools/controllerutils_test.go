@@ -5,7 +5,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	csv3 "github.com/containership/cloud-agent/pkg/apis/containership.io/v3"
+	csv3 "github.com/containership/cluster-manager/pkg/apis/containership.io/v3"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )

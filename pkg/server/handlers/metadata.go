@@ -4,8 +4,8 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/containership/cloud-agent/pkg/buildinfo"
-	"github.com/containership/cloud-agent/pkg/env"
+	"github.com/containership/cluster-manager/pkg/buildinfo"
+	"github.com/containership/cluster-manager/pkg/env"
 )
 
 type containershipClusterMetadata struct {

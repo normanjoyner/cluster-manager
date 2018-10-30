@@ -8,8 +8,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	csv3 "github.com/containership/cloud-agent/pkg/apis/containership.io/v3"
-	"github.com/containership/cloud-agent/pkg/constants"
+	csv3 "github.com/containership/cluster-manager/pkg/apis/containership.io/v3"
+	"github.com/containership/cluster-manager/pkg/constants"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )

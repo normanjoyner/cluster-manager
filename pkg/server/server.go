@@ -6,8 +6,8 @@ import (
 
 	"github.com/gorilla/mux"
 
-	"github.com/containership/cloud-agent/pkg/env"
-	"github.com/containership/cloud-agent/pkg/log"
+	"github.com/containership/cluster-manager/pkg/env"
+	"github.com/containership/cluster-manager/pkg/log"
 )
 
 // CSServer defines the server

@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"strings"
 
-	csv3 "github.com/containership/cloud-agent/pkg/apis/containership.io/v3"
+	csv3 "github.com/containership/cluster-manager/pkg/apis/containership.io/v3"
 )
 
 // GCR is a google container registry which needs a different kind of auth token

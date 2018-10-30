@@ -7,11 +7,11 @@ import (
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/record"
 
-	csclientset "github.com/containership/cloud-agent/pkg/client/clientset/versioned"
+	csclientset "github.com/containership/cluster-manager/pkg/client/clientset/versioned"
 
-	"github.com/containership/cloud-agent/pkg/constants"
-	"github.com/containership/cloud-agent/pkg/env"
-	"github.com/containership/cloud-agent/pkg/log"
+	"github.com/containership/cluster-manager/pkg/constants"
+	"github.com/containership/cluster-manager/pkg/env"
+	"github.com/containership/cluster-manager/pkg/log"
 )
 
 type syncController struct {

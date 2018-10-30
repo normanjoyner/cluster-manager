@@ -3,7 +3,7 @@
 
 SRC_DIR_HOST = "."
 # TODO make this use $HOME on VM or maybe don't use $HOME at all
-SRC_DIR_VM = "/home/containership/go/src/github.com/containership/cloud-agent"
+SRC_DIR_VM = "/home/containership/go/src/github.com/containership/cluster-manager"
 
 # Hack to sync a directory owned by a user that doesn't exist on VM yet
 # https://stackoverflow.com/a/19682290

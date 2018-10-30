@@ -10,11 +10,11 @@
 
 # Exec into coordinator pod
 `kubectl exec -it $COORDINATOR_POD -- /bin/sh`
-`cd /go/src/github.com/containership/cloud-agent/`
+`cd /go/src/github.com/containership/cluster-manager/`
 
 # Exec into agent pod
 `kubectl exec -it $AGENT_POD -- /bin/sh`
-`cd /go/src/github.com/containership/cloud-agent/`
+`cd /go/src/github.com/containership/cluster-manager/`
 
 From here you can develop locally,
 and inside the kubernetes pod run `go run cmd/(cloud_agent|cloud_coordinator)/main.go`

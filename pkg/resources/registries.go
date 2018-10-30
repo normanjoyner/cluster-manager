@@ -4,9 +4,9 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/containership/cloud-agent/pkg/resources/registry"
+	"github.com/containership/cluster-manager/pkg/resources/registry"
 
-	csv3 "github.com/containership/cloud-agent/pkg/apis/containership.io/v3"
+	csv3 "github.com/containership/cluster-manager/pkg/apis/containership.io/v3"
 )
 
 // CsRegistries defines the Containership Cloud CsRegistries resource

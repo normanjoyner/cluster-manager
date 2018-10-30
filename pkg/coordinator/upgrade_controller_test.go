@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/containership/cloud-agent/pkg/env"
 	"github.com/stretchr/testify/assert"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -16,10 +15,11 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/fake"
 
-	provisioncsv3 "github.com/containership/cloud-agent/pkg/apis/provision.containership.io/v3"
-	csclientset "github.com/containership/cloud-agent/pkg/client/clientset/versioned"
-	fakecsv3 "github.com/containership/cloud-agent/pkg/client/clientset/versioned/fake"
-	csinformers "github.com/containership/cloud-agent/pkg/client/informers/externalversions"
+	provisioncsv3 "github.com/containership/cluster-manager/pkg/apis/provision.containership.io/v3"
+	csclientset "github.com/containership/cluster-manager/pkg/client/clientset/versioned"
+	fakecsv3 "github.com/containership/cluster-manager/pkg/client/clientset/versioned/fake"
+	csinformers "github.com/containership/cluster-manager/pkg/client/informers/externalversions"
+	"github.com/containership/cluster-manager/pkg/env"
 )
 
 type buildLabelTest struct {
@@ -90,16 +90,16 @@ const Scheduler = "kube-scheduler"
 var controlPlane = []*v1.Pod{
 	&v1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: APIServer,
+			Name:      APIServer,
 			Namespace: "kube-system",
 			Labels: map[string]string{
-				"tier":       "control-panel",
+				"tier": "control-panel",
 			},
 		},
 		Spec: v1.PodSpec{
 			Containers: []v1.Container{
 				{
-					Name: APIServer,
+					Name:  APIServer,
 					Image: APIServer + ":v1.9.2",
 				},
 			},
@@ -107,16 +107,16 @@ var controlPlane = []*v1.Pod{
 	},
 	&v1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: ControllerManager,
+			Name:      ControllerManager,
 			Namespace: "kube-system",
 			Labels: map[string]string{
-				"tier":       "control-panel",
+				"tier": "control-panel",
 			},
 		},
 		Spec: v1.PodSpec{
 			Containers: []v1.Container{
 				{
-					Name: ControllerManager,
+					Name:  ControllerManager,
 					Image: ControllerManager + ":v1.9.2",
 				},
 			},
@@ -124,16 +124,16 @@ var controlPlane = []*v1.Pod{
 	},
 	&v1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: Scheduler,
+			Name:      Scheduler,
 			Namespace: "kube-system",
 			Labels: map[string]string{
-				"tier":       "control-panel",
+				"tier": "control-panel",
 			},
 		},
 		Spec: v1.PodSpec{
 			Containers: []v1.Container{
 				{
-					Name: Scheduler,
+					Name:  Scheduler,
 					Image: Scheduler + ":v1.9.2",
 				},
 			},

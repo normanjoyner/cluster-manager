@@ -4,7 +4,7 @@ FROM golang:1.10.1-alpine3.7
 RUN apk update && \
     apk add --no-cache git gcc musl-dev glide
 
-ENV SRC_DIR=/go/src/github.com/containership/cloud-agent/
+ENV SRC_DIR=/go/src/github.com/containership/cluster-manager/
 
 WORKDIR /app
 
@@ -27,9 +27,9 @@ ARG GIT_COMMIT
 RUN cd $SRC_DIR && \
     CGO_ENABLED=0 GOOS=linux GOARCH=amd64 \
         go build -ldflags \
-        "-X github.com/containership/cloud-agent/pkg/buildinfo.gitDescribe=${GIT_DESCRIBE} \
-        -X github.com/containership/cloud-agent/pkg/buildinfo.gitCommit=${GIT_COMMIT} \
-        -X github.com/containership/cloud-agent/pkg/buildinfo.unixTime=`date '+%s'` \
+        "-X github.com/containership/cluster-manager/pkg/buildinfo.gitDescribe=${GIT_DESCRIBE} \
+        -X github.com/containership/cluster-manager/pkg/buildinfo.gitCommit=${GIT_COMMIT} \
+        -X github.com/containership/cluster-manager/pkg/buildinfo.unixTime=`date '+%s'` \
         -w" \
         -a -tags netgo \
         -o agent cmd/cloud_agent/agent.go && \

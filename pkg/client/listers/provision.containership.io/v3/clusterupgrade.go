@@ -19,7 +19,7 @@ limitations under the License.
 package v3
 
 import (
-	v3 "github.com/containership/cloud-agent/pkg/apis/provision.containership.io/v3"
+	v3 "github.com/containership/cluster-manager/pkg/apis/provision.containership.io/v3"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/tools/cache"

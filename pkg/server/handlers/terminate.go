@@ -3,8 +3,8 @@ package handlers
 import (
 	"net/http"
 
-	"github.com/containership/cloud-agent/pkg/coordinator"
-	"github.com/containership/cloud-agent/pkg/log"
+	"github.com/containership/cluster-manager/pkg/coordinator"
+	"github.com/containership/cluster-manager/pkg/log"
 )
 
 // Delete stops cloud synchronization and requests cleanup and termination

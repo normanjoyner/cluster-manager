@@ -14,9 +14,9 @@ import (
 	// used for running locally and testing on gke
 	// _ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 
-	"github.com/containership/cloud-agent/pkg/constants"
-	"github.com/containership/cloud-agent/pkg/env"
-	"github.com/containership/cloud-agent/pkg/log"
+	"github.com/containership/cluster-manager/pkg/constants"
+	"github.com/containership/cluster-manager/pkg/env"
+	"github.com/containership/cluster-manager/pkg/log"
 )
 
 // KubeAPI defines an object to be able to easily

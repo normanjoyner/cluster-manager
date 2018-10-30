@@ -6,7 +6,7 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 
-	provisioncsv3 "github.com/containership/cloud-agent/pkg/apis/provision.containership.io/v3"
+	provisioncsv3 "github.com/containership/cluster-manager/pkg/apis/provision.containership.io/v3"
 )
 
 // NodeIsTargetKubernetesVersion checks if the current node version matches the target version

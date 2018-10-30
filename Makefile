@@ -1,5 +1,5 @@
 SHELL=/bin/bash
-PROJECT_NAME := "cloud-agent"
+PROJECT_NAME := "cluster-manager"
 AGENT_IMAGE_TAG ?= "latest"
 COORDINATOR_IMAGE_TAG ?= "latest"
 PKG := "github.com/containership/$(PROJECT_NAME)"

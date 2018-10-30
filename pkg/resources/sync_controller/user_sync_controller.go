@@ -8,15 +8,15 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/kubernetes"
 
-	csv3 "github.com/containership/cloud-agent/pkg/apis/containership.io/v3"
-	csclientset "github.com/containership/cloud-agent/pkg/client/clientset/versioned"
-	csinformers "github.com/containership/cloud-agent/pkg/client/informers/externalversions"
-	cslisters "github.com/containership/cloud-agent/pkg/client/listers/containership.io/v3"
+	csv3 "github.com/containership/cluster-manager/pkg/apis/containership.io/v3"
+	csclientset "github.com/containership/cluster-manager/pkg/client/clientset/versioned"
+	csinformers "github.com/containership/cluster-manager/pkg/client/informers/externalversions"
+	cslisters "github.com/containership/cluster-manager/pkg/client/listers/containership.io/v3"
 
-	"github.com/containership/cloud-agent/pkg/constants"
-	"github.com/containership/cloud-agent/pkg/log"
-	"github.com/containership/cloud-agent/pkg/resources"
-	"github.com/containership/cloud-agent/pkg/tools"
+	"github.com/containership/cluster-manager/pkg/constants"
+	"github.com/containership/cluster-manager/pkg/log"
+	"github.com/containership/cluster-manager/pkg/resources"
+	"github.com/containership/cluster-manager/pkg/tools"
 )
 
 // UserSyncController is the implementation for syncing User CRDs

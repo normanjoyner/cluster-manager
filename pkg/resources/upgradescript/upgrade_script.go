@@ -7,11 +7,11 @@ import (
 
 	"github.com/spf13/afero"
 
-	"github.com/containership/cloud-agent/pkg/constants"
-	"github.com/containership/cloud-agent/pkg/log"
-	"github.com/containership/cloud-agent/pkg/tools/fsutil"
+	"github.com/containership/cluster-manager/pkg/constants"
+	"github.com/containership/cluster-manager/pkg/log"
+	"github.com/containership/cluster-manager/pkg/tools/fsutil"
 
-	provisioncsv3 "github.com/containership/cloud-agent/pkg/apis/provision.containership.io/v3"
+	provisioncsv3 "github.com/containership/cluster-manager/pkg/apis/provision.containership.io/v3"
 )
 
 const (

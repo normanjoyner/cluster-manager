@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/containership/cloud-agent/pkg/k8sutil"
+	"github.com/containership/cluster-manager/pkg/k8sutil"
 
 	"github.com/stretchr/testify/assert"
 

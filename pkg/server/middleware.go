@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/containership/cloud-agent/pkg/request"
-	"github.com/containership/cloud-agent/pkg/server/handlers"
+	"github.com/containership/cluster-manager/pkg/request"
+	"github.com/containership/cluster-manager/pkg/server/handlers"
 
 	jwt "github.com/dgrijalva/jwt-go"
 )

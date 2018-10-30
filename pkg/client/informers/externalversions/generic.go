@@ -21,8 +21,8 @@ package externalversions
 import (
 	"fmt"
 
-	v3 "github.com/containership/cloud-agent/pkg/apis/containership.io/v3"
-	provisioncontainershipiov3 "github.com/containership/cloud-agent/pkg/apis/provision.containership.io/v3"
+	v3 "github.com/containership/cluster-manager/pkg/apis/containership.io/v3"
+	provisioncontainershipiov3 "github.com/containership/cluster-manager/pkg/apis/provision.containership.io/v3"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	cache "k8s.io/client-go/tools/cache"
 )

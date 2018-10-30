@@ -8,10 +8,10 @@ import (
 
 	"github.com/spf13/afero"
 
-	v3 "github.com/containership/cloud-agent/pkg/apis/containership.io/v3"
-	"github.com/containership/cloud-agent/pkg/constants"
-	"github.com/containership/cloud-agent/pkg/log"
-	"github.com/containership/cloud-agent/pkg/tools/fsutil"
+	v3 "github.com/containership/cluster-manager/pkg/apis/containership.io/v3"
+	"github.com/containership/cluster-manager/pkg/constants"
+	"github.com/containership/cluster-manager/pkg/log"
+	"github.com/containership/cluster-manager/pkg/tools/fsutil"
 )
 
 const (

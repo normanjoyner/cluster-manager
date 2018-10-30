@@ -7,7 +7,7 @@ import (
 
 	"github.com/spf13/afero"
 
-	"github.com/containership/cloud-agent/pkg/log"
+	"github.com/containership/cluster-manager/pkg/log"
 )
 
 // dirExists returns true if dir exists and is a directory, else false

@@ -19,8 +19,8 @@ limitations under the License.
 package containership
 
 import (
-	v3 "github.com/containership/cloud-agent/pkg/client/informers/externalversions/containership.io/v3"
-	internalinterfaces "github.com/containership/cloud-agent/pkg/client/informers/externalversions/internalinterfaces"
+	v3 "github.com/containership/cluster-manager/pkg/client/informers/externalversions/containership.io/v3"
+	internalinterfaces "github.com/containership/cluster-manager/pkg/client/informers/externalversions/internalinterfaces"
 )
 
 // Interface provides access to each of this group's versions.

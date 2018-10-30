@@ -3,8 +3,8 @@ package resources
 import (
 	"io/ioutil"
 
-	"github.com/containership/cloud-agent/pkg/log"
-	"github.com/containership/cloud-agent/pkg/request"
+	"github.com/containership/cluster-manager/pkg/log"
+	"github.com/containership/cluster-manager/pkg/request"
 )
 
 // CloudResource defines an interface for resources to adhere to in order to be kept

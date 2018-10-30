@@ -3,7 +3,7 @@ package v3test
 import (
 	"fmt"
 
-	v3 "github.com/containership/cloud-agent/pkg/apis/containership.io/v3"
+	v3 "github.com/containership/cluster-manager/pkg/apis/containership.io/v3"
 )
 
 var userCounter int

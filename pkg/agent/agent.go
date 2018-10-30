@@ -7,12 +7,12 @@ import (
 
 	"k8s.io/client-go/kubernetes/scheme"
 
-	csscheme "github.com/containership/cloud-agent/pkg/client/clientset/versioned/scheme"
-	csinformers "github.com/containership/cloud-agent/pkg/client/informers/externalversions"
-	"github.com/containership/cloud-agent/pkg/env"
-	"github.com/containership/cloud-agent/pkg/k8sutil"
-	"github.com/containership/cloud-agent/pkg/log"
-	"github.com/containership/cloud-agent/pkg/resources/sysuser"
+	csscheme "github.com/containership/cluster-manager/pkg/client/clientset/versioned/scheme"
+	csinformers "github.com/containership/cluster-manager/pkg/client/informers/externalversions"
+	"github.com/containership/cluster-manager/pkg/env"
+	"github.com/containership/cluster-manager/pkg/k8sutil"
+	"github.com/containership/cluster-manager/pkg/log"
+	"github.com/containership/cluster-manager/pkg/resources/sysuser"
 )
 
 var (

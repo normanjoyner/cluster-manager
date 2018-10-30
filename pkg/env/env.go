@@ -7,7 +7,7 @@ import (
 
 	"github.com/davecgh/go-spew/spew"
 
-	"github.com/containership/cloud-agent/pkg/log"
+	"github.com/containership/cluster-manager/pkg/log"
 )
 
 type environment struct {
@@ -153,7 +153,7 @@ func CSCloudEnvironment() string {
 	return env.csCloudEnvironment
 }
 
-// CSServerPort returns cloud-agent http server port
+// CSServerPort returns cluster-manager http server port
 func CSServerPort() string {
 	return env.csServerPort
 }

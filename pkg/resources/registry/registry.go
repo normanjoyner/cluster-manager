@@ -4,9 +4,9 @@ import (
 	"encoding/base64"
 	"strings"
 
-	csv3 "github.com/containership/cloud-agent/pkg/apis/containership.io/v3"
+	csv3 "github.com/containership/cluster-manager/pkg/apis/containership.io/v3"
 
-	"github.com/containership/cloud-agent/pkg/constants"
+	"github.com/containership/cluster-manager/pkg/constants"
 )
 
 const (

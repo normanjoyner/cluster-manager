@@ -21,10 +21,10 @@ package v3
 import (
 	time "time"
 
-	provisioncontainershipiov3 "github.com/containership/cloud-agent/pkg/apis/provision.containership.io/v3"
-	versioned "github.com/containership/cloud-agent/pkg/client/clientset/versioned"
-	internalinterfaces "github.com/containership/cloud-agent/pkg/client/informers/externalversions/internalinterfaces"
-	v3 "github.com/containership/cloud-agent/pkg/client/listers/provision.containership.io/v3"
+	provisioncontainershipiov3 "github.com/containership/cluster-manager/pkg/apis/provision.containership.io/v3"
+	versioned "github.com/containership/cluster-manager/pkg/client/clientset/versioned"
+	internalinterfaces "github.com/containership/cluster-manager/pkg/client/informers/externalversions/internalinterfaces"
+	v3 "github.com/containership/cluster-manager/pkg/client/listers/provision.containership.io/v3"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	watch "k8s.io/apimachinery/pkg/watch"

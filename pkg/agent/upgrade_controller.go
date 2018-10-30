@@ -15,15 +15,15 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/containership/cloud-agent/pkg/constants"
-	"github.com/containership/cloud-agent/pkg/env"
-	"github.com/containership/cloud-agent/pkg/log"
-	"github.com/containership/cloud-agent/pkg/request"
-	"github.com/containership/cloud-agent/pkg/resources/upgradescript"
+	"github.com/containership/cluster-manager/pkg/constants"
+	"github.com/containership/cluster-manager/pkg/env"
+	"github.com/containership/cluster-manager/pkg/log"
+	"github.com/containership/cluster-manager/pkg/request"
+	"github.com/containership/cluster-manager/pkg/resources/upgradescript"
 
-	provisioncsv3 "github.com/containership/cloud-agent/pkg/apis/provision.containership.io/v3"
-	csinformers "github.com/containership/cloud-agent/pkg/client/informers/externalversions"
-	pcslisters "github.com/containership/cloud-agent/pkg/client/listers/provision.containership.io/v3"
+	provisioncsv3 "github.com/containership/cluster-manager/pkg/apis/provision.containership.io/v3"
+	csinformers "github.com/containership/cluster-manager/pkg/client/informers/externalversions"
+	pcslisters "github.com/containership/cluster-manager/pkg/client/listers/provision.containership.io/v3"
 )
 
 const (

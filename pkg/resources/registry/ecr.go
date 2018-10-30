@@ -6,7 +6,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/ecr"
 
-	csv3 "github.com/containership/cloud-agent/pkg/apis/containership.io/v3"
+	csv3 "github.com/containership/cluster-manager/pkg/apis/containership.io/v3"
 )
 
 // ECR defines a registry on AWS

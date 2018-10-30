@@ -3,10 +3,10 @@ package coordinator
 import (
 	"time"
 
-	csinformers "github.com/containership/cloud-agent/pkg/client/informers/externalversions"
-	"github.com/containership/cloud-agent/pkg/k8sutil"
-	"github.com/containership/cloud-agent/pkg/log"
-	synccontroller "github.com/containership/cloud-agent/pkg/resources/sync_controller"
+	csinformers "github.com/containership/cluster-manager/pkg/client/informers/externalversions"
+	"github.com/containership/cluster-manager/pkg/k8sutil"
+	"github.com/containership/cluster-manager/pkg/log"
+	synccontroller "github.com/containership/cluster-manager/pkg/resources/sync_controller"
 )
 
 // CloudSynchronizer synchronizes Containership Cloud resources

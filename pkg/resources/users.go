@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	csv3 "github.com/containership/cloud-agent/pkg/apis/containership.io/v3"
+	csv3 "github.com/containership/cluster-manager/pkg/apis/containership.io/v3"
 )
 
 // CsUsers defines the Containership Cloud Users resource

@@ -12,7 +12,7 @@ import (
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/record"
 
-	"github.com/containership/cloud-agent/pkg/log"
+	"github.com/containership/cluster-manager/pkg/log"
 )
 
 // MetaResourceNamespaceKeyFunc is a convenient KeyFunc which knows how to make

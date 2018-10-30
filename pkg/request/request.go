@@ -8,8 +8,8 @@ import (
 	"text/template"
 	"time"
 
-	"github.com/containership/cloud-agent/pkg/env"
-	"github.com/containership/cloud-agent/pkg/log"
+	"github.com/containership/cluster-manager/pkg/env"
+	"github.com/containership/cluster-manager/pkg/log"
 )
 
 // Requester returns an object that can be used for making requests to the

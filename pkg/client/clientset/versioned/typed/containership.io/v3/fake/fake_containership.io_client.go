@@ -19,7 +19,7 @@ limitations under the License.
 package fake
 
 import (
-	v3 "github.com/containership/cloud-agent/pkg/client/clientset/versioned/typed/containership.io/v3"
+	v3 "github.com/containership/cluster-manager/pkg/client/clientset/versioned/typed/containership.io/v3"
 	rest "k8s.io/client-go/rest"
 	testing "k8s.io/client-go/testing"
 )

@@ -1,7 +1,7 @@
 package request
 
 import (
-	"github.com/containership/cloud-agent/pkg/env"
+	"github.com/containership/cluster-manager/pkg/env"
 )
 
 // CloudService indicates the cloud service a request is associated with

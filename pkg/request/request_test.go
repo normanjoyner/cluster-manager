@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/containership/cloud-agent/pkg/env"
+	"github.com/containership/cluster-manager/pkg/env"
 )
 
 func TestNew(t *testing.T) {

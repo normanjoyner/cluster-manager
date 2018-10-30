@@ -8,8 +8,8 @@ import (
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/containership/cloud-agent/pkg/apis/containership.io/v3"
-	"github.com/containership/cloud-agent/pkg/apis/containership.io/v3/v3test"
+	"github.com/containership/cluster-manager/pkg/apis/containership.io/v3"
+	"github.com/containership/cluster-manager/pkg/apis/containership.io/v3/v3test"
 )
 
 // TODO the expected strings are too coupled to the underlying fakes and

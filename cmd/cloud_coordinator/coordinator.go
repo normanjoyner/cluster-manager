@@ -4,11 +4,11 @@ import (
 	"flag"
 	"runtime"
 
-	"github.com/containership/cloud-agent/pkg/buildinfo"
-	"github.com/containership/cloud-agent/pkg/coordinator"
-	"github.com/containership/cloud-agent/pkg/env"
-	"github.com/containership/cloud-agent/pkg/log"
-	"github.com/containership/cloud-agent/pkg/server"
+	"github.com/containership/cluster-manager/pkg/buildinfo"
+	"github.com/containership/cluster-manager/pkg/coordinator"
+	"github.com/containership/cluster-manager/pkg/env"
+	"github.com/containership/cluster-manager/pkg/log"
+	"github.com/containership/cluster-manager/pkg/server"
 )
 
 func main() {

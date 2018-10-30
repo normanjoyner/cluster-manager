@@ -5,8 +5,8 @@ import (
 
 	"k8s.io/client-go/rest"
 
-	csclientset "github.com/containership/cloud-agent/pkg/client/clientset/versioned"
-	csinformers "github.com/containership/cloud-agent/pkg/client/informers/externalversions"
+	csclientset "github.com/containership/cluster-manager/pkg/client/clientset/versioned"
+	csinformers "github.com/containership/cluster-manager/pkg/client/informers/externalversions"
 )
 
 // CSKubeAPI is an object for interacting with the CRDs containership

@@ -3,7 +3,7 @@ package k8sutil
 import (
 	"k8s.io/client-go/rest"
 
-	"github.com/containership/cloud-agent/pkg/constants"
+	"github.com/containership/cluster-manager/pkg/constants"
 	v1beta1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
 	extclientset "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"

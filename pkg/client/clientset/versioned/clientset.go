@@ -19,8 +19,8 @@ limitations under the License.
 package versioned
 
 import (
-	containershipv3 "github.com/containership/cloud-agent/pkg/client/clientset/versioned/typed/containership.io/v3"
-	containershipprovisionv3 "github.com/containership/cloud-agent/pkg/client/clientset/versioned/typed/provision.containership.io/v3"
+	containershipv3 "github.com/containership/cluster-manager/pkg/client/clientset/versioned/typed/containership.io/v3"
+	containershipprovisionv3 "github.com/containership/cluster-manager/pkg/client/clientset/versioned/typed/provision.containership.io/v3"
 	discovery "k8s.io/client-go/discovery"
 	rest "k8s.io/client-go/rest"
 	flowcontrol "k8s.io/client-go/util/flowcontrol"
