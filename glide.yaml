@@ -1,4 +1,4 @@
-package: github.com/containership/cloud-agent
+package: github.com/containership/cluster-manager
 import:
 - package: github.com/gorilla/mux
   version: v1.6.2

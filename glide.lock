@@ -1,8 +1,8 @@
-hash: effb91a278aa5c292eaf205ee52ae11ec3d446c4c71da788a8e2c29b3b547d6b
-updated: 2018-10-05T09:19:29.84379-04:00
+hash: 3b51383ad7962fbd22aa8a7b12678d2dfe64fe9bf8e4343be91ebf03da867c1a
+updated: 2018-10-30T13:45:29.042403-04:00
 imports:
 - name: github.com/aws/aws-sdk-go
-  version: 3c7ce80a3b6d9b952022a6c5e5dd758486ff4de1
+  version: 34ab03ee1a2b90b3baf97ff666397c8fb9b8714b
   subpackages:
   - aws
   - aws/awserr
@@ -21,6 +21,7 @@ imports:
   - aws/request
   - aws/session
   - aws/signer/v4
+  - internal/ini
   - internal/sdkio
   - internal/sdkrand
   - internal/sdkuri
@@ -44,8 +45,6 @@ imports:
   version: c2828203cd70a50dcccfb2761f8b1f8ceef9a8e9
 - name: github.com/ghodss/yaml
   version: 73d445a93680fa1a78ae23a5839bad48f32ba1ee
-- name: github.com/go-ini/ini
-  version: 7b294651033cd7d9e7f0d9ffa1b75ed1e198e737
 - name: github.com/gogo/protobuf
   version: c0656edd0d9eab7c66d1eb0c568f9039345796f7
   subpackages:
@@ -75,6 +74,8 @@ imports:
   - OpenAPIv2
   - compiler
   - extensions
+- name: github.com/gorilla/context
+  version: 08b5f424b9271eedf6f9f0ce86cb9396ed337a42
 - name: github.com/gorilla/mux
   version: e3702bed27f0d39777b0b37b664b6280e8ef8fbf
 - name: github.com/gregjones/httpcache
@@ -94,7 +95,7 @@ imports:
 - name: github.com/modern-go/concurrent
   version: bacd9c7ef1dd9b15be4a9909b8ac7a4e313eec94
 - name: github.com/modern-go/reflect2
-  version: 94122c33edd36123c84d5368cfb2b69df93a0ec8
+  version: 05fbef0ca5da472bbf96c9322b84a53edc03c9fd
 - name: github.com/peterbourgon/diskv
   version: 5f041e8faa004a95c88a202771f4cc3e991971e6
 - name: github.com/pkg/errors
@@ -174,7 +175,7 @@ imports:
 - name: gopkg.in/yaml.v2
   version: 670d4cfef0544295bc27a114dbac37980d83185a
 - name: k8s.io/api
-  version: a191abe0b71e00ce4cde58af8002aa4c1a8bb068
+  version: fd83cbc87e7632ccd8bbab63d2b673d4e0c631cc
   subpackages:
   - admissionregistration/v1alpha1
   - admissionregistration/v1beta1
