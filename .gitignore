@@ -24,3 +24,6 @@
 
 # local dev
 /bin
+
+# Coverage
+coverage.txt

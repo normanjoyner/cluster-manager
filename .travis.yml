@@ -1,0 +1,37 @@
+language: go
+
+go:
+  - 1.11.x
+
+before_install:
+  - curl https://glide.sh/get | sh
+  - go get -u golang.org/x/lint/golint
+    # The following is required for `make verify`
+  - go get -u github.com/golang/glog github.com/spf13/pflag golang.org/x/tools/imports
+
+
+install:
+  - glide install -v
+
+jobs:
+  include:
+    - stage: "Tests"
+      name: "Format Check"
+      script: make fmt-check
+    - script: make vet
+      name: "Vet"
+    - script: make lint
+      name: "Lint"
+    - script: make verify
+      name: "Verify Generated Code"
+    - script: make coverage
+      name: "Unit Test and Coverage"
+
+    - stage: "Build"
+      name: "Build Agent"
+      script: make build-agent
+    - script: make build-coordinator
+      name: "Build Coordinator"
+
+after_success:
+  - bash <(curl -s https://codecov.io/bash)
