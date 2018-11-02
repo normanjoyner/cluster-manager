@@ -48,9 +48,12 @@ func PostNodeCloudStatusMessage(nodeID string, status *NodeCloudStatusMessage) e
 	}
 
 	resp, err := req.MakeRequest()
-	defer resp.Body.Close()
+	if err != nil {
+		return err
+	}
 
-	return err
+	defer resp.Body.Close()
+	return nil
 }
 
 // PostNodeCloudStatusMessageWithRetry posts the node cloud status, retrying up to
