@@ -1,8 +1,8 @@
-hash: 3b51383ad7962fbd22aa8a7b12678d2dfe64fe9bf8e4343be91ebf03da867c1a
-updated: 2018-10-30T13:45:29.042403-04:00
+hash: cb0bdf03d2dad0579035103f7f3b7e0153a1bd61550753ed4a4475175b493257
+updated: 2018-11-06T08:49:26.491918-05:00
 imports:
 - name: github.com/aws/aws-sdk-go
-  version: 34ab03ee1a2b90b3baf97ff666397c8fb9b8714b
+  version: fa9217848bf00ff03c3c097e9c109cbe833ea130
   subpackages:
   - aws
   - aws/awserr
@@ -432,6 +432,8 @@ imports:
   - util/workqueue
 - name: k8s.io/code-generator
   version: 3dcf91f64f638563e5106f21f50c31fa361c918d
+- name: k8s.io/gengo
+  version: 7338e4bfd6915369a1375890db1bbda0158c9863
 - name: k8s.io/kube-openapi
   version: 0cf8f7e6ed1d2e3d47d02e3b6e559369af24d803
   subpackages:

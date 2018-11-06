@@ -26,3 +26,5 @@ import:
   version: kubernetes-1.12.0
 - package: k8s.io/client-go
   version: v9.0.0
+- package: k8s.io/gengo
+  version: 7338e4bfd6915369a1375890db1bbda0158c9863
