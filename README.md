@@ -1,6 +1,7 @@
 # Containership Cluster Manager
 
 [![Build Status](https://travis-ci.org/containership/cluster-manager.svg?branch=master)](https://travis-ci.org/containership/cluster-manager)
+[![Go Report Card](https://goreportcard.com/badge/github.com/containership/cluster-manager)](https://goreportcard.com/report/github.com/containership/cluster-manager)
 [![codecov](https://codecov.io/gh/containership/cluster-manager/branch/master/graph/badge.svg)](https://codecov.io/gh/containership/cluster-manager)
 
 ## Overview
