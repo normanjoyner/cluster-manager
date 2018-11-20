@@ -13,8 +13,9 @@ Vagrantfile
 .dockerignore
 Dockerfile*
 
-# Jenkins
-Jenkinsfile
+# CI
+.travis.yml
+.codecov.yml
 
 # misc
 *.log

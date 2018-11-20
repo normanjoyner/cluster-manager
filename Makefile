@@ -3,18 +3,8 @@ PROJECT_NAME := "cluster-manager"
 AGENT_IMAGE_TAG ?= "latest"
 COORDINATOR_IMAGE_TAG ?= "latest"
 PKG := "github.com/containership/$(PROJECT_NAME)"
-PKG_LIST := $(shell glide novendor)
+PKG_LIST := $(shell go list ./...)
 GO_FILES := $(shell find . -type f -not -path './vendor/*' -name '*.go')
-
-# TODO remove this hack. We need Jenkins Dockerfiles until GKE supports a
-# version of Docker that supports multi-stage builds.
-ifeq ($(JENKINS), 1)
-	AGENT_DOCKERFILE=Dockerfile-jenkins.agent
-	COORDINATOR_DOCKERFILE=Dockerfile-jenkins.coordinator
-else
-	AGENT_DOCKERFILE=Dockerfile.agent
-	COORDINATOR_DOCKERFILE=Dockerfile.coordinator
-endif
 
 # TODO generated fakes can get a vet error for a copied lock
 VET_LIST := $(shell go list ./... | grep -v '/pkg/client/clientset/versioned/fake')
@@ -117,7 +107,7 @@ build-agent: ## Build the agent in Docker
 	docker image build -t containership/cloud-agent:$(AGENT_IMAGE_TAG) \
 		--build-arg GIT_DESCRIBE=`git describe --dirty` \
 		--build-arg GIT_COMMIT=`git rev-parse --short HEAD` \
-		-f $(AGENT_DOCKERFILE) .
+		-f Dockerfile.agent .
 
 .PHONY: agent
 agent: build-agent deploy-agent ## Build and deploy the agent
@@ -128,7 +118,7 @@ build-coordinator: ## Build the coordinator in Docker
 	docker image build -t containership/cloud-coordinator:$(COORDINATOR_IMAGE_TAG) \
 		--build-arg GIT_DESCRIBE=`git describe --dirty` \
 		--build-arg GIT_COMMIT=`git rev-parse --short HEAD` \
-		-f $(COORDINATOR_DOCKERFILE) .
+		-f Dockerfile.coordinator .
 
 .PHONY: coordinator
 coordinator: build-coordinator deploy-coordinator ## Build and deploy the coordinator
