@@ -1,5 +1,5 @@
 /*
-Copyright The Kubernetes Authors.
+Copyright 2018 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -62,7 +62,7 @@ func (c *FakeClusterUpgrades) List(opts v1.ListOptions) (result *v3.ClusterUpgra
 	if label == nil {
 		label = labels.Everything()
 	}
-	list := &v3.ClusterUpgradeList{ListMeta: obj.(*v3.ClusterUpgradeList).ListMeta}
+	list := &v3.ClusterUpgradeList{}
 	for _, item := range obj.(*v3.ClusterUpgradeList).Items {
 		if label.Matches(labels.Set(item.Labels)) {
 			list.Items = append(list.Items, item)
