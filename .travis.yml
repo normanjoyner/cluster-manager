@@ -4,14 +4,14 @@ go:
   - 1.11.x
 
 before_install:
-  - curl https://glide.sh/get | sh
+  - go get -u github.com/golang/dep/cmd/dep
   - go get -u golang.org/x/lint/golint
     # The following is required for `make verify`
   - go get -u github.com/golang/glog github.com/spf13/pflag golang.org/x/tools/imports
 
 
 install:
-  - glide install -v
+  - dep ensure
 
 jobs:
   include:
