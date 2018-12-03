@@ -102,4 +102,37 @@ func TestPluginIsEqual(t *testing.T) {
 		assert.Equal(t, test.expected, result, test.message)
 		assert.Nil(t, err)
 	}
+
+	_, err := c.IsEqual(plugin1, plugin1)
+	assert.Error(t, err)
+
+	_, err = c.IsEqual(plugin1spec, plugin1spec)
+	assert.Error(t, err)
+}
+
+var pluginBytes = []byte(`[{
+	"id" : "1234",
+	"description": "description text",
+	"type": "plugin_type",
+	"version": "1.0.0",
+	"implementation": "plugin_implementation"
+}]`)
+
+func TestPluginCache(t *testing.T) {
+	c := NewCsPlugins()
+
+	c.UnmarshalToCache(pluginBytes)
+	ca := c.Cache()
+
+	assert.Equal(t, c.cache, ca)
+}
+
+func TestPluginUnmarshalToCache(t *testing.T) {
+	c := NewCsPlugins()
+
+	err := c.UnmarshalToCache(nil)
+	assert.Error(t, err)
+
+	err = c.UnmarshalToCache(pluginBytes)
+	assert.Nil(t, err)
 }

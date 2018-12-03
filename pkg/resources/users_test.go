@@ -124,6 +124,18 @@ var user2 = &csv3.User{
 	},
 }
 
+var user3 = &csv3.User{
+	ObjectMeta: metav1.ObjectMeta{
+		Name:      "user1",
+		Namespace: "containership",
+	},
+	Spec: csv3.UserSpec{
+		ID:      "1",
+		Name:    "User1",
+		SSHKeys: []csv3.SSHKeySpec{key1spec, key2spec},
+	},
+}
+
 var user2specDiff = csv3.UserSpec{
 	ID:      "2",
 	Name:    "User2",
@@ -155,8 +167,20 @@ func TestIsEqual(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, differentTest, false)
 
-	// check with different keys, different lengths
+	// check with different keys
 	diffLengths, err := c.IsEqual(user2specDiff, user1)
 	assert.Nil(t, err)
 	assert.Equal(t, diffLengths, false)
+
+	// check everything same except extra ssh key
+	diffLengths, err = c.IsEqual(user1spec, user3)
+	assert.Nil(t, err)
+	assert.False(t, diffLengths)
+
+	_, err = c.IsEqual(user1, user1)
+	assert.Error(t, err)
+
+	_, err = c.IsEqual(user2specDiff, user2specDiff)
+	assert.Error(t, err)
+
 }

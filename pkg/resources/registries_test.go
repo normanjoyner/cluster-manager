@@ -20,7 +20,10 @@ var registry1spec = csv3.RegistrySpec{
 	Email:         "",
 	Serveraddress: "hub.docker.com",
 	Provider:      "amazon_ec2_registry",
-	Owner:         "",
+	Credentials: map[string]string{
+		"key": "value",
+	},
+	Owner: "",
 }
 
 var registry2spec = csv3.RegistrySpec{
@@ -47,6 +50,25 @@ var registry2 = &csv3.Registry{
 		Namespace: "containership",
 	},
 	Spec: registry2spec,
+}
+
+var registry3 = &csv3.Registry{
+	ObjectMeta: metav1.ObjectMeta{
+		Name:      "registry1",
+		Namespace: "containership",
+	},
+	Spec: csv3.RegistrySpec{
+		ID:            "1",
+		Description:   "description 1",
+		Organization:  "1234-234-567",
+		Email:         "",
+		Serveraddress: "hub.docker.com",
+		Provider:      "amazon_ec2_registry",
+		Credentials: map[string]string{
+			"key": "differentvalue",
+		},
+		Owner: "",
+	},
 }
 
 func TestRegistryIsEqual(t *testing.T) {
@@ -77,4 +99,14 @@ func TestRegistryIsEqual(t *testing.T) {
 	same, err := c.IsEqual(registry1spec, registry1)
 	assert.Nil(t, err)
 	assert.Equal(t, same, true)
+
+	differentCreds, err := c.IsEqual(registry1spec, registry3)
+	assert.Nil(t, err)
+	assert.False(t, differentCreds)
+
+	_, err = c.IsEqual(registry1spec, registry1spec)
+	assert.Error(t, err)
+
+	_, err = c.IsEqual(registry1, registry1)
+	assert.Error(t, err)
 }
