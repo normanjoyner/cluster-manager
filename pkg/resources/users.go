@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/containership/cluster-manager/pkg/request"
+
 	csv3 "github.com/containership/cluster-manager/pkg/apis/containership.io/v3"
 )
 
@@ -18,6 +20,7 @@ func NewCsUsers() *CsUsers {
 	return &CsUsers{
 		cloudResource: cloudResource{
 			endpoint: "/organizations/{{.OrganizationID}}/users",
+			service:  request.CloudServiceAPI,
 		},
 		cache: make([]csv3.UserSpec, 0),
 	}

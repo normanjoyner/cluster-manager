@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/containership/cluster-manager/pkg/request"
 	"github.com/containership/cluster-manager/pkg/resources/registry"
 
 	csv3 "github.com/containership/cluster-manager/pkg/apis/containership.io/v3"
@@ -20,6 +21,7 @@ func NewCsRegistries() *CsRegistries {
 	return &CsRegistries{
 		cloudResource: cloudResource{
 			endpoint: "/organizations/{{.OrganizationID}}/registries",
+			service:  request.CloudServiceAPI,
 		},
 		cache: make([]csv3.RegistrySpec, 0),
 	}
