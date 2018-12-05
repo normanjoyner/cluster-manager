@@ -9,16 +9,20 @@ import (
 	"github.com/containership/cluster-manager/pkg/env"
 	"github.com/containership/cluster-manager/pkg/k8sutil"
 	"github.com/containership/cluster-manager/pkg/log"
+
+	cerebralscheme "github.com/containership/cerebral/pkg/client/clientset/versioned/scheme"
+	cerebralinformers "github.com/containership/cerebral/pkg/client/informers/externalversions"
 )
 
 var (
-	kubeInformerFactory kubeinformers.SharedInformerFactory
-	csInformerFactory   csinformers.SharedInformerFactory
-	regController       *RegistryController
-	csController        *ContainershipController
-	plgnController      *PluginController
-	cupController       *UpgradeController
-	cloudSynchronizer   *CloudSynchronizer
+	kubeInformerFactory     kubeinformers.SharedInformerFactory
+	csInformerFactory       csinformers.SharedInformerFactory
+	cerebralInformerFactory cerebralinformers.SharedInformerFactory
+	regController           *RegistryController
+	csController            *ContainershipController
+	plgnController          *PluginController
+	cupController           *UpgradeController
+	cloudSynchronizer       *CloudSynchronizer
 )
 
 // Initialize creates the informer factories, controller, and synchronizer.
@@ -30,12 +34,16 @@ func Initialize() {
 	// Register our scheme with main k8s scheme so we can forward custom events
 	// properly
 	csscheme.AddToScheme(scheme.Scheme)
+	// Register the cerebral scheme with main k8s scheme so we can forward custom events
+	// properly
+	cerebralscheme.AddToScheme(scheme.Scheme)
 
 	// Create Informer factories. All Informers should be created from these
 	// factories in order to share the same underlying caches.
 	interval := env.CoordinatorInformerSyncInterval()
 	kubeInformerFactory = k8sutil.API().NewKubeSharedInformerFactory(interval)
 	csInformerFactory = k8sutil.CSAPI().NewCSSharedInformerFactory(interval)
+	cerebralInformerFactory = k8sutil.CerebralAPI().NewCerebralSharedInformerFactory(interval)
 
 	regController = NewRegistryController(
 		k8sutil.API().Client(), k8sutil.CSAPI().Client(), kubeInformerFactory, csInformerFactory)
@@ -54,7 +62,7 @@ func Initialize() {
 	// Synchronizer needs to be created before any jobs start so
 	// that all needed index functions can be added to the
 	// informers
-	cloudSynchronizer = NewCloudSynchronizer(csInformerFactory)
+	cloudSynchronizer = NewCloudSynchronizer(csInformerFactory, cerebralInformerFactory)
 }
 
 // Run kicks off the informer factories, controller, and synchronizer.
@@ -63,6 +71,7 @@ func Run() {
 	stopCh := make(chan struct{})
 	kubeInformerFactory.Start(stopCh)
 	csInformerFactory.Start(stopCh)
+	cerebralInformerFactory.Start(stopCh)
 
 	cloudSynchronizer.Run()
 

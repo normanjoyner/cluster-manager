@@ -7,20 +7,23 @@ import (
 	"github.com/containership/cluster-manager/pkg/k8sutil"
 	"github.com/containership/cluster-manager/pkg/log"
 	synccontroller "github.com/containership/cluster-manager/pkg/resources/sync_controller"
+
+	cerebralinformers "github.com/containership/cerebral/pkg/client/informers/externalversions"
 )
 
 // CloudSynchronizer synchronizes Containership Cloud resources
 // into our Kubernetes CRDs.
 type CloudSynchronizer struct {
-	userSyncController     *synccontroller.UserSyncController
-	registrySyncController *synccontroller.RegistrySyncController
-	pluginSyncController   *synccontroller.PluginSyncController
-	syncStopCh             chan struct{}
-	stopped                bool
+	autoscalingPolicySyncController *synccontroller.AutoscalingPolicySyncController
+	userSyncController              *synccontroller.UserSyncController
+	registrySyncController          *synccontroller.RegistrySyncController
+	pluginSyncController            *synccontroller.PluginSyncController
+	syncStopCh                      chan struct{}
+	stopped                         bool
 }
 
 // NewCloudSynchronizer constructs a new CloudSynchronizer.
-func NewCloudSynchronizer(csInformerFactory csinformers.SharedInformerFactory) *CloudSynchronizer {
+func NewCloudSynchronizer(csInformerFactory csinformers.SharedInformerFactory, cerebralInformerFactory cerebralinformers.SharedInformerFactory) *CloudSynchronizer {
 	return &CloudSynchronizer{
 		userSyncController: synccontroller.NewUser(
 			k8sutil.API().Client(),
@@ -40,6 +43,12 @@ func NewCloudSynchronizer(csInformerFactory csinformers.SharedInformerFactory) *
 			csInformerFactory,
 		),
 
+		autoscalingPolicySyncController: synccontroller.NewAutoscalingPolicyController(
+			k8sutil.API().Client(),
+			k8sutil.CerebralAPI().Client(),
+			cerebralInformerFactory,
+		),
+
 		syncStopCh: make(chan struct{}),
 		stopped:    false,
 	}
@@ -48,6 +57,7 @@ func NewCloudSynchronizer(csInformerFactory csinformers.SharedInformerFactory) *
 // Run kicks off cloud sync routines.
 func (s *CloudSynchronizer) Run() {
 	log.Info("Running CloudSynchronizer")
+	go s.autoscalingPolicySyncController.SyncWithCloud(s.syncStopCh)
 	go s.userSyncController.SyncWithCloud(s.syncStopCh)
 	go s.registrySyncController.SyncWithCloud(s.syncStopCh)
 	go s.pluginSyncController.SyncWithCloud(s.syncStopCh)

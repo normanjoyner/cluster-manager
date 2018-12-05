@@ -52,9 +52,15 @@ func Initialize() error {
 		return errors.Wrap(err, "create Kubernetes extensions clientset failed")
 	}
 
+	cerebralclientset, err := newCerebralClient(config)
+	if err != nil {
+		return errors.Wrap(err, "create Kubernetes cerebral clientset failed")
+	}
+
 	kubeAPI = &KubeAPI{clientset, config}
 	csAPI = &CSKubeAPI{csclientset, config}
 	kubeExtensionsAPI = &KubeExtensionsAPI{extclientset, config}
+	cerebralAPI = &CerebralKubeAPI{cerebralclientset, config}
 
 	return nil
 }
