@@ -6,6 +6,7 @@ import (
 
 	"github.com/containership/cluster-manager/pkg/request"
 	"github.com/containership/cluster-manager/pkg/resources/registry"
+	"github.com/containership/cluster-manager/pkg/tools"
 
 	csv3 "github.com/containership/cluster-manager/pkg/apis/containership.io/v3"
 )
@@ -45,7 +46,7 @@ func (rs *CsRegistries) GetAuthToken(spec csv3.RegistrySpec) (csv3.AuthTokenDef,
 }
 
 // IsEqual take a Registry Spec and compares it to a Registry to see if they are
-// the same, returns an error if the objects are of the inforect type
+// equal, returns an error if the objects are of an incorrect type
 func (rs *CsRegistries) IsEqual(specObj interface{}, parentSpecObj interface{}) (bool, error) {
 	spec, ok := specObj.(csv3.RegistrySpec)
 	if !ok {
@@ -68,11 +69,7 @@ func (rs *CsRegistries) IsEqual(specObj interface{}, parentSpecObj interface{}) 
 		return false, nil
 	}
 
-	for i, k := range spec.Credentials {
-		if user.Spec.Credentials[i] != k {
-			return false, nil
-		}
-	}
+	equal = tools.StringMapsAreEqual(spec.Credentials, user.Spec.Credentials)
 
-	return true, nil
+	return equal, nil
 }

@@ -11,6 +11,7 @@ import (
 )
 
 var autoscalingPolicyBytes = []byte(`[{
+	"id": "1234",
 	"name": "cpu-autoscaling-policy",
 	"policy": {
 		"scale_up": {
@@ -75,7 +76,7 @@ func TestScalingPolicyIsEqual(t *testing.T) {
 	assert.False(t, result)
 }
 
-func TestUnmarshalToCache(t *testing.T) {
+func TestUnmarshalAutoscalingPolicyToCache(t *testing.T) {
 	ap := NewCsAutoscalingPolicies()
 
 	err := ap.UnmarshalToCache(nil)
@@ -85,7 +86,7 @@ func TestUnmarshalToCache(t *testing.T) {
 	assert.Nil(t, err)
 }
 
-func TestAutoscalingGroupCache(t *testing.T) {
+func TestAutoscalingPolicyCache(t *testing.T) {
 	ap := NewCsAutoscalingPolicies()
 	ap.UnmarshalToCache(autoscalingPolicyBytes)
 	c := ap.Cache()
@@ -98,20 +99,20 @@ func TestAutoscalingGroupCache(t *testing.T) {
 }
 
 // Testing IsEqual function
-var cloud = cerebralv1alpha1.AutoscalingPolicySpec{
+var cloudAP = cerebralv1alpha1.AutoscalingPolicySpec{
 	Metric: "CPU",
 }
 
-var cloudPolicyChange = cerebralv1alpha1.AutoscalingPolicySpec{
+var cloudAPPolicyChange = cerebralv1alpha1.AutoscalingPolicySpec{
 	Metric:        "CPU",
 	ScalingPolicy: sp2,
 }
 
-var cloudChange = cerebralv1alpha1.AutoscalingPolicySpec{
+var cloudAPChange = cerebralv1alpha1.AutoscalingPolicySpec{
 	Metric: "Memory",
 }
 
-var cacheObj = &cerebralv1alpha1.AutoscalingPolicy{
+var autoscalingPolicyCacheObj = &cerebralv1alpha1.AutoscalingPolicy{
 	ObjectMeta: metav1.ObjectMeta{
 		Name: "asp1",
 	},
@@ -123,21 +124,21 @@ var cacheObj = &cerebralv1alpha1.AutoscalingPolicy{
 func TestAutoscalingPolicyIsEqual(t *testing.T) {
 	ap := NewCsAutoscalingPolicies()
 
-	result, err := ap.IsEqual(cloud, cacheObj)
+	result, err := ap.IsEqual(cloudAP, autoscalingPolicyCacheObj)
 	assert.Nil(t, err)
 	assert.True(t, result)
 
-	result, err = ap.IsEqual(cloudChange, cacheObj)
+	result, err = ap.IsEqual(cloudAPChange, autoscalingPolicyCacheObj)
 	assert.Nil(t, err)
 	assert.False(t, result)
 
-	result, err = ap.IsEqual(cloudPolicyChange, cacheObj)
+	result, err = ap.IsEqual(cloudAPPolicyChange, autoscalingPolicyCacheObj)
 	assert.Nil(t, err)
 	assert.False(t, result)
 
-	_, err = ap.IsEqual(cacheObj, cacheObj)
+	_, err = ap.IsEqual(autoscalingPolicyCacheObj, autoscalingPolicyCacheObj)
 	assert.Error(t, err)
 
-	_, err = ap.IsEqual(cloud, cloud)
+	_, err = ap.IsEqual(cloudAP, cloudAP)
 	assert.Error(t, err)
 }

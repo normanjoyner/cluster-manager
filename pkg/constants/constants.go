@@ -25,6 +25,8 @@ const (
 const (
 	// ContainershipNodeIDLabelKey is the label key for the Containership node ID on nodes
 	ContainershipNodeIDLabelKey = "containership.io/node-id"
+	// ContainershipNodePoolIDLabelKey is the label key for the Containership node pool ID
+	ContainershipNodePoolIDLabelKey = "containership.io/node-pool-id"
 )
 
 const (

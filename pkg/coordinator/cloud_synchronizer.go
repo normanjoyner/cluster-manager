@@ -14,6 +14,7 @@ import (
 // CloudSynchronizer synchronizes Containership Cloud resources
 // into our Kubernetes CRDs.
 type CloudSynchronizer struct {
+	autoscalingGroupSyncController  *synccontroller.AutoscalingGroupSyncController
 	autoscalingPolicySyncController *synccontroller.AutoscalingPolicySyncController
 	userSyncController              *synccontroller.UserSyncController
 	registrySyncController          *synccontroller.RegistrySyncController
@@ -49,6 +50,12 @@ func NewCloudSynchronizer(csInformerFactory csinformers.SharedInformerFactory, c
 			cerebralInformerFactory,
 		),
 
+		autoscalingGroupSyncController: synccontroller.NewAutoscalingGroupController(
+			k8sutil.API().Client(),
+			k8sutil.CerebralAPI().Client(),
+			cerebralInformerFactory,
+		),
+
 		syncStopCh: make(chan struct{}),
 		stopped:    false,
 	}
@@ -57,6 +64,7 @@ func NewCloudSynchronizer(csInformerFactory csinformers.SharedInformerFactory, c
 // Run kicks off cloud sync routines.
 func (s *CloudSynchronizer) Run() {
 	log.Info("Running CloudSynchronizer")
+	go s.autoscalingGroupSyncController.SyncWithCloud(s.syncStopCh)
 	go s.autoscalingPolicySyncController.SyncWithCloud(s.syncStopCh)
 	go s.userSyncController.SyncWithCloud(s.syncStopCh)
 	go s.registrySyncController.SyncWithCloud(s.syncStopCh)
