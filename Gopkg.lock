@@ -58,6 +58,24 @@
   version = "v1.15.79"
 
 [[projects]]
+  digest = "1:bf86c0cab4c6fde3f794ce91a5d7011ddf8a819a93bb3b56f1e4f23a1c867e7f"
+  name = "github.com/containership/cerebral"
+  packages = [
+    "pkg/apis/cerebral.containership.io",
+    "pkg/apis/cerebral.containership.io/v1alpha1",
+    "pkg/client/clientset/versioned",
+    "pkg/client/clientset/versioned/scheme",
+    "pkg/client/clientset/versioned/typed/cerebral.containership.io/v1alpha1",
+    "pkg/client/informers/externalversions",
+    "pkg/client/informers/externalversions/cerebral.containership.io",
+    "pkg/client/informers/externalversions/cerebral.containership.io/v1alpha1",
+    "pkg/client/informers/externalversions/internalinterfaces",
+    "pkg/client/listers/cerebral.containership.io/v1alpha1",
+  ]
+  pruneopts = "T"
+  revision = "7f872b1f0a3de48961a1e7aedbc6d7e629a69a27"
+
+[[projects]]
   digest = "1:9f42202ac457c462ad8bb9642806d275af9ab4850cf0b1960b9c6f083d4a309a"
   name = "github.com/davecgh/go-spew"
   packages = ["spew"]
@@ -543,7 +561,7 @@
   revision = "46ad728b8d13de6dffe4396623b098473f626e9e"
 
 [[projects]]
-  digest = "1:c3024cff1dc2bbc3721c356abd9c20a21f54dfef47b898eb920bfc706d86b011"
+  digest = "1:3d0ba42a7eaed76c293905ced94201752762c84481f76505ac2079e6f332ae2b"
   name = "k8s.io/apiextensions-apiserver"
   packages = [
     "pkg/apis/apiextensions",
@@ -553,11 +571,11 @@
     "pkg/client/clientset/clientset/typed/apiextensions/v1beta1",
   ]
   pruneopts = "T"
-  revision = "1748dfb29e8a4432b78514bc88a1b07937a9805a"
-  version = "kubernetes-1.12.0"
+  revision = "0cd23ebeb6882bd1cdc2cb15fc7b2d72e8a86a5b"
+  version = "kubernetes-1.12.3"
 
 [[projects]]
-  digest = "1:3818bcfa7e8b205b4425bce9fa6fb70a1f88e16e5519f17b45470faed1aae94e"
+  digest = "1:bcf693d144a1d98dabdb4ab3bf18fbde8b2f7ee86d2fd8a3f74fb6a035627550"
   name = "k8s.io/apimachinery"
   packages = [
     "pkg/api/errors",
@@ -604,11 +622,11 @@
     "third_party/forked/golang/reflect",
   ]
   pruneopts = "T"
-  revision = "6dd46049f39503a1fc8d65de4bd566829e95faff"
-  version = "kubernetes-1.12.0"
+  revision = "eddba98df674a16931d2d4ba75edc3a389bf633a"
+  version = "kubernetes-1.12.3"
 
 [[projects]]
-  digest = "1:d6b3b22d9442b9c22e1b2cfe911e2f74e8aefb6fddae613769fea0de3e295374"
+  digest = "1:5aa94390c366adc57a82b19ad4f99482ab8fbeca0a2ff7b09db12d7baf590e46"
   name = "k8s.io/client-go"
   packages = [
     "discovery",
@@ -778,8 +796,8 @@
     "util/workqueue",
   ]
   pruneopts = "T"
-  revision = "1638f8970cefaa404ff3a62950f88b08292b2696"
-  version = "v9.0.0"
+  revision = "d082d5923d3cc0bfbb066ee5fbdea3d0ca79acf8"
+  version = "kubernetes-1.12.3"
 
 [[projects]]
   branch = "release-1.10"
@@ -862,6 +880,11 @@
     "github.com/aws/aws-sdk-go/aws/credentials",
     "github.com/aws/aws-sdk-go/aws/session",
     "github.com/aws/aws-sdk-go/service/ecr",
+    "github.com/containership/cerebral/pkg/apis/cerebral.containership.io/v1alpha1",
+    "github.com/containership/cerebral/pkg/client/clientset/versioned",
+    "github.com/containership/cerebral/pkg/client/clientset/versioned/scheme",
+    "github.com/containership/cerebral/pkg/client/informers/externalversions",
+    "github.com/containership/cerebral/pkg/client/listers/cerebral.containership.io/v1alpha1",
     "github.com/davecgh/go-spew/spew",
     "github.com/dgrijalva/jwt-go",
     "github.com/fsnotify/fsnotify",
