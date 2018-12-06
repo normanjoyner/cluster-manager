@@ -70,16 +70,14 @@ func getPodforNodeByContainerName(name string, nodeName string, pods []*corev1.P
 }
 
 func getImageVersion(image string) string {
+	if !strings.Contains(image, ":") {
+		return "latest"
+	}
+
 	parts := strings.Split(image, ":")
 	// get the last part of the array
 	// ex.  <YOUR-DOMAIN>:8080/test-image:tag
-	version := parts[len(parts)-1]
-
-	if version != "" {
-		return version
-	}
-
-	return "latest"
+	return parts[len(parts)-1]
 }
 
 // NodeIsReady returns true if the given node has a Ready status, else false.
