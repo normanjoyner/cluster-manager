@@ -30,8 +30,8 @@ type CloudAPIAutoscalingPolicy struct {
 
 // CloudAPIScalingPolicy holds the policy configurations for scaling up and down
 type CloudAPIScalingPolicy struct {
-	ScaleUp   CloudAPIScalingPolicyConfiguration `json:"scale_up"`
-	ScaleDown CloudAPIScalingPolicyConfiguration `json:"scale_down"`
+	ScaleUp   *CloudAPIScalingPolicyConfiguration `json:"scale_up"`
+	ScaleDown *CloudAPIScalingPolicyConfiguration `json:"scale_down"`
 }
 
 // A CloudAPIScalingPolicyConfiguration defines the criterion for triggering a scale event
@@ -39,7 +39,7 @@ type CloudAPIScalingPolicyConfiguration struct {
 	Threshold          float64 `json:"threshold"`
 	ComparisonOperator string  `json:"comparison_operator"`
 	AdjustmentType     string  `json:"adjustment_type"`
-	AdjustmentValue    int     `json:"adjustment_value"`
+	AdjustmentValue    float64 `json:"adjustment_value"`
 }
 
 // NewCsAutoscalingPolicies constructs a new CsAutoscalingPolicies
@@ -71,6 +71,9 @@ func (us *CsAutoscalingPolicies) UnmarshalToCache(bytes []byte) error {
 		// AutoscalingPolicy type you need to reference each value to convert, since
 		// the underlying types and structure is not consistent between the API representation
 		// of the object and the Cerebral representation of the object.
+
+		scaleUp := convertScalingPolicy(cap.ScalingPolicy.ScaleUp)
+		scaleDown := convertScalingPolicy(cap.ScalingPolicy.ScaleDown)
 		ae := cerebralv1alpha1.AutoscalingPolicy{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: cap.ID,
@@ -82,18 +85,8 @@ func (us *CsAutoscalingPolicies) UnmarshalToCache(bytes []byte) error {
 				PollInterval:        cap.PollInterval,
 				SamplePeriod:        cap.SamplePeriod,
 				ScalingPolicy: cerebralv1alpha1.ScalingPolicy{
-					ScaleUp: cerebralv1alpha1.ScalingPolicyConfiguration{
-						Threshold:          cap.ScalingPolicy.ScaleUp.Threshold,
-						ComparisonOperator: cap.ScalingPolicy.ScaleUp.ComparisonOperator,
-						AdjustmentType:     cap.ScalingPolicy.ScaleUp.AdjustmentType,
-						AdjustmentValue:    cap.ScalingPolicy.ScaleUp.AdjustmentValue,
-					},
-					ScaleDown: cerebralv1alpha1.ScalingPolicyConfiguration{
-						Threshold:          cap.ScalingPolicy.ScaleDown.Threshold,
-						ComparisonOperator: cap.ScalingPolicy.ScaleDown.ComparisonOperator,
-						AdjustmentType:     cap.ScalingPolicy.ScaleDown.AdjustmentType,
-						AdjustmentValue:    cap.ScalingPolicy.ScaleDown.AdjustmentValue,
-					},
+					ScaleUp:   scaleUp,
+					ScaleDown: scaleDown,
 				},
 			},
 		}
@@ -104,6 +97,24 @@ func (us *CsAutoscalingPolicies) UnmarshalToCache(bytes []byte) error {
 	us.cache = coerceCloudAPITypeToCerebral
 
 	return nil
+}
+
+func convertScalingPolicy(policy *CloudAPIScalingPolicyConfiguration) *cerebralv1alpha1.ScalingPolicyConfiguration {
+	// If the policy is nil, or does not contain a ComparisonOperator or AdjustmentType
+	// we return nil and pretend like the policy doesn't exist and should not be written
+	// to the CR
+	if policy == nil ||
+		policy.ComparisonOperator == "" ||
+		policy.AdjustmentType == "" {
+		return nil
+	}
+
+	return &cerebralv1alpha1.ScalingPolicyConfiguration{
+		Threshold:          policy.Threshold,
+		ComparisonOperator: policy.ComparisonOperator,
+		AdjustmentType:     policy.AdjustmentType,
+		AdjustmentValue:    policy.AdjustmentValue,
+	}
 }
 
 // Cache returns the autoscalingEngines cache
@@ -143,7 +154,13 @@ func scalingPolicyIsEqual(cloudPolicies, cachePolicies cerebralv1alpha1.ScalingP
 		scalingPolicyConfigurationIsEqual(cloudPolicies.ScaleDown, cachePolicies.ScaleDown)
 }
 
-func scalingPolicyConfigurationIsEqual(cloudPolicyConfiguration, cachePolicyConfiguration cerebralv1alpha1.ScalingPolicyConfiguration) bool {
+func scalingPolicyConfigurationIsEqual(cloudPolicyConfiguration, cachePolicyConfiguration *cerebralv1alpha1.ScalingPolicyConfiguration) bool {
+	if cloudPolicyConfiguration == nil && cachePolicyConfiguration == nil {
+		return true
+	} else if cloudPolicyConfiguration == nil || cachePolicyConfiguration == nil {
+		return false
+	}
+
 	return cloudPolicyConfiguration.Threshold == cachePolicyConfiguration.Threshold &&
 		cloudPolicyConfiguration.ComparisonOperator == cachePolicyConfiguration.ComparisonOperator &&
 		cloudPolicyConfiguration.AdjustmentType == cachePolicyConfiguration.AdjustmentType &&

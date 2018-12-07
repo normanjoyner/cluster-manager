@@ -58,7 +58,7 @@
   version = "v1.15.79"
 
 [[projects]]
-  digest = "1:bf86c0cab4c6fde3f794ce91a5d7011ddf8a819a93bb3b56f1e4f23a1c867e7f"
+  digest = "1:6f7d4c3456f1450d1cff4463c65c727a6626706d8302e353395c5b34e1477ff3"
   name = "github.com/containership/cerebral"
   packages = [
     "pkg/apis/cerebral.containership.io",
@@ -75,7 +75,7 @@
     "pkg/client/listers/cerebral.containership.io/v1alpha1",
   ]
   pruneopts = "T"
-  revision = "7f872b1f0a3de48961a1e7aedbc6d7e629a69a27"
+  revision = "6f6c2688ddab9d681c06e81e65d8c06e01a31cde"
 
 [[projects]]
   digest = "1:9f42202ac457c462ad8bb9642806d275af9ab4850cf0b1960b9c6f083d4a309a"
@@ -628,7 +628,7 @@
   version = "kubernetes-1.12.3"
 
 [[projects]]
-  digest = "1:5aa94390c366adc57a82b19ad4f99482ab8fbeca0a2ff7b09db12d7baf590e46"
+  digest = "1:d6b3b22d9442b9c22e1b2cfe911e2f74e8aefb6fddae613769fea0de3e295374"
   name = "k8s.io/client-go"
   packages = [
     "discovery",
@@ -798,8 +798,8 @@
     "util/workqueue",
   ]
   pruneopts = "T"
-  revision = "d082d5923d3cc0bfbb066ee5fbdea3d0ca79acf8"
-  version = "kubernetes-1.12.3"
+  revision = "1638f8970cefaa404ff3a62950f88b08292b2696"
+  version = "v9.0.0"
 
 [[projects]]
   branch = "release-1.10"

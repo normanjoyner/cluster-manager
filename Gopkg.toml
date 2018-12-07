@@ -58,11 +58,11 @@ required = [
 
 [[constraint]]
   name = "k8s.io/client-go"
-  version = "kubernetes-1.12.3"
+  version = "9.0.0"
 
 [[constraint]]
   name = "github.com/containership/cerebral"
-  revision = "7f872b1f0a3de48961a1e7aedbc6d7e629a69a27"
+  revision = "6f6c2688ddab9d681c06e81e65d8c06e01a31cde"
 
 [prune]
   go-tests = true
