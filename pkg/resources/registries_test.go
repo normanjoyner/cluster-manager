@@ -110,3 +110,41 @@ func TestRegistryIsEqual(t *testing.T) {
 	_, err = c.IsEqual(registry1, registry1)
 	assert.Error(t, err)
 }
+
+var registryBytes = []byte(`[{
+	"id": "1234",
+	"added_at": "addedtimestamp",
+	"description": "description",
+	"organization_id": "organization-uuid",
+	"email": "testing@email.com",
+	"serveraddress": "https://docker.com",
+	"provider": "docker",
+	"credentials": {
+		"key": "value"
+	},
+	"owner": "uuid",
+	"authToken": {
+		"token": "token",
+		"endpoint": "/something",
+		"type": "type",
+		"expires": "datetime"
+	}
+}]`)
+
+func TestUnmarshalRegistriesToCache(t *testing.T) {
+	r := NewCsRegistries()
+
+	err := r.UnmarshalToCache(nil)
+	assert.Error(t, err)
+
+	err = r.UnmarshalToCache(registryBytes)
+	assert.Nil(t, err)
+}
+
+func TestRegistriesCache(t *testing.T) {
+	r := NewCsRegistries()
+	r.UnmarshalToCache(registryBytes)
+	c := r.Cache()
+
+	assert.Equal(t, r.cache, c)
+}

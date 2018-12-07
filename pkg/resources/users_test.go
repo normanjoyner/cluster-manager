@@ -184,3 +184,34 @@ func TestIsEqual(t *testing.T) {
 	assert.Error(t, err)
 
 }
+
+var userBytes = []byte(`[{
+	"id" : "1234",
+	"name" : "name",
+	"avatar_url" : "https://testing.com",
+	"added_at" : "timestring",
+	"ssh_keys" : [{
+		"id" : "2345",
+		"name" : "ssh key",
+		"fingerprint" : "fingerprint",
+		"key" : "key"
+	}]
+}]`)
+
+func TestUnmarshalUsersToCache(t *testing.T) {
+	u := NewCsUsers()
+
+	err := u.UnmarshalToCache(nil)
+	assert.Error(t, err)
+
+	err = u.UnmarshalToCache(userBytes)
+	assert.Nil(t, err)
+}
+
+func TestUsersCache(t *testing.T) {
+	u := NewCsUsers()
+	u.UnmarshalToCache(userBytes)
+	c := u.Cache()
+
+	assert.Equal(t, u.cache, c)
+}
