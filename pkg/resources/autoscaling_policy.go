@@ -7,6 +7,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/containership/cluster-manager/pkg/request"
+	"github.com/containership/cluster-manager/pkg/tools"
 
 	cerebralv1alpha1 "github.com/containership/cerebral/pkg/apis/cerebral.containership.io/v1alpha1"
 )
@@ -139,7 +140,11 @@ func (us *CsAutoscalingPolicies) IsEqual(specObj interface{}, parentSpecObj inte
 		autoscalingPolicy.Spec.Metric == spec.Metric &&
 		autoscalingPolicy.Spec.PollInterval == spec.PollInterval &&
 		autoscalingPolicy.Spec.SamplePeriod == spec.SamplePeriod
+	if !equal {
+		return false, nil
+	}
 
+	equal = tools.StringMapsAreEqual(spec.MetricConfiguration, autoscalingPolicy.Spec.MetricConfiguration)
 	if !equal {
 		return false, nil
 	}

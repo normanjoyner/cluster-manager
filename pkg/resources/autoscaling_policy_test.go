@@ -142,6 +142,13 @@ var cloudAP = cerebralv1alpha1.AutoscalingPolicySpec{
 	Metric: "CPU",
 }
 
+var cloudAPWithConfig = cerebralv1alpha1.AutoscalingPolicySpec{
+	Metric: "CPU",
+	MetricConfiguration: map[string]string{
+		"key": "value",
+	},
+}
+
 var cloudAPPolicyChange = cerebralv1alpha1.AutoscalingPolicySpec{
 	Metric:        "CPU",
 	ScalingPolicy: sp2,
@@ -166,6 +173,10 @@ func TestAutoscalingPolicyIsEqual(t *testing.T) {
 	result, err := ap.IsEqual(cloudAP, autoscalingPolicyCacheObj)
 	assert.Nil(t, err)
 	assert.True(t, result)
+
+	result, err = ap.IsEqual(cloudAPWithConfig, autoscalingPolicyCacheObj)
+	assert.Nil(t, err)
+	assert.False(t, result)
 
 	result, err = ap.IsEqual(cloudAPChange, autoscalingPolicyCacheObj)
 	assert.Nil(t, err)
