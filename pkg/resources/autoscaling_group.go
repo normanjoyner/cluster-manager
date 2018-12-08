@@ -35,7 +35,7 @@ type APIAutoScalingGroupSpec struct {
 	Policies        []string           `json:"policies"`
 	Engine          string             `json:"engine"`
 	CooldownPeriod  int                `json:"cooldown_period"`
-	Suspended       bool               `json:"suspend"`
+	Suspended       bool               `json:"suspended"`
 	MinNodes        int                `json:"min_nodes"`
 	MaxNodes        int                `json:"max_nodes"`
 	ScalingStrategy APIScalingStrategy `json:"scaling_strategy"`
@@ -68,7 +68,7 @@ func (us *CsAutoscalingGroups) UnmarshalToCache(bytes []byte) error {
 		return err
 	}
 
-	coerceAPITypeToCerebral := make([]cerebralv1alpha1.AutoscalingGroup, 0)
+	cerebralAutoscalingGroups := make([]cerebralv1alpha1.AutoscalingGroup, 0)
 	for _, np := range nodepools {
 		// If autoscaling is not enabled for the node pool we should not sync the
 		// node pool as an AutoscalingGroup
@@ -91,31 +91,35 @@ func (us *CsAutoscalingGroups) UnmarshalToCache(bytes []byte) error {
 			return err
 		}
 
-		ag := cerebralv1alpha1.AutoscalingGroup{
-			ObjectMeta: metav1.ObjectMeta{
-				Name: np.ID,
-			},
-			Spec: cerebralv1alpha1.AutoscalingGroupSpec{
-				NodeSelector:   np.Autoscaling.NodeSelector,
-				Policies:       policyIDs,
-				Engine:         np.Autoscaling.Engine,
-				CooldownPeriod: np.Autoscaling.CooldownPeriod,
-				Suspended:      np.Autoscaling.Suspended,
-				MinNodes:       np.Autoscaling.MinNodes,
-				MaxNodes:       np.Autoscaling.MaxNodes,
-				ScalingStrategy: cerebralv1alpha1.ScalingStrategy{
-					ScaleUp:   np.Autoscaling.ScalingStrategy.ScaleUp,
-					ScaleDown: np.Autoscaling.ScalingStrategy.ScaleDown,
-				},
-			},
-		}
+		ag := transformAPINodePoolToCerebralASG(np, policyIDs)
 
-		coerceAPITypeToCerebral = append(coerceAPITypeToCerebral, ag)
+		cerebralAutoscalingGroups = append(cerebralAutoscalingGroups, ag)
 	}
 
-	us.cache = coerceAPITypeToCerebral
+	us.cache = cerebralAutoscalingGroups
 
 	return nil
+}
+
+func transformAPINodePoolToCerebralASG(np NodePool, policyIDs []string) cerebralv1alpha1.AutoscalingGroup {
+	return cerebralv1alpha1.AutoscalingGroup{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: np.ID,
+		},
+		Spec: cerebralv1alpha1.AutoscalingGroupSpec{
+			NodeSelector:   np.Autoscaling.NodeSelector,
+			Policies:       policyIDs,
+			Engine:         np.Autoscaling.Engine,
+			CooldownPeriod: np.Autoscaling.CooldownPeriod,
+			Suspended:      np.Autoscaling.Suspended,
+			MinNodes:       np.Autoscaling.MinNodes,
+			MaxNodes:       np.Autoscaling.MaxNodes,
+			ScalingStrategy: cerebralv1alpha1.ScalingStrategy{
+				ScaleUp:   np.Autoscaling.ScalingStrategy.ScaleUp,
+				ScaleDown: np.Autoscaling.ScalingStrategy.ScaleDown,
+			},
+		},
+	}
 }
 
 // Cache return the containership AutoscalingGroup cache

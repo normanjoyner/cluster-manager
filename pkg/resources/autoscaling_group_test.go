@@ -1,6 +1,7 @@
 package resources
 
 import (
+	"encoding/json"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -10,7 +11,7 @@ import (
 	cerebralv1alpha1 "github.com/containership/cerebral/pkg/apis/cerebral.containership.io/v1alpha1"
 )
 
-var autoscalingGroupBytes = []byte(`[{
+var autoscalingGroupBytesDisabled = []byte(`[{
 	"id": "1234",
 	"autoscaling": {
 		"node_selector": {
@@ -20,7 +21,7 @@ var autoscalingGroupBytes = []byte(`[{
 		"policies": ["policies"],
 		"engine": "containership",
 		"cooldown_period": 600,
-		"suspend": false,
+		"suspended": true,
 		"min_nodes": 1,
 		"max_nodes": 3,
 		"scaling_strategy": {
@@ -51,17 +52,67 @@ func TestUnmarshalToCache(t *testing.T) {
 	err := ag.UnmarshalToCache(nil)
 	assert.Error(t, err)
 
-	err = ag.UnmarshalToCache(autoscalingGroupBytes)
+	err = ag.UnmarshalToCache(autoscalingGroupBytesDisabled)
 	assert.Nil(t, err)
 }
 
 func TestAutoscalingGroupCache(t *testing.T) {
 	ag := NewCsAutoscalingGroups()
-	// TODO: add actual object
-	ag.UnmarshalToCache(autoscalingGroupBytes)
+	ag.UnmarshalToCache(autoscalingGroupBytesDisabled)
 	c := ag.Cache()
 
 	assert.Equal(t, ag.cache, c)
+}
+
+var autoscalingGroupBytes = []byte(`{
+	"id": "1234",
+	"autoscaling": {
+		"node_selector": {
+			"key": "value"
+		},
+		"enabled" : true,
+		"policies": ["policies"],
+		"engine": "containership",
+		"cooldown_period": 600,
+		"suspended": true,
+		"min_nodes": 1,
+		"max_nodes": 3,
+		"scaling_strategy": {
+			"scale_up": "random",
+			"scale_down": "leastPods"
+		}
+	}
+}`)
+
+var cerebralAutoscalingGroup = cerebralv1alpha1.AutoscalingGroup{
+	ObjectMeta: metav1.ObjectMeta{
+		Name: "1234",
+	},
+	Spec: cerebralv1alpha1.AutoscalingGroupSpec{
+		NodeSelector: map[string]string{
+			"key": "value",
+		},
+		Policies:       []string{"policy-id"},
+		Engine:         "containership",
+		CooldownPeriod: 600,
+		Suspended:      true,
+		MinNodes:       1,
+		MaxNodes:       3,
+		ScalingStrategy: cerebralv1alpha1.ScalingStrategy{
+			ScaleUp:   "random",
+			ScaleDown: "leastPods",
+		},
+	},
+}
+
+func TestTransformAPINodePoolToCerebralASG(t *testing.T) {
+	var np NodePool
+	err := json.Unmarshal(autoscalingGroupBytes, &np)
+	assert.Nil(t, err)
+	policyIDs := []string{"policy-id"}
+
+	ag := transformAPINodePoolToCerebralASG(np, policyIDs)
+	assert.Equal(t, cerebralAutoscalingGroup, ag)
 }
 
 // Testing IsEqual function
