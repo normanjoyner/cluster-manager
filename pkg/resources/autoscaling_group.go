@@ -30,15 +30,15 @@ type NodePool struct {
 // Autoscaling Group from containership API and transform the object to be of the
 // Cerebral AutoscalingGroup type
 type APIAutoScalingGroupSpec struct {
-	NodeSelector    map[string]string  `json:"node_selector"`
-	Enabled         bool               `json:"enabled"`
-	Policies        []string           `json:"policies"`
-	Engine          string             `json:"engine"`
-	CooldownPeriod  int                `json:"cooldown_period"`
-	Suspended       bool               `json:"suspended"`
-	MinNodes        int                `json:"min_nodes"`
-	MaxNodes        int                `json:"max_nodes"`
-	ScalingStrategy APIScalingStrategy `json:"scaling_strategy"`
+	NodeSelector    map[string]string   `json:"node_selector"`
+	Enabled         bool                `json:"enabled"`
+	Policies        []string            `json:"policies"`
+	Engine          string              `json:"engine"`
+	CooldownPeriod  int                 `json:"cooldown_period"`
+	Suspended       bool                `json:"suspended"`
+	MinNodes        int                 `json:"min_nodes"`
+	MaxNodes        int                 `json:"max_nodes"`
+	ScalingStrategy *APIScalingStrategy `json:"scaling_strategy,omitempty"`
 }
 
 // APIScalingStrategy is part of the APIAutoScalingGroupSpec
@@ -114,7 +114,7 @@ func transformAPINodePoolToCerebralASG(np NodePool, policyIDs []string) cerebral
 			Suspended:      np.Autoscaling.Suspended,
 			MinNodes:       np.Autoscaling.MinNodes,
 			MaxNodes:       np.Autoscaling.MaxNodes,
-			ScalingStrategy: cerebralv1alpha1.ScalingStrategy{
+			ScalingStrategy: &cerebralv1alpha1.ScalingStrategy{
 				ScaleUp:   np.Autoscaling.ScalingStrategy.ScaleUp,
 				ScaleDown: np.Autoscaling.ScalingStrategy.ScaleDown,
 			},
@@ -143,10 +143,12 @@ func (us *CsAutoscalingGroups) IsEqual(specObj interface{}, parentSpecObj interf
 		autoscalingGroup.Spec.CooldownPeriod == spec.CooldownPeriod &&
 		autoscalingGroup.Spec.Suspended == spec.Suspended &&
 		autoscalingGroup.Spec.MinNodes == spec.MinNodes &&
-		autoscalingGroup.Spec.MaxNodes == spec.MaxNodes &&
-		autoscalingGroup.Spec.ScalingStrategy.ScaleUp == spec.ScalingStrategy.ScaleUp &&
-		autoscalingGroup.Spec.ScalingStrategy.ScaleDown == spec.ScalingStrategy.ScaleDown
+		autoscalingGroup.Spec.MaxNodes == spec.MaxNodes
+	if !equal {
+		return false, nil
+	}
 
+	equal = scalingStrategiesAreEqual(autoscalingGroup.Spec.ScalingStrategy, spec.ScalingStrategy)
 	if !equal {
 		return false, nil
 	}
@@ -159,6 +161,19 @@ func (us *CsAutoscalingGroups) IsEqual(specObj interface{}, parentSpecObj interf
 	equal = policiesAreEqual(spec.Policies, autoscalingGroup.Spec.Policies)
 
 	return equal, nil
+}
+
+func scalingStrategiesAreEqual(s1, s2 *cerebralv1alpha1.ScalingStrategy) bool {
+	switch {
+	case s1 == nil && s2 == nil:
+		return true
+	case s1 == nil && s2 != nil:
+		return false
+	case s1 != nil && s2 == nil:
+		return false
+	default:
+		return s1.ScaleUp == s2.ScaleUp && s1.ScaleDown == s2.ScaleDown
+	}
 }
 
 func policiesAreEqual(cloudPolicies, cachePolicies []string) bool {

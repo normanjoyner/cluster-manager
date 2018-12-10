@@ -31,6 +31,116 @@ var autoscalingGroupBytesDisabled = []byte(`[{
 	}
 }]`)
 
+type strategiesEqualTest struct {
+	s1 *cerebralv1alpha1.ScalingStrategy
+	s2 *cerebralv1alpha1.ScalingStrategy
+
+	expected bool
+	message  string
+}
+
+var strategiesEqualTests = []strategiesEqualTest{
+	{
+		s1:       nil,
+		s2:       nil,
+		expected: true,
+		message:  "nil strategy == nil strategy",
+	},
+	{
+		s1:       &cerebralv1alpha1.ScalingStrategy{},
+		s2:       nil,
+		expected: false,
+		message:  "empty strategy != nil strategy",
+	},
+	{
+		s1:       nil,
+		s2:       &cerebralv1alpha1.ScalingStrategy{},
+		expected: false,
+		message:  "nil strategy != empty strategy",
+	},
+	{
+		s1:       &cerebralv1alpha1.ScalingStrategy{},
+		s2:       &cerebralv1alpha1.ScalingStrategy{},
+		expected: true,
+		message:  "empty strategy == empty strategy",
+	},
+	{
+		s1: &cerebralv1alpha1.ScalingStrategy{
+			ScaleUp: "up-strategy",
+		},
+		s2:       &cerebralv1alpha1.ScalingStrategy{},
+		expected: false,
+		message:  "non-empty scale up strategy only != empty scale up strategy",
+	},
+	{
+		s1: &cerebralv1alpha1.ScalingStrategy{
+			ScaleDown: "up-strategy",
+		},
+		s2:       &cerebralv1alpha1.ScalingStrategy{},
+		expected: false,
+		message:  "non-empty scale up strategy only != empty scale up strategy",
+	},
+	{
+		s1: &cerebralv1alpha1.ScalingStrategy{
+			ScaleUp: "up-strategy",
+		},
+		s2: &cerebralv1alpha1.ScalingStrategy{
+			ScaleUp: "up-strategy",
+		},
+		expected: true,
+		message:  "scale up strategy only == scale up strategy only",
+	},
+	{
+		s1: &cerebralv1alpha1.ScalingStrategy{
+			ScaleUp: "up-strategy",
+		},
+		s2: &cerebralv1alpha1.ScalingStrategy{
+			ScaleUp: "different-up-strategy",
+		},
+		expected: false,
+		message:  "scale up strategy only != different scale up strategy only",
+	},
+	{
+		s1: &cerebralv1alpha1.ScalingStrategy{
+			ScaleDown: "down-strategy",
+		},
+		s2: &cerebralv1alpha1.ScalingStrategy{
+			ScaleDown: "down-strategy",
+		},
+		expected: true,
+		message:  "scale down strategy only == scale down strategy only",
+	},
+	{
+		s1: &cerebralv1alpha1.ScalingStrategy{
+			ScaleDown: "down-strategy",
+		},
+		s2: &cerebralv1alpha1.ScalingStrategy{
+			ScaleDown: "different-down-strategy",
+		},
+		expected: false,
+		message:  "scale down strategy only != different scale down strategy only",
+	},
+	{
+		s1: &cerebralv1alpha1.ScalingStrategy{
+			ScaleUp:   "up-strategy",
+			ScaleDown: "down-strategy",
+		},
+		s2: &cerebralv1alpha1.ScalingStrategy{
+			ScaleUp:   "up-strategy",
+			ScaleDown: "down-strategy",
+		},
+		expected: true,
+		message:  "scale strategies the same",
+	},
+}
+
+func TestScalingStrategiesAreEqual(t *testing.T) {
+	for _, test := range strategiesEqualTests {
+		equal := scalingStrategiesAreEqual(test.s1, test.s2)
+		assert.Equal(t, test.expected, equal, test.message)
+	}
+}
+
 func TestPoliciesAreEqual(t *testing.T) {
 	policies1 := []string{"policy-1", "policy-2", "policy-3"}
 	policies2 := []string{"policy-1", "policy-2"}
@@ -98,7 +208,7 @@ var cerebralAutoscalingGroup = cerebralv1alpha1.AutoscalingGroup{
 		Suspended:      true,
 		MinNodes:       1,
 		MaxNodes:       3,
-		ScalingStrategy: cerebralv1alpha1.ScalingStrategy{
+		ScalingStrategy: &cerebralv1alpha1.ScalingStrategy{
 			ScaleUp:   "random",
 			ScaleDown: "leastPods",
 		},
