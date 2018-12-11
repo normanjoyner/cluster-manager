@@ -62,7 +62,7 @@ required = [
 
 [[constraint]]
   name = "github.com/containership/cerebral"
-  revision = "845355abee26fb665cb1163d0faf5ed54f8fa085"
+  version = "0.1.0-alpha"
 
 [prune]
   go-tests = true

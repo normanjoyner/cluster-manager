@@ -58,7 +58,7 @@
   version = "v1.15.79"
 
 [[projects]]
-  digest = "1:bf59ddcfb1940ca8d41c45213b18b9b6e68e0ec6b0460ada523394223c5b8828"
+  digest = "1:af4678e4fd4abc3384f65ac6686e7233d039e792038e30f75b5b1b8dc9827470"
   name = "github.com/containership/cerebral"
   packages = [
     "pkg/apis/cerebral.containership.io",
@@ -75,7 +75,8 @@
     "pkg/client/listers/cerebral.containership.io/v1alpha1",
   ]
   pruneopts = "T"
-  revision = "845355abee26fb665cb1163d0faf5ed54f8fa085"
+  revision = "97bad5d69c8deb3802817d19429a2357a0d188ce"
+  version = "v0.1.0-alpha"
 
 [[projects]]
   digest = "1:9f42202ac457c462ad8bb9642806d275af9ab4850cf0b1960b9c6f083d4a309a"
