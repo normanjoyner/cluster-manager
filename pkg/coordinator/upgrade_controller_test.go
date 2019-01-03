@@ -88,7 +88,7 @@ const ControllerManager = "kube-controller-manager"
 const Scheduler = "kube-scheduler"
 
 var controlPlane = []*v1.Pod{
-	&v1.Pod{
+	{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      APIServer,
 			Namespace: "kube-system",
@@ -105,7 +105,7 @@ var controlPlane = []*v1.Pod{
 			},
 		},
 	},
-	&v1.Pod{
+	{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      ControllerManager,
 			Namespace: "kube-system",
@@ -122,7 +122,7 @@ var controlPlane = []*v1.Pod{
 			},
 		},
 	},
-	&v1.Pod{
+	{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      Scheduler,
 			Namespace: "kube-system",

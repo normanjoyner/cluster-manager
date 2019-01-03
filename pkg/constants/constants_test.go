@@ -29,7 +29,7 @@ var tests = []buildLabelTest{
 		},
 		expected: map[string]string{
 			"containership.io/managed": "true",
-			"key1": "value1",
+			"key1":                     "value1",
 		},
 	},
 	// Many inputs
@@ -43,11 +43,11 @@ var tests = []buildLabelTest{
 		},
 		expected: map[string]string{
 			"containership.io/managed": "true",
-			"key1": "value1",
-			"key2": "value2",
-			"key3": "value3",
-			"key4": "value4",
-			"key5": "value5",
+			"key1":                     "value1",
+			"key2":                     "value2",
+			"key3":                     "value3",
+			"key4":                     "value4",
+			"key5":                     "value5",
 		},
 	},
 }
@@ -102,11 +102,11 @@ var isContainership = []buildIsContainershipTest{
 		input: &corev1.Secret{
 			ObjectMeta: metav1.ObjectMeta{
 				Labels: map[string]string{
-					"key1": "value1",
-					"key2": "value2",
+					"key1":                     "value1",
+					"key2":                     "value2",
 					"containership.io/managed": "true",
-					"key4": "value4",
-					"key5": "value5",
+					"key4":                     "value4",
+					"key5":                     "value5",
 				},
 			},
 		},
