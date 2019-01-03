@@ -14,7 +14,12 @@ all: agent coordinator ## (default) Build and deploy agent and coordinator
 
 .PHONY: fmt-check
 fmt-check: ## Check the file format
-	@gofmt -s -e -d ${GO_FILES}
+	@gofmt -s -e -d $(GO_FILES) | read; \
+		if [ $$? == 0 ]; then \
+			echo "gofmt check failed:"; \
+			gofmt -s -e -d $(GO_FILES); \
+			exit 1; \
+		fi
 
 .PHONY: lint
 lint: ## Lint the files
