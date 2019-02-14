@@ -18,6 +18,14 @@
   revision = "de5bf2ad457846296e2031421a34e2568e304e35"
 
 [[projects]]
+  digest = "1:297a3c21bf1d3b4695a222e43e982bb52b4b9e156ca2eadbe32b898d0a1ae551"
+  name = "github.com/asaskevich/govalidator"
+  packages = ["."]
+  pruneopts = "T"
+  revision = "ccb8e960c48f04d6935e72476ae4a51028f9e22f"
+  version = "v9"
+
+[[projects]]
   digest = "1:77ffe1d76a501fa4f101ff65ce46f3c508fea5640a79ef74cd307231085dec96"
   name = "github.com/aws/aws-sdk-go"
   packages = [
@@ -64,10 +72,8 @@
     "pkg/apis/cerebral.containership.io",
     "pkg/apis/cerebral.containership.io/v1alpha1",
     "pkg/client/clientset/versioned",
-    "pkg/client/clientset/versioned/fake",
     "pkg/client/clientset/versioned/scheme",
     "pkg/client/clientset/versioned/typed/cerebral.containership.io/v1alpha1",
-    "pkg/client/clientset/versioned/typed/cerebral.containership.io/v1alpha1/fake",
     "pkg/client/informers/externalversions",
     "pkg/client/informers/externalversions/cerebral.containership.io",
     "pkg/client/informers/externalversions/cerebral.containership.io/v1alpha1",
@@ -77,6 +83,22 @@
   pruneopts = "T"
   revision = "97bad5d69c8deb3802817d19429a2357a0d188ce"
   version = "v0.1.0-alpha"
+
+[[projects]]
+  digest = "1:ec7dd0b71258343144c8d0acd246d262bc9dffb8ba43aab72726436a6d954a2b"
+  name = "github.com/containership/csctl"
+  packages = [
+    "cloud",
+    "cloud/api",
+    "cloud/api/types",
+    "cloud/auth",
+    "cloud/auth/types",
+    "cloud/provision",
+    "cloud/provision/types",
+    "cloud/rest",
+  ]
+  pruneopts = "T"
+  revision = "e912989f8c93458dc0593a0941e80d5d752b5aa5"
 
 [[projects]]
   digest = "1:9f42202ac457c462ad8bb9642806d275af9ab4850cf0b1960b9c6f083d4a309a"
@@ -122,6 +144,36 @@
   version = "v1.0.0"
 
 [[projects]]
+  branch = "master"
+  digest = "1:0ab8d37960557936b3b2ebd497a354d448efe067c42187cfc13549c2bbb0fb5f"
+  name = "github.com/globalsign/mgo"
+  packages = [
+    "bson",
+    "internal/json",
+  ]
+  pruneopts = "T"
+  revision = "eeefdecb41b842af6dc652aaea4026e8403e62df"
+
+[[projects]]
+  digest = "1:4a9af30ced8881517daa47bddf2ce8a306f620290decd58e0f804865acdb4f4a"
+  name = "github.com/go-openapi/analysis"
+  packages = [
+    ".",
+    "internal",
+  ]
+  pruneopts = "T"
+  revision = "e2f3fdbb7ed0e56e070ccbfb6fc75b288a33c014"
+  version = "v0.18.0"
+
+[[projects]]
+  digest = "1:d05bc299b5455ede1c64fa3ad9ef84499b7d3c7b2eae92b9fc4cfa25e7bcb91c"
+  name = "github.com/go-openapi/errors"
+  packages = ["."]
+  pruneopts = "T"
+  revision = "7a7ff1b7b8020f22574411a32f28b4d168d69237"
+  version = "v0.18.0"
+
+[[projects]]
   digest = "1:701ec53dfa0182bf25e5c09e664906f11d697e779b59461a2607dbd4dc75a4f9"
   name = "github.com/go-openapi/jsonpointer"
   packages = ["."]
@@ -138,6 +190,22 @@
   version = "v0.17.2"
 
 [[projects]]
+  digest = "1:ef85d5bfc494328e6aba776c743b9f496506f5cc99fc083943b41c85c9077a71"
+  name = "github.com/go-openapi/loads"
+  packages = ["."]
+  pruneopts = "T"
+  revision = "74628589c3b94e3526a842d24f46589980f5ab22"
+  version = "v0.18.0"
+
+[[projects]]
+  digest = "1:8a6e8092805cc742f900544aaa9c241a23da5e4b9fe01250cc1f77012d7c2857"
+  name = "github.com/go-openapi/runtime"
+  packages = ["."]
+  pruneopts = "T"
+  revision = "41e24cc66d7af6af39eb9b5a6418e901bcdd333c"
+  version = "v0.18.0"
+
+[[projects]]
   digest = "1:76b8b440ca412e287dff607469a5a40a9445fe7168ad1fb85916d87c66011c83"
   name = "github.com/go-openapi/spec"
   packages = ["."]
@@ -146,12 +214,36 @@
   version = "v0.17.2"
 
 [[projects]]
+  digest = "1:f9543ae38cbec643f32433c93430536ddb840b3b222929737ef18e3511ec14e5"
+  name = "github.com/go-openapi/strfmt"
+  packages = ["."]
+  pruneopts = "T"
+  revision = "e471370ae57ac74eaf0afe816a66e4ddd7f1b027"
+  version = "v0.18.0"
+
+[[projects]]
   digest = "1:0d8057a212a27a625bb8e57b1e25fb8e8e4a0feb0b7df543fd46d8d15c31d870"
   name = "github.com/go-openapi/swag"
   packages = ["."]
   pruneopts = "T"
   revision = "5899d5c5e619fda5fa86e14795a835f473ca284c"
   version = "v0.17.2"
+
+[[projects]]
+  digest = "1:5ac92b91bd8e0041a5fd9a6309c85557c3e4b47d730be454dea62da21f332c91"
+  name = "github.com/go-openapi/validate"
+  packages = ["."]
+  pruneopts = "T"
+  revision = "d2eab7d93009e9215fc85b2faa2c2f2a98c2af48"
+  version = "v0.18.0"
+
+[[projects]]
+  digest = "1:69d2110fd467b261dd8b589c804f91101b845c8a47198a40ddf5ee9a47a0c2af"
+  name = "github.com/go-resty/resty"
+  packages = ["."]
+  pruneopts = "T"
+  revision = "03c09fa32a21b7b27b8dbb3877826c1ab3d2daa2"
+  version = "v1.11.0"
 
 [[projects]]
   digest = "1:da39f4a22829ca95e63566208e0ea42d6f055f41dff1b14fdab88d88f62df653"
@@ -296,6 +388,14 @@
   revision = "60711f1a8329503b04e1c88535f419d0bb440bff"
 
 [[projects]]
+  digest = "1:53bc4cd4914cd7cd52139990d5170d6dc99067ae31c56530621b18b35fc30318"
+  name = "github.com/mitchellh/mapstructure"
+  packages = ["."]
+  pruneopts = "T"
+  revision = "3536a929edddb9a5b34bd6861dc4a9647cb459fe"
+  version = "v1.1.2"
+
+[[projects]]
   digest = "1:33422d238f147d247752996a26574ac48dcf472976eda7f5134015f06bf16563"
   name = "github.com/modern-go/concurrent"
   packages = ["."]
@@ -420,6 +520,7 @@
     "http2",
     "http2/hpack",
     "idna",
+    "publicsuffix",
   ]
   pruneopts = "T"
   revision = "adae6a3d119ae4890b46832a2e88a95adc62b8e7"
@@ -885,10 +986,11 @@
     "github.com/aws/aws-sdk-go/service/ecr",
     "github.com/containership/cerebral/pkg/apis/cerebral.containership.io/v1alpha1",
     "github.com/containership/cerebral/pkg/client/clientset/versioned",
-    "github.com/containership/cerebral/pkg/client/clientset/versioned/fake",
     "github.com/containership/cerebral/pkg/client/clientset/versioned/scheme",
     "github.com/containership/cerebral/pkg/client/informers/externalversions",
     "github.com/containership/cerebral/pkg/client/listers/cerebral.containership.io/v1alpha1",
+    "github.com/containership/csctl/cloud",
+    "github.com/containership/csctl/cloud/provision/types",
     "github.com/davecgh/go-spew/spew",
     "github.com/dgrijalva/jwt-go",
     "github.com/fsnotify/fsnotify",

@@ -64,6 +64,10 @@ required = [
   name = "github.com/containership/cerebral"
   version = "0.1.0-alpha"
 
+[[constraint]]
+  name = "github.com/containership/csctl"
+  revision = "e912989f8c93458dc0593a0941e80d5d752b5aa5"
+
 [prune]
   go-tests = true
   # Note that we can't do this due to the code generator packages required; see above
