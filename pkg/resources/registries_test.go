@@ -72,7 +72,7 @@ var registry3 = &csv3.Registry{
 }
 
 func TestRegistryIsEqual(t *testing.T) {
-	c := NewCsRegistries()
+	c := NewCsRegistries(nil)
 	// check for both being empty
 	emptySameTest, err := c.IsEqual(emptyRegistrySpec, emptyRegistry)
 	assert.Nil(t, err)
@@ -131,19 +131,9 @@ var registryBytes = []byte(`[{
 	}
 }]`)
 
-func TestUnmarshalRegistriesToCache(t *testing.T) {
-	r := NewCsRegistries()
-
-	err := r.UnmarshalToCache(nil)
-	assert.Error(t, err)
-
-	err = r.UnmarshalToCache(registryBytes)
-	assert.Nil(t, err)
-}
-
 func TestRegistriesCache(t *testing.T) {
-	r := NewCsRegistries()
-	r.UnmarshalToCache(registryBytes)
+	r := NewCsRegistries(nil)
+	r.cache = []csv3.RegistrySpec{registry1spec}
 	c := r.Cache()
 
 	assert.Equal(t, r.cache, c)

@@ -3,7 +3,10 @@ package coordinator
 import (
 	"time"
 
+	cscloud "github.com/containership/csctl/cloud"
+
 	csinformers "github.com/containership/cluster-manager/pkg/client/informers/externalversions"
+	"github.com/containership/cluster-manager/pkg/env"
 	"github.com/containership/cluster-manager/pkg/k8sutil"
 	"github.com/containership/cluster-manager/pkg/log"
 	synccontroller "github.com/containership/cluster-manager/pkg/resources/sync_controller"
@@ -25,35 +28,50 @@ type CloudSynchronizer struct {
 
 // NewCloudSynchronizer constructs a new CloudSynchronizer.
 func NewCloudSynchronizer(csInformerFactory csinformers.SharedInformerFactory, cerebralInformerFactory cerebralinformers.SharedInformerFactory) *CloudSynchronizer {
+	cloudclientset, err := cscloud.New(cscloud.Config{
+		Token:            env.CloudClusterAPIKey(),
+		ProvisionBaseURL: env.ProvisionBaseURL(),
+		APIBaseURL:       env.APIBaseURL(),
+	})
+
+	if err != nil {
+		log.Fatalf("failed to initialize Containership Cloud client: %s", err)
+	}
+
 	return &CloudSynchronizer{
 		userSyncController: synccontroller.NewUser(
 			k8sutil.API().Client(),
 			k8sutil.CSAPI().Client(),
 			csInformerFactory,
+			cloudclientset,
 		),
 
 		registrySyncController: synccontroller.NewRegistry(
 			k8sutil.API().Client(),
 			k8sutil.CSAPI().Client(),
 			csInformerFactory,
+			cloudclientset,
 		),
 
 		pluginSyncController: synccontroller.NewPlugin(
 			k8sutil.API().Client(),
 			k8sutil.CSAPI().Client(),
 			csInformerFactory,
+			cloudclientset,
 		),
 
 		autoscalingPolicySyncController: synccontroller.NewAutoscalingPolicyController(
 			k8sutil.API().Client(),
 			k8sutil.CerebralAPI().Client(),
 			cerebralInformerFactory,
+			cloudclientset,
 		),
 
 		autoscalingGroupSyncController: synccontroller.NewAutoscalingGroupController(
 			k8sutil.API().Client(),
 			k8sutil.CerebralAPI().Client(),
 			cerebralInformerFactory,
+			cloudclientset,
 		),
 
 		syncStopCh: make(chan struct{}),

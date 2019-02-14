@@ -95,7 +95,7 @@ var tests = []buildIsEqualTest{
 }
 
 func TestPluginIsEqual(t *testing.T) {
-	c := NewCsPlugins()
+	c := NewCsPlugins(nil)
 	for _, test := range tests {
 		result, err := c.IsEqual(test.inputSpec, test.inputObject)
 		// Note that this is a deep compare
@@ -119,20 +119,9 @@ var pluginBytes = []byte(`[{
 }]`)
 
 func TestPluginCache(t *testing.T) {
-	c := NewCsPlugins()
-
-	c.UnmarshalToCache(pluginBytes)
+	c := NewCsPlugins(nil)
+	c.cache = []csv3.PluginSpec{plugin1spec}
 	ca := c.Cache()
 
 	assert.Equal(t, c.cache, ca)
-}
-
-func TestPluginUnmarshalToCache(t *testing.T) {
-	c := NewCsPlugins()
-
-	err := c.UnmarshalToCache(nil)
-	assert.Error(t, err)
-
-	err = c.UnmarshalToCache(pluginBytes)
-	assert.Nil(t, err)
 }

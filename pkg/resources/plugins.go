@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/containership/cluster-manager/pkg/request"
+	cscloud "github.com/containership/csctl/cloud"
 
 	csv3 "github.com/containership/cluster-manager/pkg/apis/containership.io/v3"
 )
@@ -16,29 +16,38 @@ type CsPlugins struct {
 }
 
 // NewCsPlugins constructs a new CsPlugins
-func NewCsPlugins() *CsPlugins {
+func NewCsPlugins(cloud cscloud.Interface) *CsPlugins {
+	cache := make([]csv3.PluginSpec, 0)
 	return &CsPlugins{
-		cloudResource: cloudResource{
-			endpoint: "/organizations/{{.OrganizationID}}/clusters/{{.ClusterID}}/plugins",
-			service:  request.CloudServiceAPI,
-		},
-		cache: make([]csv3.PluginSpec, 0),
+		newCloudResource(cloud),
+		cache,
 	}
 }
 
-// UnmarshalToCache take the json returned from containership api
-// and writes it to CsPlugins cache
-func (us *CsPlugins) UnmarshalToCache(bytes []byte) error {
-	return json.Unmarshal(bytes, &us.cache)
+// Sync implements the CloudResource interface
+func (cp *CsPlugins) Sync() error {
+	plugins, err := cp.cloud.API().Plugins(cp.organizationID, cp.clusterID).List()
+	if err != nil {
+		return err
+	}
+
+	data, err := json.Marshal(plugins)
+	if err != nil {
+		return err
+	}
+
+	json.Unmarshal(data, &cp.cache)
+
+	return nil
 }
 
 // Cache return the containership plugins cache
-func (us *CsPlugins) Cache() []csv3.PluginSpec {
-	return us.cache
+func (cp *CsPlugins) Cache() []csv3.PluginSpec {
+	return cp.cache
 }
 
 // IsEqual compares a PluginSpec to another Plugin
-func (us *CsPlugins) IsEqual(specObj interface{}, parentSpecObj interface{}) (bool, error) {
+func (cp *CsPlugins) IsEqual(specObj interface{}, parentSpecObj interface{}) (bool, error) {
 	spec, ok := specObj.(csv3.PluginSpec)
 	if !ok {
 		return false, fmt.Errorf("The object is not of type PluginSpec")

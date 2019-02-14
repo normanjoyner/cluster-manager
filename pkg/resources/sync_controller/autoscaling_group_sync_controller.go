@@ -14,6 +14,8 @@ import (
 	cerebralinformers "github.com/containership/cerebral/pkg/client/informers/externalversions"
 	cerebrallisters "github.com/containership/cerebral/pkg/client/listers/cerebral.containership.io/v1alpha1"
 
+	cscloud "github.com/containership/csctl/cloud"
+
 	"github.com/containership/cluster-manager/pkg/log"
 	"github.com/containership/cluster-manager/pkg/resources"
 	"github.com/containership/cluster-manager/pkg/tools"
@@ -35,7 +37,7 @@ const (
 // NewAutoscalingGroupController returns a AutoscalingGroupSyncController that
 // will be in control of pulling from cloud comparing to the CR cache and
 // modifying based on those compares
-func NewAutoscalingGroupController(kubeclientset kubernetes.Interface, clientset cerebral.Interface, cerebralInformerFactory cerebralinformers.SharedInformerFactory) *AutoscalingGroupSyncController {
+func NewAutoscalingGroupController(kubeclientset kubernetes.Interface, clientset cerebral.Interface, cerebralInformerFactory cerebralinformers.SharedInformerFactory, cloud cscloud.Interface) *AutoscalingGroupSyncController {
 	autoscalingGroupInformer := cerebralInformerFactory.Cerebral().V1alpha1().AutoscalingGroups()
 
 	autoscalingGroupInformer.Informer().AddIndexers(tools.IndexByIDKeyFun())
@@ -50,7 +52,7 @@ func NewAutoscalingGroupController(kubeclientset kubernetes.Interface, clientset
 
 		cerebralclientset: clientset,
 		lister:            autoscalingGroupInformer.Lister(),
-		cloudResource:     resources.NewCsAutoscalingGroups(),
+		cloudResource:     resources.NewCsAutoscalingGroups(cloud),
 	}
 }
 
@@ -63,7 +65,7 @@ func (c *AutoscalingGroupSyncController) SyncWithCloud(stopCh <-chan struct{}) e
 func (c *AutoscalingGroupSyncController) doSync() {
 	log.Debug("Sync AutoscalingGroups")
 	// makes a request to containership api and writes results to the resource's cache
-	err := resources.Sync(c.cloudResource)
+	err := c.cloudResource.Sync()
 	if err != nil {
 		log.Error("AutoscalingGroups failed to sync: ", err.Error())
 		return

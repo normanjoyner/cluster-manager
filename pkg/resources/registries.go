@@ -4,7 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/containership/cluster-manager/pkg/request"
+	cscloud "github.com/containership/csctl/cloud"
+
 	"github.com/containership/cluster-manager/pkg/resources/registry"
 	"github.com/containership/cluster-manager/pkg/tools"
 
@@ -18,20 +19,29 @@ type CsRegistries struct {
 }
 
 // NewCsRegistries constructs a new CsRegistries
-func NewCsRegistries() *CsRegistries {
+func NewCsRegistries(cloud cscloud.Interface) *CsRegistries {
+	cache := make([]csv3.RegistrySpec, 0)
 	return &CsRegistries{
-		cloudResource: cloudResource{
-			endpoint: "/organizations/{{.OrganizationID}}/registries",
-			service:  request.CloudServiceAPI,
-		},
-		cache: make([]csv3.RegistrySpec, 0),
+		newCloudResource(cloud),
+		cache,
 	}
 }
 
-// UnmarshalToCache take the json returned from containership api
-// and writes it to CsRegistries cache
-func (rs *CsRegistries) UnmarshalToCache(bytes []byte) error {
-	return json.Unmarshal(bytes, &rs.cache)
+// Sync implements the CloudResource interface
+func (rs *CsRegistries) Sync() error {
+	registries, err := rs.cloud.API().Registries(rs.organizationID).List()
+	if err != nil {
+		return err
+	}
+
+	data, err := json.Marshal(registries)
+	if err != nil {
+		return err
+	}
+
+	json.Unmarshal(data, &rs.cache)
+
+	return nil
 }
 
 // Cache returns CsRegistries cache

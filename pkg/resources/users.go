@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/containership/cluster-manager/pkg/request"
+	cscloud "github.com/containership/csctl/cloud"
 
 	csv3 "github.com/containership/cluster-manager/pkg/apis/containership.io/v3"
 )
@@ -16,20 +16,29 @@ type CsUsers struct {
 }
 
 // NewCsUsers constructs a new CsUsers
-func NewCsUsers() *CsUsers {
+func NewCsUsers(cloud cscloud.Interface) *CsUsers {
+	cache := make([]csv3.UserSpec, 0)
 	return &CsUsers{
-		cloudResource: cloudResource{
-			endpoint: "/organizations/{{.OrganizationID}}/users",
-			service:  request.CloudServiceAPI,
-		},
-		cache: make([]csv3.UserSpec, 0),
+		newCloudResource(cloud),
+		cache,
 	}
 }
 
-// UnmarshalToCache take the json returned from containership api
-// and writes it to CsUsers cache
-func (us *CsUsers) UnmarshalToCache(bytes []byte) error {
-	return json.Unmarshal(bytes, &us.cache)
+// Sync implements the CloudResource interface
+func (us *CsUsers) Sync() error {
+	users, err := us.cloud.API().Users(us.organizationID).List()
+	if err != nil {
+		return err
+	}
+
+	data, err := json.Marshal(users)
+	if err != nil {
+		return err
+	}
+
+	json.Unmarshal(data, &us.cache)
+
+	return nil
 }
 
 // Cache return the containership users cache

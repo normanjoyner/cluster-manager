@@ -14,6 +14,8 @@ import (
 	cerebralinformers "github.com/containership/cerebral/pkg/client/informers/externalversions"
 	cerebrallisters "github.com/containership/cerebral/pkg/client/listers/cerebral.containership.io/v1alpha1"
 
+	cscloud "github.com/containership/csctl/cloud"
+
 	"github.com/containership/cluster-manager/pkg/log"
 	"github.com/containership/cluster-manager/pkg/resources"
 	"github.com/containership/cluster-manager/pkg/tools"
@@ -35,7 +37,7 @@ const (
 // NewAutoscalingPolicyController returns a AutoscalingPolicySyncController that
 // will be in control of pulling from cloud comparing to the CR cache and
 // modifying based on those compares
-func NewAutoscalingPolicyController(kubeclientset kubernetes.Interface, clientset cerebral.Interface, cerebralInformerFactory cerebralinformers.SharedInformerFactory) *AutoscalingPolicySyncController {
+func NewAutoscalingPolicyController(kubeclientset kubernetes.Interface, clientset cerebral.Interface, cerebralInformerFactory cerebralinformers.SharedInformerFactory, cloud cscloud.Interface) *AutoscalingPolicySyncController {
 	autoscalingPolicyInformer := cerebralInformerFactory.Cerebral().V1alpha1().AutoscalingPolicies()
 
 	autoscalingPolicyInformer.Informer().AddIndexers(tools.IndexByIDKeyFun())
@@ -50,7 +52,7 @@ func NewAutoscalingPolicyController(kubeclientset kubernetes.Interface, clientse
 
 		cerebralclientset: clientset,
 		lister:            autoscalingPolicyInformer.Lister(),
-		cloudResource:     resources.NewCsAutoscalingPolicies(),
+		cloudResource:     resources.NewCsAutoscalingPolicies(cloud),
 	}
 }
 
@@ -63,7 +65,7 @@ func (c *AutoscalingPolicySyncController) SyncWithCloud(stopCh <-chan struct{}) 
 func (c *AutoscalingPolicySyncController) doSync() {
 	log.Debug("Sync AutoscalingPolicies")
 	// makes a request to containership api and write results to the resource's cache
-	err := resources.Sync(c.cloudResource)
+	err := c.cloudResource.Sync()
 	if err != nil {
 		log.Error("AutoscalingPolicies failed to sync: ", err.Error())
 		return

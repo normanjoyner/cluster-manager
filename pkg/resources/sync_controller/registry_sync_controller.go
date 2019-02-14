@@ -9,6 +9,8 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
 
+	cscloud "github.com/containership/csctl/cloud"
+
 	csv3 "github.com/containership/cluster-manager/pkg/apis/containership.io/v3"
 	csclientset "github.com/containership/cluster-manager/pkg/client/clientset/versioned"
 	csinformers "github.com/containership/cluster-manager/pkg/client/informers/externalversions"
@@ -36,7 +38,7 @@ const (
 
 // NewRegistry returns a RegistrySyncController that will be in control of pulling from cloud
 // comparing to the CRD cache and modifying based on those compares
-func NewRegistry(kubeclientset kubernetes.Interface, clientset csclientset.Interface, csInformerFactory csinformers.SharedInformerFactory) *RegistrySyncController {
+func NewRegistry(kubeclientset kubernetes.Interface, clientset csclientset.Interface, csInformerFactory csinformers.SharedInformerFactory, cloud cscloud.Interface) *RegistrySyncController {
 	registryInformer := csInformerFactory.Containership().V3().Registries()
 
 	registryInformer.Informer().AddIndexers(tools.IndexByIDKeyFun())
@@ -52,7 +54,7 @@ func NewRegistry(kubeclientset kubernetes.Interface, clientset csclientset.Inter
 		},
 
 		lister:        registryInformer.Lister(),
-		cloudResource: resources.NewCsRegistries(),
+		cloudResource: resources.NewCsRegistries(cloud),
 
 		tokenRegenerationByID: make(map[string]chan bool, 0),
 	}
@@ -81,7 +83,7 @@ func (c *RegistrySyncController) SyncWithCloud(stopCh <-chan struct{}) error {
 func (c *RegistrySyncController) doSync() {
 	log.Debug("Sync Registries")
 	// makes a request to containership api and write results to the resource's cache
-	err := resources.Sync(c.cloudResource)
+	err := c.cloudResource.Sync()
 	if err != nil {
 		log.Error("Registries failed to sync: ", err.Error())
 		return

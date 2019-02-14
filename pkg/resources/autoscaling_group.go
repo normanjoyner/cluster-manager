@@ -6,8 +6,10 @@ import (
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	cscloud "github.com/containership/csctl/cloud"
+	"github.com/containership/csctl/cloud/provision/types"
+
 	"github.com/containership/cluster-manager/pkg/constants"
-	"github.com/containership/cluster-manager/pkg/request"
 	"github.com/containership/cluster-manager/pkg/tools"
 
 	cerebralv1alpha1 "github.com/containership/cerebral/pkg/apis/cerebral.containership.io/v1alpha1"
@@ -48,20 +50,33 @@ type APIScalingStrategy struct {
 }
 
 // NewCsAutoscalingGroups constructs a new CsAutoscalingGroups
-func NewCsAutoscalingGroups() *CsAutoscalingGroups {
+func NewCsAutoscalingGroups(cloud cscloud.Interface) *CsAutoscalingGroups {
+	cache := make([]cerebralv1alpha1.AutoscalingGroup, 0)
 	return &CsAutoscalingGroups{
-		cloudResource: cloudResource{
-			endpoint: "/organizations/{{.OrganizationID}}/clusters/{{.ClusterID}}/node-pools",
-			service:  request.CloudServiceProvision,
-		},
-		cache: make([]cerebralv1alpha1.AutoscalingGroup, 0),
+		newCloudResource(cloud),
+		cache,
 	}
+}
+
+// Sync implements the CloudResource interface
+func (ag *CsAutoscalingGroups) Sync() error {
+	nodepools, err := ag.cloud.Provision().NodePools(ag.organizationID, ag.clusterID).List()
+	if err != nil {
+		return err
+	}
+
+	data, err := json.Marshal(nodepools)
+	if err != nil {
+		return err
+	}
+
+	return ag.UnmarshalToCache(data)
 }
 
 // UnmarshalToCache take the json returned from containership API and gets the
 // AutoscalingPolicy associated with them, then writes the AutoscalingGroup
 // to the CsAutoscalingGroups cache
-func (us *CsAutoscalingGroups) UnmarshalToCache(bytes []byte) error {
+func (ag *CsAutoscalingGroups) UnmarshalToCache(bytes []byte) error {
 	nodepools := make([]NodePool, 0)
 	err := json.Unmarshal(bytes, &nodepools)
 	if err != nil {
@@ -86,7 +101,7 @@ func (us *CsAutoscalingGroups) UnmarshalToCache(bytes []byte) error {
 			}
 		}
 
-		policyIDs, err := getAutoscalingGroupPolicies(np.ID)
+		policyIDs, err := ag.getAutoscalingGroupPolicies(np.ID)
 		if err != nil {
 			return err
 		}
@@ -96,7 +111,7 @@ func (us *CsAutoscalingGroups) UnmarshalToCache(bytes []byte) error {
 		cerebralAutoscalingGroups = append(cerebralAutoscalingGroups, ag)
 	}
 
-	us.cache = cerebralAutoscalingGroups
+	ag.cache = cerebralAutoscalingGroups
 
 	return nil
 }
@@ -123,12 +138,12 @@ func transformAPINodePoolToCerebralASG(np NodePool, policyIDs []string) cerebral
 }
 
 // Cache return the containership AutoscalingGroup cache
-func (us *CsAutoscalingGroups) Cache() []cerebralv1alpha1.AutoscalingGroup {
-	return us.cache
+func (ag *CsAutoscalingGroups) Cache() []cerebralv1alpha1.AutoscalingGroup {
+	return ag.cache
 }
 
 // IsEqual compares a cloud AutoscalingGroupSpec to the cache AutoscalingGroup
-func (us *CsAutoscalingGroups) IsEqual(specObj interface{}, parentSpecObj interface{}) (bool, error) {
+func (ag *CsAutoscalingGroups) IsEqual(specObj interface{}, parentSpecObj interface{}) (bool, error) {
 	spec, ok := specObj.(cerebralv1alpha1.AutoscalingGroupSpec)
 	if !ok {
 		return false, fmt.Errorf("The object is not of type AutoscalingGroupSpec")
@@ -196,31 +211,20 @@ func policiesAreEqual(cloudPolicies, cachePolicies []string) bool {
 	return true
 }
 
-func getAutoscalingGroupPolicies(nodepoolID string) ([]string, error) {
-	npcr := cloudResource{
-		endpoint: fmt.Sprintf("/organizations/{{.OrganizationID}}/clusters/{{.ClusterID}}/node-pools/%s/autoscaling-policies", nodepoolID),
-		service:  request.CloudServiceProvision,
-	}
-
-	autoscalingpolicies, err := makeRequest(npcr.Service(), npcr.Endpoint())
+func (ag *CsAutoscalingGroups) getAutoscalingGroupPolicies(nodepoolID string) ([]string, error) {
+	autoscalingpolicies, err := ag.cloud.Provision().AutoscalingPolicies(ag.organizationID, ag.clusterID).ListForNodePool(nodepoolID)
 	if err != nil {
 		return nil, err
 	}
 
-	return getAutoscalingGroupPoliciesIDs(autoscalingpolicies)
+	return getAutoscalingGroupPoliciesIDs(autoscalingpolicies), nil
 }
 
-func getAutoscalingGroupPoliciesIDs(autoscalingpolicies []byte) ([]string, error) {
-	var aps []*CloudAPIAutoscalingPolicy
-	err := json.Unmarshal(autoscalingpolicies, &aps)
-	if err != nil {
-		return nil, err
+func getAutoscalingGroupPoliciesIDs(autoscalingpolicies []types.AutoscalingPolicy) []string {
+	policiesID := make([]string, len(autoscalingpolicies))
+	for i, ap := range autoscalingpolicies {
+		policiesID[i] = fmt.Sprintf("%s", ap.ID)
 	}
 
-	policiesID := make([]string, len(aps))
-	for i, ap := range aps {
-		policiesID[i] = ap.ID
-	}
-
-	return policiesID, nil
+	return policiesID
 }

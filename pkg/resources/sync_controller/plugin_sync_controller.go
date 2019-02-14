@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 
+	cscloud "github.com/containership/csctl/cloud"
+
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
@@ -34,7 +36,7 @@ const (
 
 // NewPlugin returns a PluginSyncController that will be in control of pulling from cloud
 // comparing to the CRD cache and modifying based on those compares
-func NewPlugin(kubeclientset kubernetes.Interface, clientset csclientset.Interface, csInformerFactory csinformers.SharedInformerFactory) *PluginSyncController {
+func NewPlugin(kubeclientset kubernetes.Interface, clientset csclientset.Interface, csInformerFactory csinformers.SharedInformerFactory, cloud cscloud.Interface) *PluginSyncController {
 	pluginInformer := csInformerFactory.Containership().V3().Plugins()
 
 	pluginInformer.Informer().AddIndexers(tools.IndexByIDKeyFun())
@@ -49,7 +51,7 @@ func NewPlugin(kubeclientset kubernetes.Interface, clientset csclientset.Interfa
 		},
 
 		lister:        pluginInformer.Lister(),
-		cloudResource: resources.NewCsPlugins(),
+		cloudResource: resources.NewCsPlugins(cloud),
 	}
 }
 
@@ -62,7 +64,7 @@ func (c *PluginSyncController) SyncWithCloud(stopCh <-chan struct{}) error {
 func (c *PluginSyncController) doSync() {
 	log.Debug("Sync Plugins")
 	// makes a request to containership api and write results to the resource's cache
-	err := resources.Sync(c.cloudResource)
+	err := c.cloudResource.Sync()
 	if err != nil {
 		log.Error("Plugins failed to sync: ", err.Error())
 		return

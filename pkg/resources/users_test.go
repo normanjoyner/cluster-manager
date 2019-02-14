@@ -1,6 +1,7 @@
 package resources
 
 import (
+	"encoding/json"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -143,7 +144,7 @@ var user2specDiff = csv3.UserSpec{
 }
 
 func TestIsEqual(t *testing.T) {
-	c := NewCsUsers()
+	c := NewCsUsers(nil)
 	// check for both being empty
 	emptySameTest, err := c.IsEqual(csv3.UserSpec{}, emptyUser)
 	assert.Nil(t, err)
@@ -198,19 +199,10 @@ var userBytes = []byte(`[{
 	}]
 }]`)
 
-func TestUnmarshalUsersToCache(t *testing.T) {
-	u := NewCsUsers()
-
-	err := u.UnmarshalToCache(nil)
-	assert.Error(t, err)
-
-	err = u.UnmarshalToCache(userBytes)
-	assert.Nil(t, err)
-}
-
 func TestUsersCache(t *testing.T) {
-	u := NewCsUsers()
-	u.UnmarshalToCache(userBytes)
+	u := NewCsUsers(nil)
+
+	json.Unmarshal(userBytes, &u.cache)
 	c := u.Cache()
 
 	assert.Equal(t, u.cache, c)

@@ -9,6 +9,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	cerebralv1alpha1 "github.com/containership/cerebral/pkg/apis/cerebral.containership.io/v1alpha1"
+	"github.com/containership/csctl/cloud/provision/types"
 )
 
 var autoscalingGroupBytesDisabled = []byte(`[{
@@ -157,7 +158,7 @@ func TestPoliciesAreEqual(t *testing.T) {
 }
 
 func TestUnmarshalToCache(t *testing.T) {
-	ag := NewCsAutoscalingGroups()
+	ag := NewCsAutoscalingGroups(nil)
 
 	err := ag.UnmarshalToCache(nil)
 	assert.Error(t, err)
@@ -167,7 +168,7 @@ func TestUnmarshalToCache(t *testing.T) {
 }
 
 func TestAutoscalingGroupCache(t *testing.T) {
-	ag := NewCsAutoscalingGroups()
+	ag := NewCsAutoscalingGroups(nil)
 	ag.UnmarshalToCache(autoscalingGroupBytesDisabled)
 	c := ag.Cache()
 
@@ -257,7 +258,7 @@ var autoscalingGroupCacheObj = &cerebralv1alpha1.AutoscalingGroup{
 }
 
 func TestAGIsEqual(t *testing.T) {
-	ag := NewCsAutoscalingGroups()
+	ag := NewCsAutoscalingGroups(nil)
 
 	result, err := ag.IsEqual(cloud, autoscalingGroupCacheObj)
 	assert.Nil(t, err)
@@ -279,14 +280,12 @@ func TestAGIsEqual(t *testing.T) {
 }
 
 func TestGetAutoscalingGroupPoliciesIDs(t *testing.T) {
-	policies, err := getAutoscalingGroupPoliciesIDs(autoscalingPolicyBytes)
-	assert.Nil(t, err)
+	policies := getAutoscalingGroupPoliciesIDs(autoscalingPolicyBytes)
 	assert.Equal(t, "1234", policies[0])
 
-	policies, err = getAutoscalingGroupPoliciesIDs([]byte("[]"))
-	assert.Nil(t, err)
+	policies = getAutoscalingGroupPoliciesIDs([]types.AutoscalingPolicy{})
 	assert.Equal(t, 0, len(policies))
 
-	_, err = getAutoscalingGroupPoliciesIDs(nil)
-	assert.Error(t, err)
+	policies = getAutoscalingGroupPoliciesIDs(nil)
+	assert.Equal(t, 0, len(policies))
 }

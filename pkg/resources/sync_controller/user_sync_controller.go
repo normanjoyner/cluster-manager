@@ -8,6 +8,8 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/kubernetes"
 
+	cscloud "github.com/containership/csctl/cloud"
+
 	csv3 "github.com/containership/cluster-manager/pkg/apis/containership.io/v3"
 	csclientset "github.com/containership/cluster-manager/pkg/client/clientset/versioned"
 	csinformers "github.com/containership/cluster-manager/pkg/client/informers/externalversions"
@@ -33,7 +35,7 @@ const (
 
 // NewUser returns a UserSyncController that will be in control of pulling from cloud
 // comparing to the CRD cache and modifying based on those compares
-func NewUser(kubeclientset kubernetes.Interface, clientset csclientset.Interface, csInformerFactory csinformers.SharedInformerFactory) *UserSyncController {
+func NewUser(kubeclientset kubernetes.Interface, clientset csclientset.Interface, csInformerFactory csinformers.SharedInformerFactory, cloud cscloud.Interface) *UserSyncController {
 	userInformer := csInformerFactory.Containership().V3().Users()
 
 	userInformer.Informer().AddIndexers(tools.IndexByIDKeyFun())
@@ -48,7 +50,7 @@ func NewUser(kubeclientset kubernetes.Interface, clientset csclientset.Interface
 		},
 
 		lister:        userInformer.Lister(),
-		cloudResource: resources.NewCsUsers(),
+		cloudResource: resources.NewCsUsers(cloud),
 	}
 }
 
@@ -61,7 +63,7 @@ func (c *UserSyncController) SyncWithCloud(stopCh <-chan struct{}) error {
 func (c *UserSyncController) doSync() {
 	log.Debug("Sync Users")
 	// makes a request to containership api and write results to the resource's cache
-	err := resources.Sync(c.cloudResource)
+	err := c.cloudResource.Sync()
 	if err != nil {
 		log.Error("Users failed to sync: ", err.Error())
 		return
