@@ -5,6 +5,8 @@ import (
 	"io/ioutil"
 	"time"
 
+	"golang.org/x/time/rate"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -52,7 +54,11 @@ func NewUpgradeController(
 
 	uc := &UpgradeController{
 		kubeclientset: kubeclientset,
-		workqueue:     workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), upgradeControllerName),
+		workqueue: workqueue.NewNamedRateLimitingQueue(workqueue.NewMaxOfRateLimiter(
+			workqueue.NewItemExponentialFailureRateLimiter(time.Second, 120*time.Second),
+			// 10 qps, 100 bucket size.  This is only for retry speed and its only the overall factor (not per item)
+			&workqueue.BucketRateLimiter{Limiter: rate.NewLimiter(rate.Limit(10), 100)},
+		), upgradeControllerName),
 	}
 
 	// Create an informer from the factory so that we share the underlying
