@@ -18,6 +18,7 @@ func main() {
 	// We don't have any of our own flags to parse, but k8s packages want to
 	// use glog and we have to pass flags to that to configure it to behave
 	// in a sane way.
+	flag.Set("logtostderr", "true")
 	flag.Parse()
 
 	env.Dump()

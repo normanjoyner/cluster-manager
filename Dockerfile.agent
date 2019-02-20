@@ -43,4 +43,4 @@ COPY --from=builder ./scripts /scripts
 COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
 COPY --from=builder ./app/agent .
 
-CMD ["./agent", "-logtostderr=true"]
+CMD ["./agent"]

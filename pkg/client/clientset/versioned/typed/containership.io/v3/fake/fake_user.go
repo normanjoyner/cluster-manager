@@ -1,5 +1,5 @@
 /*
-Copyright 2019 The Kubernetes Authors.
+Copyright The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -62,7 +62,7 @@ func (c *FakeUsers) List(opts v1.ListOptions) (result *v3.UserList, err error) {
 	if label == nil {
 		label = labels.Everything()
 	}
-	list := &v3.UserList{}
+	list := &v3.UserList{ListMeta: obj.(*v3.UserList).ListMeta}
 	for _, item := range obj.(*v3.UserList).Items {
 		if label.Matches(labels.Set(item.Labels)) {
 			list.Items = append(list.Items, item)
@@ -119,7 +119,7 @@ func (c *FakeUsers) DeleteCollection(options *v1.DeleteOptions, listOptions v1.L
 // Patch applies the patch and returns the patched user.
 func (c *FakeUsers) Patch(name string, pt types.PatchType, data []byte, subresources ...string) (result *v3.User, err error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewPatchSubresourceAction(usersResource, c.ns, name, data, subresources...), &v3.User{})
+		Invokes(testing.NewPatchSubresourceAction(usersResource, c.ns, name, pt, data, subresources...), &v3.User{})
 
 	if obj == nil {
 		return nil, err

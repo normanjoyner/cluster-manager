@@ -1,5 +1,5 @@
 /*
-Copyright 2019 The Kubernetes Authors.
+Copyright The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -62,7 +62,7 @@ func (c *FakeClusterUpgrades) List(opts v1.ListOptions) (result *v3.ClusterUpgra
 	if label == nil {
 		label = labels.Everything()
 	}
-	list := &v3.ClusterUpgradeList{}
+	list := &v3.ClusterUpgradeList{ListMeta: obj.(*v3.ClusterUpgradeList).ListMeta}
 	for _, item := range obj.(*v3.ClusterUpgradeList).Items {
 		if label.Matches(labels.Set(item.Labels)) {
 			list.Items = append(list.Items, item)
@@ -119,7 +119,7 @@ func (c *FakeClusterUpgrades) DeleteCollection(options *v1.DeleteOptions, listOp
 // Patch applies the patch and returns the patched clusterUpgrade.
 func (c *FakeClusterUpgrades) Patch(name string, pt types.PatchType, data []byte, subresources ...string) (result *v3.ClusterUpgrade, err error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewPatchSubresourceAction(clusterupgradesResource, c.ns, name, data, subresources...), &v3.ClusterUpgrade{})
+		Invokes(testing.NewPatchSubresourceAction(clusterupgradesResource, c.ns, name, pt, data, subresources...), &v3.ClusterUpgrade{})
 
 	if obj == nil {
 		return nil, err

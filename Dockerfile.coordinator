@@ -51,4 +51,4 @@ COPY --from=builder /kubectl /etc/kubectl/kubectl
 
 ENV KUBECTL_PATH=/etc/kubectl/kubectl
 
-CMD ["./coordinator", "-logtostderr=true"]
+CMD ["./coordinator"]

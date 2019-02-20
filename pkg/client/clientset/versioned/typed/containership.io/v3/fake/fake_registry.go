@@ -1,5 +1,5 @@
 /*
-Copyright 2019 The Kubernetes Authors.
+Copyright The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -62,7 +62,7 @@ func (c *FakeRegistries) List(opts v1.ListOptions) (result *v3.RegistryList, err
 	if label == nil {
 		label = labels.Everything()
 	}
-	list := &v3.RegistryList{}
+	list := &v3.RegistryList{ListMeta: obj.(*v3.RegistryList).ListMeta}
 	for _, item := range obj.(*v3.RegistryList).Items {
 		if label.Matches(labels.Set(item.Labels)) {
 			list.Items = append(list.Items, item)
@@ -119,7 +119,7 @@ func (c *FakeRegistries) DeleteCollection(options *v1.DeleteOptions, listOptions
 // Patch applies the patch and returns the patched registry.
 func (c *FakeRegistries) Patch(name string, pt types.PatchType, data []byte, subresources ...string) (result *v3.Registry, err error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewPatchSubresourceAction(registriesResource, c.ns, name, data, subresources...), &v3.Registry{})
+		Invokes(testing.NewPatchSubresourceAction(registriesResource, c.ns, name, pt, data, subresources...), &v3.Registry{})
 
 	if obj == nil {
 		return nil, err
