@@ -36,6 +36,8 @@ func addKnownTypes(scheme *runtime.Scheme) error {
 	scheme.AddKnownTypes(SchemeGroupVersion,
 		&ClusterUpgrade{},
 		&ClusterUpgradeList{},
+		&NodePoolLabel{},
+		&NodePoolLabelList{},
 	)
 	metav1.AddToGroupVersion(scheme, SchemeGroupVersion)
 	return nil

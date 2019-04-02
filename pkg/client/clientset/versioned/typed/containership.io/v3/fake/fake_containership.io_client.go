@@ -28,6 +28,10 @@ type FakeContainershipV3 struct {
 	*testing.Fake
 }
 
+func (c *FakeContainershipV3) ClusterLabels(namespace string) v3.ClusterLabelInterface {
+	return &FakeClusterLabels{c, namespace}
+}
+
 func (c *FakeContainershipV3) Plugins(namespace string) v3.PluginInterface {
 	return &FakePlugins{c, namespace}
 }

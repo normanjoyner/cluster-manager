@@ -136,3 +136,34 @@ type PluginList struct {
 
 	Items []Plugin `json:"items"`
 }
+
+// +genclient
+// +genclient:noStatus
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+
+// ClusterLabel describes a cluster label in Containership Cloud.
+type ClusterLabel struct {
+	metav1.TypeMeta   `json:",inline"`
+	metav1.ObjectMeta `json:"metadata,omitempty"`
+
+	Spec ClusterLabelSpec `json:"spec"`
+}
+
+// ClusterLabelSpec is the spec for a Containership Cloud ClusterLabel.
+type ClusterLabelSpec struct {
+	ID        string `json:"id"`
+	CreatedAt string `json:"created_at"`
+	UpdatedAt string `json:"updated_at"`
+	Key       string `json:"key"`
+	Value     string `json:"value"`
+}
+
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+
+// ClusterLabelList is a list of ClusterLabels.
+type ClusterLabelList struct {
+	metav1.TypeMeta `json:",inline"`
+	metav1.ListMeta `json:"metadata"`
+
+	Items []ClusterLabel `json:"items"`
+}

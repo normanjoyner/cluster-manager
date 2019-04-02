@@ -25,3 +25,11 @@ type ClusterUpgradeListerExpansion interface{}
 // ClusterUpgradeNamespaceListerExpansion allows custom methods to be added to
 // ClusterUpgradeNamespaceLister.
 type ClusterUpgradeNamespaceListerExpansion interface{}
+
+// NodePoolLabelListerExpansion allows custom methods to be added to
+// NodePoolLabelLister.
+type NodePoolLabelListerExpansion interface{}
+
+// NodePoolLabelNamespaceListerExpansion allows custom methods to be added to
+// NodePoolLabelNamespaceLister.
+type NodePoolLabelNamespaceListerExpansion interface{}

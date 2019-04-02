@@ -27,6 +27,7 @@ import (
 
 type ContainershipV3Interface interface {
 	RESTClient() rest.Interface
+	ClusterLabelsGetter
 	PluginsGetter
 	RegistriesGetter
 	UsersGetter
@@ -35,6 +36,10 @@ type ContainershipV3Interface interface {
 // ContainershipV3Client is used to interact with features provided by the containership.io group.
 type ContainershipV3Client struct {
 	restClient rest.Interface
+}
+
+func (c *ContainershipV3Client) ClusterLabels(namespace string) ClusterLabelInterface {
+	return newClusterLabels(c, namespace)
 }
 
 func (c *ContainershipV3Client) Plugins(namespace string) PluginInterface {

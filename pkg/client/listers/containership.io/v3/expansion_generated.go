@@ -18,6 +18,14 @@ limitations under the License.
 
 package v3
 
+// ClusterLabelListerExpansion allows custom methods to be added to
+// ClusterLabelLister.
+type ClusterLabelListerExpansion interface{}
+
+// ClusterLabelNamespaceListerExpansion allows custom methods to be added to
+// ClusterLabelNamespaceLister.
+type ClusterLabelNamespaceListerExpansion interface{}
+
 // PluginListerExpansion allows custom methods to be added to
 // PluginLister.
 type PluginListerExpansion interface{}

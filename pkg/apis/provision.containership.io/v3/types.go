@@ -78,3 +78,35 @@ type ClusterUpgradeList struct {
 
 	Items []ClusterUpgrade `json:"items"`
 }
+
+// +genclient
+// +genclient:noStatus
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+
+// NodePoolLabel describes a node pool label in Containership Cloud.
+type NodePoolLabel struct {
+	metav1.TypeMeta   `json:",inline"`
+	metav1.ObjectMeta `json:"metadata,omitempty"`
+
+	Spec NodePoolLabelSpec `json:"spec"`
+}
+
+// NodePoolLabelSpec is the spec for a Containership Cloud NodePoolLabel.
+type NodePoolLabelSpec struct {
+	ID         string `json:"id"`
+	CreatedAt  string `json:"created_at"`
+	UpdatedAt  string `json:"updated_at"`
+	Key        string `json:"key"`
+	Value      string `json:"value"`
+	NodePoolID string `json:"node_pool_id"`
+}
+
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+
+// NodePoolLabelList is a list of NodePoolLabels.
+type NodePoolLabelList struct {
+	metav1.TypeMeta `json:",inline"`
+	metav1.ListMeta `json:"metadata"`
+
+	Items []NodePoolLabel `json:"items"`
+}

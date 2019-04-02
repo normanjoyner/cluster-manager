@@ -18,6 +18,8 @@ limitations under the License.
 
 package v3
 
+type ClusterLabelExpansion interface{}
+
 type PluginExpansion interface{}
 
 type RegistryExpansion interface{}

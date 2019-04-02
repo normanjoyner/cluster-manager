@@ -28,6 +28,7 @@ import (
 type ContainershipProvisionV3Interface interface {
 	RESTClient() rest.Interface
 	ClusterUpgradesGetter
+	NodePoolLabelsGetter
 }
 
 // ContainershipProvisionV3Client is used to interact with features provided by the provision.containership.io group.
@@ -37,6 +38,10 @@ type ContainershipProvisionV3Client struct {
 
 func (c *ContainershipProvisionV3Client) ClusterUpgrades(namespace string) ClusterUpgradeInterface {
 	return newClusterUpgrades(c, namespace)
+}
+
+func (c *ContainershipProvisionV3Client) NodePoolLabels(namespace string) NodePoolLabelInterface {
+	return newNodePoolLabels(c, namespace)
 }
 
 // NewForConfig creates a new ContainershipProvisionV3Client for the given config.

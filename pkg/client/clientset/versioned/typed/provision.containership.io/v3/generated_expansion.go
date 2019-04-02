@@ -19,3 +19,5 @@ limitations under the License.
 package v3
 
 type ClusterUpgradeExpansion interface{}
+
+type NodePoolLabelExpansion interface{}

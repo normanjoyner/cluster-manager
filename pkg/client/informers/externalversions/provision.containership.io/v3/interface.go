@@ -26,6 +26,8 @@ import (
 type Interface interface {
 	// ClusterUpgrades returns a ClusterUpgradeInformer.
 	ClusterUpgrades() ClusterUpgradeInformer
+	// NodePoolLabels returns a NodePoolLabelInformer.
+	NodePoolLabels() NodePoolLabelInformer
 }
 
 type version struct {
@@ -42,4 +44,9 @@ func New(f internalinterfaces.SharedInformerFactory, namespace string, tweakList
 // ClusterUpgrades returns a ClusterUpgradeInformer.
 func (v *version) ClusterUpgrades() ClusterUpgradeInformer {
 	return &clusterUpgradeInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
+}
+
+// NodePoolLabels returns a NodePoolLabelInformer.
+func (v *version) NodePoolLabels() NodePoolLabelInformer {
+	return &nodePoolLabelInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
 }

@@ -24,6 +24,8 @@ import (
 
 // Interface provides access to all the informers in this group version.
 type Interface interface {
+	// ClusterLabels returns a ClusterLabelInformer.
+	ClusterLabels() ClusterLabelInformer
 	// Plugins returns a PluginInformer.
 	Plugins() PluginInformer
 	// Registries returns a RegistryInformer.
@@ -41,6 +43,11 @@ type version struct {
 // New returns a new Interface.
 func New(f internalinterfaces.SharedInformerFactory, namespace string, tweakListOptions internalinterfaces.TweakListOptionsFunc) Interface {
 	return &version{factory: f, namespace: namespace, tweakListOptions: tweakListOptions}
+}
+
+// ClusterLabels returns a ClusterLabelInformer.
+func (v *version) ClusterLabels() ClusterLabelInformer {
+	return &clusterLabelInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
 }
 
 // Plugins returns a PluginInformer.

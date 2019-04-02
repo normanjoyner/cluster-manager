@@ -32,6 +32,10 @@ func (c *FakeContainershipProvisionV3) ClusterUpgrades(namespace string) v3.Clus
 	return &FakeClusterUpgrades{c, namespace}
 }
 
+func (c *FakeContainershipProvisionV3) NodePoolLabels(namespace string) v3.NodePoolLabelInterface {
+	return &FakeNodePoolLabels{c, namespace}
+}
+
 // RESTClient returns a RESTClient that is used to communicate
 // with API server by this client implementation.
 func (c *FakeContainershipProvisionV3) RESTClient() rest.Interface {

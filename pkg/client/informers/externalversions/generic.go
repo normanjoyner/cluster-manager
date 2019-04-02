@@ -54,6 +54,8 @@ func (f *genericInformer) Lister() cache.GenericLister {
 func (f *sharedInformerFactory) ForResource(resource schema.GroupVersionResource) (GenericInformer, error) {
 	switch resource {
 	// Group=containership.io, Version=v3
+	case v3.SchemeGroupVersion.WithResource("clusterlabels"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Containership().V3().ClusterLabels().Informer()}, nil
 	case v3.SchemeGroupVersion.WithResource("plugins"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Containership().V3().Plugins().Informer()}, nil
 	case v3.SchemeGroupVersion.WithResource("registries"):
@@ -64,6 +66,8 @@ func (f *sharedInformerFactory) ForResource(resource schema.GroupVersionResource
 		// Group=provision.containership.io, Version=v3
 	case provisioncontainershipiov3.SchemeGroupVersion.WithResource("clusterupgrades"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.ContainershipProvision().V3().ClusterUpgrades().Informer()}, nil
+	case provisioncontainershipiov3.SchemeGroupVersion.WithResource("nodepoollabels"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.ContainershipProvision().V3().NodePoolLabels().Informer()}, nil
 
 	}
 
