@@ -1,5 +1,6 @@
-#!/bin/sh
+#!/bin/bash
 
+PATH=$PATH:/usr/sbin
 USER=$1
 USER_HOME=/etc/containership/home/$USER
 
