@@ -18,11 +18,15 @@ var (
 	kubeInformerFactory     kubeinformers.SharedInformerFactory
 	csInformerFactory       csinformers.SharedInformerFactory
 	cerebralInformerFactory cerebralinformers.SharedInformerFactory
-	regController           *RegistryController
+
+	clusterLabelController  *ClusterLabelController
 	csController            *ContainershipController
-	plgnController          *PluginController
 	cupController           *UpgradeController
-	cloudSynchronizer       *CloudSynchronizer
+	nodePoolLabelController *NodePoolLabelController
+	plgnController          *PluginController
+	regController           *RegistryController
+
+	cloudSynchronizer *CloudSynchronizer
 )
 
 // Initialize creates the informer factories, controller, and synchronizer.
@@ -45,7 +49,10 @@ func Initialize() {
 	csInformerFactory = k8sutil.CSAPI().NewCSSharedInformerFactory(interval)
 	cerebralInformerFactory = k8sutil.CerebralAPI().NewCerebralSharedInformerFactory(interval)
 
-	regController = NewRegistryController(
+	clusterLabelController = NewClusterLabelController(
+		k8sutil.API().Client(), k8sutil.CSAPI().Client(), kubeInformerFactory, csInformerFactory)
+
+	nodePoolLabelController = NewNodePoolLabelController(
 		k8sutil.API().Client(), k8sutil.CSAPI().Client(), kubeInformerFactory, csInformerFactory)
 
 	csController = NewContainershipController(
@@ -53,6 +60,9 @@ func Initialize() {
 
 	plgnController = NewPluginController(
 		k8sutil.API().Client(), k8sutil.CSAPI().Client(), csInformerFactory)
+
+	regController = NewRegistryController(
+		k8sutil.API().Client(), k8sutil.CSAPI().Client(), kubeInformerFactory, csInformerFactory)
 
 	if env.IsClusterUpgradeEnabled() {
 		cupController = NewUpgradeController(
@@ -75,7 +85,9 @@ func Run() {
 
 	cloudSynchronizer.Run()
 
+	go clusterLabelController.Run(1, stopCh)
 	go csController.Run(1, stopCh)
+	go nodePoolLabelController.Run(1, stopCh)
 	go plgnController.Run(1, stopCh)
 	go regController.Run(1, stopCh)
 

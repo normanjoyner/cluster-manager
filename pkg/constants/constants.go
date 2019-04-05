@@ -27,6 +27,10 @@ const (
 	ContainershipNodeIDLabelKey = "containership.io/node-id"
 	// ContainershipNodePoolIDLabelKey is the label key for the Containership node pool ID
 	ContainershipNodePoolIDLabelKey = "containership.io/node-pool-id"
+	// ContainershipClusterLabelPrefix is the prefix for cluster labels
+	ContainershipClusterLabelPrefix = "cluster.containership.io/"
+	// ContainershipNodePoolLabelPrefix is the prefix for node pool labels
+	ContainershipNodePoolLabelPrefix = "nodepool.containership.io/"
 )
 
 const (
