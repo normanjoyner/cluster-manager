@@ -1,12 +1,13 @@
 package coordinator
 
 import (
-	"fmt"
 	"time"
+
+	"github.com/pkg/errors"
 
 	corev1 "k8s.io/api/core/v1"
 
-	"k8s.io/apimachinery/pkg/api/errors"
+	kubeerrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/selection"
 	"k8s.io/apimachinery/pkg/util/runtime"
@@ -103,7 +104,7 @@ func NewUpgradeController(kubeclientset kubernetes.Interface, clientset csclient
 			if newPod.Namespace != constants.KubernetesControlPlaneNamespace || oldPod.ResourceVersion == newPod.ResourceVersion {
 				return
 			}
-			uc.enqueuePod(new)
+			uc.enqueueControlPlaneNodeForPod(new)
 		},
 	})
 
@@ -226,7 +227,7 @@ func (uc *UpgradeController) handleErr(err error, key interface{}) error {
 
 	if uc.workqueue.NumRequeues(key) < maxUpgradeControllerRetries {
 		uc.workqueue.AddRateLimited(key)
-		return fmt.Errorf("error syncing %q: %s. Has been resynced %v times", key, err.Error(), uc.workqueue.NumRequeues(key))
+		return errors.Wrapf(err, "syncing %q (has been resynced %d times)", key, uc.workqueue.NumRequeues(key))
 	}
 
 	uc.workqueue.Forget(key)
@@ -256,9 +257,9 @@ func (uc *UpgradeController) enqueueNode(obj interface{}) {
 	uc.workqueue.AddRateLimited(key)
 }
 
-// enqueuePod enqueues the node that the pod is running on if the pod has
+// enqueue the node that the pod is running on if the pod has
 // a tier label with the value of control-plane
-func (uc *UpgradeController) enqueuePod(obj interface{}) {
+func (uc *UpgradeController) enqueueControlPlaneNodeForPod(obj interface{}) {
 	pod, ok := obj.(*corev1.Pod)
 	if !ok {
 		return
@@ -299,7 +300,7 @@ func (uc *UpgradeController) upgradeSyncHandler(key string) error {
 	_, _, name, _ := tools.SplitMetaResourceNamespaceKeyFunc(key)
 	upgrade, err := uc.upgradeLister.ClusterUpgrades(constants.ContainershipNamespace).Get(name)
 	if err != nil {
-		if errors.IsNotFound(err) {
+		if kubeerrors.IsNotFound(err) {
 			// Upgrade is no longer around so nothing to do
 			return nil
 		}
@@ -331,8 +332,8 @@ func (uc *UpgradeController) upgradeSyncHandler(key string) error {
 
 	existingUpgrade, _ := uc.getCurrentUpgrade()
 	if existingUpgrade != nil {
-		// There's already an upgrade in-progress. This should
-		// never happen, but ignore it to be safe.
+		// There's already an upgrade in-progress. Ignore it for now, and we'll
+		// manually requeue all outstanding upgrades after the current one finishes.
 		return nil
 	}
 
@@ -341,10 +342,18 @@ func (uc *UpgradeController) upgradeSyncHandler(key string) error {
 	node := uc.getNextNode(upgrade)
 	if node == nil {
 		// We're already at the target version, so just finish the upgrade.
-		return uc.finishUpgrade(upgrade)
+		err := uc.finishUpgrade(upgrade)
+		if err != nil {
+			return errors.Wrapf(err, "marking upgrade %q as finished", upgrade.Name)
+		}
 	}
 
-	return uc.startUpgradeForNode(upgrade, node)
+	err = uc.startUpgradeForNode(upgrade, node)
+	if err != nil {
+		return errors.Wrapf(err, "starting upgrade %q for node %q", upgrade.Name, node.Name)
+	}
+
+	return nil
 }
 
 // nodeSyncHandler surveys the system state and determines which node, if any,
@@ -354,17 +363,17 @@ func (uc *UpgradeController) nodeSyncHandler(key string) error {
 
 	node, err := uc.nodeLister.Get(name)
 	if err != nil {
-		if errors.IsNotFound(err) {
+		if kubeerrors.IsNotFound(err) {
 			// Node is no longer around so no need to upgrade
 			return nil
 		}
 
-		return err
+		return errors.Wrapf(err, "getting node %q", name)
 	}
 
 	currentUpgrade, err := uc.getCurrentUpgrade()
 	if err != nil {
-		return err
+		return errors.Wrap(err, "getting current upgrade")
 	}
 	if currentUpgrade == nil {
 		// No active upgrades, so nothing to do
@@ -382,7 +391,7 @@ func (uc *UpgradeController) nodeSyncHandler(key string) error {
 	currentUpgrade = currentUpgrade.DeepCopy()
 	pods, err := uc.podLister.Pods(constants.KubernetesControlPlaneNamespace).List(labels.NewSelector())
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "listing all pods in namespace %s", constants.KubernetesControlPlaneNamespace)
 	}
 
 	nodeIsTargetVersion := tools.NodeIsTargetKubernetesVersion(currentUpgrade, node, pods)
@@ -427,12 +436,18 @@ func (uc *UpgradeController) nodeSyncHandler(key string) error {
 	if next == nil {
 		// No more nodes to upgrade, so finish up
 		err = uc.finishUpgrade(currentUpgrade)
+		if err != nil {
+			return errors.Wrapf(err, "marking upgrade %q as finished in node sync handler", currentUpgrade.Name)
+		}
 	} else {
 		// Kick off the next node upgrade
 		err = uc.startUpgradeForNode(currentUpgrade, next)
+		if err != nil {
+			return errors.Wrapf(err, "starting upgrade %q for node %q", currentUpgrade.Name, next.Name)
+		}
 	}
 
-	return err
+	return nil
 }
 
 // tryPostNodeCloudStatusRunning tries to post given node status to cloud as
