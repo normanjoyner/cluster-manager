@@ -201,13 +201,10 @@ func (uc *UpgradeController) processNextWorkItem() bool {
 		case "node":
 			err := uc.nodeSyncHandler(key)
 			return uc.handleErr(err, key)
+		default:
+			// Do not use handleErr, as we do not want to re-enqueue in this case
+			return errors.Errorf("unknown kind %s in queue for %s", kind, upgradeControllerName)
 		}
-
-		// Finally, if no error occurs we forget this item so it does not
-		// get queued again until another change happens.
-		uc.workqueue.Forget(obj)
-		log.Debugf("%s: Successfully synced '%s'", upgradeControllerName, key)
-		return nil
 	}(obj)
 
 	if err != nil {
