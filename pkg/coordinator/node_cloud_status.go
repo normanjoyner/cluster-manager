@@ -30,11 +30,11 @@ const (
 	NodeCloudStatusRunning = "RUNNING"
 )
 
-// PostNodeCloudStatusMessage posts the node cloud status to cloud. Note that this
+// postNodeCloudStatusMessage posts the node cloud status to cloud. Note that this
 // status is not (currently) intended to be strictly identical to the actual
 // node status in the ClusterUpgrade CRD and is only used for essentially a
 // boolean "is running or not" check on cloud side.
-func PostNodeCloudStatusMessage(nodeID string, status *NodeCloudStatusMessage) error {
+func postNodeCloudStatusMessage(nodeID string, status *NodeCloudStatusMessage) error {
 	path := fmt.Sprintf("/organizations/{{.OrganizationID}}/clusters/{{.ClusterID}}/nodes/%s/status", nodeID)
 
 	body, err := json.Marshal(status)
@@ -56,15 +56,15 @@ func PostNodeCloudStatusMessage(nodeID string, status *NodeCloudStatusMessage) e
 	return nil
 }
 
-// PostNodeCloudStatusMessageWithRetry posts the node cloud status, retrying up to
+// postNodeCloudStatusMessageWithRetry posts the node cloud status, retrying up to
 // numRetries times.
 // TODO consider using a library such as `pester` to handle actual HTTP retries
 // here and elsewhere
-func PostNodeCloudStatusMessageWithRetry(nodeID string, status *NodeCloudStatusMessage, numRetries int) error {
+func postNodeCloudStatusMessageWithRetry(nodeID string, status *NodeCloudStatusMessage, numRetries int) error {
 	var err error
 	for attempt := 1; attempt <= numRetries; attempt++ {
 		log.Debugf("PUT node cloud status attempt %d", attempt)
-		if err = PostNodeCloudStatusMessage(nodeID, status); err == nil {
+		if err = postNodeCloudStatusMessage(nodeID, status); err == nil {
 			// Request was successful so we're done
 			break
 		}

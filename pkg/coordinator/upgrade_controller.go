@@ -459,7 +459,7 @@ func tryPostNodeCloudStatusRunning(nodeID string) {
 			Percent: "1",
 		},
 	}
-	_ = PostNodeCloudStatusMessageWithRetry(nodeID, &status, 3)
+	_ = postNodeCloudStatusMessageWithRetry(nodeID, &status, 3)
 }
 
 // updateClusterUpgradeStatus posts an updated status for the given upgrade object
