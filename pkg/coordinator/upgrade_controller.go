@@ -228,7 +228,7 @@ func (uc *UpgradeController) handleErr(err error, key interface{}) error {
 	}
 
 	uc.workqueue.Forget(key)
-	log.Infof("Dropping Upgrade %q out of the queue: %v", key, err)
+	log.Infof("Dropping key %q out of the queue: %v", key, err)
 	return err
 }
 
@@ -324,6 +324,7 @@ func (uc *UpgradeController) upgradeSyncHandler(key string) error {
 	// we don't need to do anything. We're only listening to Add events so this
 	// should be unlikely, but it can happen e.g. if coordinator restarts.
 	if isUpgradeDone(upgrade) {
+		log.Debugf("Upgrade %q is already finished - ignoring", upgrade.Name)
 		return nil
 	}
 
@@ -343,6 +344,13 @@ func (uc *UpgradeController) upgradeSyncHandler(key string) error {
 		if err != nil {
 			return errors.Wrapf(err, "marking upgrade %q as finished", upgrade.Name)
 		}
+
+		err = uc.enqueueNextUpgrade()
+		if err != nil {
+			return errors.Wrap(err, "enqueueing next upgrade")
+		}
+
+		return nil
 	}
 
 	err = uc.startUpgradeForNode(upgrade, node)
@@ -436,6 +444,11 @@ func (uc *UpgradeController) nodeSyncHandler(key string) error {
 		if err != nil {
 			return errors.Wrapf(err, "marking upgrade %q as finished in node sync handler", currentUpgrade.Name)
 		}
+
+		err = uc.enqueueNextUpgrade()
+		if err != nil {
+			return errors.Wrap(err, "enqueueing next upgrade")
+		}
 	} else {
 		// Kick off the next node upgrade
 		err = uc.startUpgradeForNode(currentUpgrade, next)
@@ -508,13 +521,55 @@ func (uc *UpgradeController) startUpgradeForNode(cup *provisioncsv3.ClusterUpgra
 	return err
 }
 
+// Enqueue the next upgrade if any upgrades are pending, else do nothing.
+func (uc *UpgradeController) enqueueNextUpgrade() error {
+	next, err := uc.getNextUpgrade()
+	if err != nil {
+		return errors.Wrap(err, "getting next upgrade")
+	}
+
+	if next == nil {
+		log.Info("No more upgrades to process")
+		return nil
+	}
+
+	log.Infof("Enqueuing next upgrade: %s", next.Name)
+	uc.enqueueUpgrade(next)
+
+	return nil
+}
+
+// Get the next upgrade if any are pending, else returns nil.
+// The next upgrade chosen is the one with the earliest creation timestamp.
+// We do not do any e.g. version skew checking, because we assume that:
+//     1. ClusterUpgrade CRs will be posted in the proper order (masters then workers)
+//     2. kubeadm will properly fail upgrades that do not meet version skew requirements anyway
+func (uc *UpgradeController) getNextUpgrade() (*provisioncsv3.ClusterUpgrade, error) {
+	upgrades, err := uc.upgradeLister.ClusterUpgrades(constants.ContainershipNamespace).
+		List(constants.GetContainershipManagedSelector())
+	if err != nil {
+		return nil, errors.Wrap(err, "listing ClusterUpgrades")
+	}
+
+	var next *provisioncsv3.ClusterUpgrade
+	for _, upgrade := range upgrades {
+		if !isUpgradeDone(upgrade) {
+			if next == nil || upgrade.CreationTimestamp.Before(&next.CreationTimestamp) {
+				next = upgrade
+			}
+		}
+	}
+
+	return next, nil
+}
+
 // getCurrentUpgrade returns the current in-progress upgrade or nil if no upgrade
-// is in-progress.
+// is in-progress. Only one upgrade should be in-progress at any time.
 func (uc *UpgradeController) getCurrentUpgrade() (*provisioncsv3.ClusterUpgrade, error) {
 	upgrades, err := uc.upgradeLister.ClusterUpgrades(constants.ContainershipNamespace).
 		List(constants.GetContainershipManagedSelector())
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "listing ClusterUpgrades")
 	}
 
 	for _, upgrade := range upgrades {
@@ -557,7 +612,10 @@ func isCurrentNode(cup *provisioncsv3.ClusterUpgrade, node *corev1.Node) bool {
 }
 
 // getNextNode finds the next node to start upgrading or nil if all nodes are
-// finished upgrading.
+// finished upgrading. If the label selector for the given upgrade spans both
+// masters and workers, then masters will be given priority.
+// (Note that in normal use cases, i.e. through Containership Cloud, a selector
+// will only span nodes of a single node pool anyway.)
 func (uc *UpgradeController) getNextNode(cup *provisioncsv3.ClusterUpgrade) *corev1.Node {
 	masters, _ := uc.nodeLister.List(getMasterSelector(cup.Spec.LabelSelector))
 	pods, _ := uc.podLister.Pods(constants.KubernetesControlPlaneNamespace).List(labels.NewSelector())
@@ -586,7 +644,7 @@ func isNext(cup *provisioncsv3.ClusterUpgrade, node *corev1.Node, pods []*corev1
 }
 
 // nodeHasFinishedStatus returns true if the given node has a "finished" status,
-// i.e. its status exists and it is  either a success or failed status.
+// i.e. its status exists and it is either a success or failed status.
 func nodeHasFinishedStatus(cup *provisioncsv3.ClusterUpgrade, node *corev1.Node) bool {
 	return cup.Spec.Status.NodeStatuses[node.Name] == provisioncsv3.UpgradeSuccess ||
 		cup.Spec.Status.NodeStatuses[node.Name] == provisioncsv3.UpgradeFailed
@@ -599,14 +657,6 @@ func addCustomLabelSelectors(selector labels.Selector, lss []provisioncsv3.Label
 		selector = selector.Add(*nr)
 	}
 
-	return selector
-}
-
-// getAllNodesSelector gets a selector for all Containership-managed nodes plus
-// any additional selectors specified as an argument.
-func getAllNodesSelector(lss []provisioncsv3.LabelSelectorSpec) labels.Selector {
-	selector := constants.GetContainershipManagedSelector()
-	selector = addCustomLabelSelectors(selector, lss)
 	return selector
 }
 
