@@ -8,8 +8,6 @@ import (
 	"github.com/containership/cluster-manager/pkg/request"
 )
 
-// TODO move this to its own module if it becomes useful outside of coordinator
-
 // NodeCloudStatusMessage is the message posted to Cloud to update a node status
 type NodeCloudStatusMessage struct {
 	Status NodeCloudStatus `json:"status"`
@@ -20,7 +18,7 @@ type NodeCloudStatus struct {
 	// Type is the status type
 	Type string `json:"type"`
 	// Percent is the progress percentage within this Type
-	Percent string `json:"percent"`
+	Percent float32 `json:"percent"`
 }
 
 const (

@@ -466,7 +466,7 @@ func tryPostNodeCloudStatusRunning(nodeID string) {
 	status := NodeCloudStatusMessage{
 		Status: NodeCloudStatus{
 			Type:    NodeCloudStatusRunning,
-			Percent: "1",
+			Percent: 1.0,
 		},
 	}
 	_ = postNodeCloudStatusMessageWithRetry(nodeID, &status, 3)
