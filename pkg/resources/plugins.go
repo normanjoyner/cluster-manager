@@ -58,9 +58,12 @@ func (cp *CsPlugins) IsEqual(specObj interface{}, parentSpecObj interface{}) (bo
 		return false, fmt.Errorf("The object is not of type Plugin")
 	}
 
-	if plugin.Spec.Version != spec.Version {
-		return false, nil
-	}
+	equal := plugin.Spec.ID == spec.ID &&
+		plugin.Spec.AddedAt == spec.AddedAt &&
+		plugin.Spec.Description == spec.Description &&
+		plugin.Spec.Type == spec.Type &&
+		plugin.Spec.Version == spec.Version &&
+		plugin.Spec.Implementation == spec.Implementation
 
-	return true, nil
+	return equal, nil
 }

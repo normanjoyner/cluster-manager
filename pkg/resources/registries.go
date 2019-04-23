@@ -68,7 +68,9 @@ func (rs *CsRegistries) IsEqual(specObj interface{}, parentSpecObj interface{}) 
 		return false, fmt.Errorf("The object is not of type Registry")
 	}
 
-	equal := spec.Description == user.Spec.Description &&
+	equal := spec.ID == user.Spec.ID &&
+		spec.AddedAt == user.Spec.AddedAt &&
+		spec.Description == user.Spec.Description &&
 		spec.Organization == user.Spec.Organization &&
 		spec.Email == user.Spec.Email &&
 		spec.Serveraddress == user.Spec.Serveraddress &&

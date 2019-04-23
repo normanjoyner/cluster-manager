@@ -83,11 +83,13 @@ func (us *CsUsers) IsEqual(specObj interface{}, parentSpecObj interface{}) (bool
 		return false, fmt.Errorf("The object is not of type User")
 	}
 
-	if user.Spec.Name != spec.Name || user.Spec.AvatarURL != spec.AvatarURL {
-		return false, nil
-	}
+	equal := user.Spec.ID == spec.ID &&
+		user.Spec.AddedAt == spec.AddedAt &&
+		user.Spec.Name == spec.Name &&
+		user.Spec.AvatarURL == spec.AvatarURL &&
+		len(user.Spec.SSHKeys) == len(spec.SSHKeys)
 
-	if len(user.Spec.SSHKeys) != len(spec.SSHKeys) {
+	if !equal {
 		return false, nil
 	}
 
