@@ -2,7 +2,8 @@ package resources
 
 import (
 	"encoding/json"
-	"fmt"
+
+	"github.com/pkg/errors"
 
 	cscloud "github.com/containership/csctl/cloud"
 
@@ -50,20 +51,20 @@ func (cp *CsPlugins) Cache() []csv3.PluginSpec {
 func (cp *CsPlugins) IsEqual(specObj interface{}, parentSpecObj interface{}) (bool, error) {
 	spec, ok := specObj.(csv3.PluginSpec)
 	if !ok {
-		return false, fmt.Errorf("The object is not of type PluginSpec")
+		return false, errors.New("object is not of type PluginSpec")
 	}
 
 	plugin, ok := parentSpecObj.(*csv3.Plugin)
 	if !ok {
-		return false, fmt.Errorf("The object is not of type Plugin")
+		return false, errors.New("object is not of type Plugin")
 	}
 
 	equal := plugin.Spec.ID == spec.ID &&
 		plugin.Spec.AddedAt == spec.AddedAt &&
 		plugin.Spec.Description == spec.Description &&
 		plugin.Spec.Type == spec.Type &&
-		plugin.Spec.Version == spec.Version &&
-		plugin.Spec.Implementation == spec.Implementation
+		plugin.Spec.Implementation == spec.Implementation &&
+		plugin.Spec.Version == spec.Version
 
 	return equal, nil
 }

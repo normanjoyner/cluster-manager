@@ -12,6 +12,7 @@ import (
 	"github.com/containership/cluster-manager/pkg/constants"
 )
 
+var emptyNodePoolLabelSpec = pcsv3.NodePoolLabelSpec{}
 var emptyNodePoolLabel = &pcsv3.NodePoolLabel{}
 
 var nodePoolLabel1 = &pcsv3.NodePoolLabel{
@@ -31,43 +32,64 @@ var nodePoolLabel1 = &pcsv3.NodePoolLabel{
 func TestNodePoolLabelIsEqual(t *testing.T) {
 	c := NewCsNodePoolLabels(nil)
 
-	eq, err := c.IsEqual(pcsv3.NodePoolLabelSpec{}, emptyNodePoolLabel)
-	assert.Nil(t, err, "both empty")
+	_, err := c.IsEqual("wrong type", emptyNodePoolLabel)
+	assert.Error(t, err, "bad spec type")
+
+	_, err = c.IsEqual(emptyNodePoolLabelSpec, "wrong type")
+	assert.Error(t, err, "bad parent type")
+
+	eq, err := c.IsEqual(emptyNodePoolLabelSpec, emptyNodePoolLabel)
+	assert.NoError(t, err)
 	assert.True(t, eq, "both empty")
+
+	eq, err = c.IsEqual(emptyNodePoolLabelSpec, nodePoolLabel1)
+	assert.NoError(t, err)
+	assert.False(t, eq, "spec only empty")
+
+	eq, err = c.IsEqual(nodePoolLabel1.Spec, emptyNodePoolLabel)
+	assert.NoError(t, err)
+	assert.False(t, eq, "parent only empty")
 
 	same := nodePoolLabel1.DeepCopy().Spec
 	eq, err = c.IsEqual(same, nodePoolLabel1)
+	assert.NoError(t, err)
 	assert.True(t, eq, "copied spec")
 
 	diff := nodePoolLabel1.DeepCopy().Spec
 	diff.ID = "different"
 	eq, err = c.IsEqual(diff, nodePoolLabel1)
+	assert.NoError(t, err)
 	assert.False(t, eq, "different ID")
 
 	diff = nodePoolLabel1.DeepCopy().Spec
 	diff.CreatedAt = "different"
 	eq, err = c.IsEqual(diff, nodePoolLabel1)
+	assert.NoError(t, err)
 	assert.False(t, eq, "different created_at")
 
 	diff = nodePoolLabel1.DeepCopy().Spec
 	diff.UpdatedAt = "different"
 	eq, err = c.IsEqual(diff, nodePoolLabel1)
+	assert.NoError(t, err)
 	assert.False(t, eq, "different updated_at")
 
 	diff = nodePoolLabel1.DeepCopy().Spec
 	diff.Key = "different"
 	eq, err = c.IsEqual(diff, nodePoolLabel1)
+	assert.NoError(t, err)
 	assert.False(t, eq, "different key")
 
 	diff = nodePoolLabel1.DeepCopy().Spec
 	diff.Value = "different"
 	eq, err = c.IsEqual(diff, nodePoolLabel1)
+	assert.NoError(t, err)
 	assert.False(t, eq, "different value")
 
 	diff = nodePoolLabel1.DeepCopy().Spec
 	diff.NodePoolID = "different"
 	eq, err = c.IsEqual(diff, nodePoolLabel1)
-	assert.False(t, eq, "different node_pool_id")
+	assert.NoError(t, err)
+	assert.False(t, eq, "different node Pool ID")
 }
 
 func TestNodePoolLabelsCache(t *testing.T) {

@@ -1,6 +1,7 @@
 package resources
 
 import (
+	"encoding/json"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -10,107 +11,83 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-type buildIsEqualTest struct {
-	inputSpec   csv3.PluginSpec
-	inputObject *csv3.Plugin
-	expected    bool
-	message     string
-}
-
 var emptyPluginSpec = csv3.PluginSpec{}
 var emptyPlugin = &csv3.Plugin{}
-
-var plugin1spec = csv3.PluginSpec{
-	ID:             "1",
-	Description:    "description 1",
-	Type:           "type",
-	Version:        "1.0.0",
-	Implementation: "implementation",
-}
-
-var plugin2spec = csv3.PluginSpec{
-	ID:             "2",
-	Description:    "description 2",
-	Type:           "type",
-	Version:        "1.0.2",
-	Implementation: "implementation",
-}
 
 var plugin1 = &csv3.Plugin{
 	ObjectMeta: metav1.ObjectMeta{
 		Name:      "plugin1",
 		Namespace: "containership",
 	},
-	Spec: plugin1spec,
-}
-
-var plugin2 = &csv3.Plugin{
-	ObjectMeta: metav1.ObjectMeta{
-		Name:      "plugin2",
-		Namespace: "containership",
-	},
-	Spec: plugin2spec,
-}
-
-var tests = []buildIsEqualTest{
-	// No input
-	{
-		inputSpec:   emptyPluginSpec,
-		inputObject: emptyPlugin,
-		expected:    true,
-		message:     "Both spec and object empty",
-	},
-	// One input
-	{
-		inputSpec:   emptyPluginSpec,
-		inputObject: plugin1,
-		expected:    false,
-		message:     "Plugin spec empty with plugin object",
-	},
-	// One input
-	{
-		inputSpec:   plugin1spec,
-		inputObject: emptyPlugin,
-		expected:    false,
-		message:     "Plugin spec with empty object",
-	},
-	{
-		inputSpec:   plugin1spec,
-		inputObject: plugin1,
-		expected:    true,
-		message:     "Spec plugin1 same as Object 1",
-	},
-	{
-		inputSpec:   plugin2spec,
-		inputObject: plugin2,
-		expected:    true,
-		message:     "Spec plugin2 same as Object 2",
-	},
-	{
-		inputSpec:   plugin2spec,
-		inputObject: plugin1,
-		expected:    false,
-		message:     "Spec different from Object",
+	Spec: csv3.PluginSpec{
+		ID:             "1",
+		AddedAt:        "123",
+		Description:    "description",
+		Type:           "cni",
+		Implementation: "calico",
+		Version:        "2.0.0",
 	},
 }
 
 func TestPluginIsEqual(t *testing.T) {
 	c := NewCsPlugins(nil)
-	for _, test := range tests {
-		result, err := c.IsEqual(test.inputSpec, test.inputObject)
-		// Note that this is a deep compare
-		assert.Equal(t, test.expected, result, test.message)
-		assert.Nil(t, err)
-	}
 
-	_, err := c.IsEqual(plugin1, plugin1)
-	assert.Error(t, err)
+	_, err := c.IsEqual("wrong type", emptyPlugin)
+	assert.Error(t, err, "bad spec type")
 
-	_, err = c.IsEqual(plugin1spec, plugin1spec)
-	assert.Error(t, err)
+	_, err = c.IsEqual(emptyPluginSpec, "wrong type")
+	assert.Error(t, err, "bad parent type")
+
+	eq, err := c.IsEqual(emptyPluginSpec, emptyPlugin)
+	assert.NoError(t, err)
+	assert.True(t, eq, "both empty")
+
+	eq, err = c.IsEqual(emptyPluginSpec, plugin1)
+	assert.NoError(t, err)
+	assert.False(t, eq, "spec only empty")
+
+	eq, err = c.IsEqual(plugin1.Spec, emptyPlugin)
+	assert.NoError(t, err)
+	assert.False(t, eq, "parent only empty")
+
+	same := plugin1.DeepCopy().Spec
+	eq, err = c.IsEqual(same, plugin1)
+	assert.NoError(t, err)
+	assert.True(t, eq, "copied spec")
+
+	diff := plugin1.DeepCopy().Spec
+	diff.ID = "different"
+	eq, err = c.IsEqual(diff, plugin1)
+	assert.NoError(t, err)
+	assert.False(t, eq, "different ID")
+
+	diff = plugin1.DeepCopy().Spec
+	diff.AddedAt = "different"
+	eq, err = c.IsEqual(diff, plugin1)
+	assert.NoError(t, err)
+	assert.False(t, eq, "different added_at")
+
+	diff = plugin1.DeepCopy().Spec
+	diff.Description = "different"
+	eq, err = c.IsEqual(diff, plugin1)
+	assert.NoError(t, err)
+	assert.False(t, eq, "different description")
+
+	diff = plugin1.DeepCopy().Spec
+	diff.Version = "different"
+	eq, err = c.IsEqual(diff, plugin1)
+	assert.NoError(t, err)
+	assert.False(t, eq, "different version")
+
+	diff = plugin1.DeepCopy().Spec
+	diff.Implementation = "different"
+	eq, err = c.IsEqual(diff, plugin1)
+	assert.NoError(t, err)
+	assert.False(t, eq, "different implementation")
 }
 
-var pluginBytes = []byte(`[{
+func TestPluginCache(t *testing.T) {
+	pluginBytes := []byte(`[{
 	"id" : "1234",
 	"description": "description text",
 	"type": "plugin_type",
@@ -118,10 +95,11 @@ var pluginBytes = []byte(`[{
 	"implementation": "plugin_implementation"
 }]`)
 
-func TestPluginCache(t *testing.T) {
-	c := NewCsPlugins(nil)
-	c.cache = []csv3.PluginSpec{plugin1spec}
-	ca := c.Cache()
+	p := NewCsPlugins(nil)
 
-	assert.Equal(t, c.cache, ca)
+	err := json.Unmarshal(pluginBytes, &p.cache)
+	assert.NoError(t, err, "unmarshal good data")
+
+	c := p.Cache()
+	assert.Equal(t, p.cache, c)
 }

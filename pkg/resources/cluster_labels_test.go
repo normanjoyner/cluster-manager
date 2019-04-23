@@ -12,6 +12,7 @@ import (
 	"github.com/containership/cluster-manager/pkg/constants"
 )
 
+var emptyClusterLabelSpec = csv3.ClusterLabelSpec{}
 var emptyClusterLabel = &csv3.ClusterLabel{}
 
 var clusterLabel1 = &csv3.ClusterLabel{
@@ -30,37 +31,57 @@ var clusterLabel1 = &csv3.ClusterLabel{
 func TestClusterLabelIsEqual(t *testing.T) {
 	c := NewCsClusterLabels(nil)
 
-	eq, err := c.IsEqual(csv3.ClusterLabelSpec{}, emptyClusterLabel)
-	assert.Nil(t, err, "both empty")
+	_, err := c.IsEqual("wrong type", emptyClusterLabel)
+	assert.Error(t, err, "bad spec type")
+
+	_, err = c.IsEqual(emptyClusterLabelSpec, "wrong type")
+	assert.Error(t, err, "bad parent type")
+
+	eq, err := c.IsEqual(emptyClusterLabelSpec, emptyClusterLabel)
+	assert.NoError(t, err)
 	assert.True(t, eq, "both empty")
+
+	eq, err = c.IsEqual(emptyClusterLabelSpec, clusterLabel1)
+	assert.NoError(t, err)
+	assert.False(t, eq, "spec only empty")
+
+	eq, err = c.IsEqual(clusterLabel1.Spec, emptyClusterLabel)
+	assert.NoError(t, err)
+	assert.False(t, eq, "parent only empty")
 
 	same := clusterLabel1.DeepCopy().Spec
 	eq, err = c.IsEqual(same, clusterLabel1)
+	assert.NoError(t, err)
 	assert.True(t, eq, "copied spec")
 
 	diff := clusterLabel1.DeepCopy().Spec
 	diff.ID = "different"
 	eq, err = c.IsEqual(diff, clusterLabel1)
+	assert.NoError(t, err)
 	assert.False(t, eq, "different ID")
 
 	diff = clusterLabel1.DeepCopy().Spec
 	diff.CreatedAt = "different"
 	eq, err = c.IsEqual(diff, clusterLabel1)
+	assert.NoError(t, err)
 	assert.False(t, eq, "different created_at")
 
 	diff = clusterLabel1.DeepCopy().Spec
 	diff.UpdatedAt = "different"
 	eq, err = c.IsEqual(diff, clusterLabel1)
+	assert.NoError(t, err)
 	assert.False(t, eq, "different updated_at")
 
 	diff = clusterLabel1.DeepCopy().Spec
 	diff.Key = "different"
 	eq, err = c.IsEqual(diff, clusterLabel1)
+	assert.NoError(t, err)
 	assert.False(t, eq, "different key")
 
 	diff = clusterLabel1.DeepCopy().Spec
 	diff.Value = "different"
 	eq, err = c.IsEqual(diff, clusterLabel1)
+	assert.NoError(t, err)
 	assert.False(t, eq, "different value")
 }
 

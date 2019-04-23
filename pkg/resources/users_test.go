@@ -6,9 +6,9 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	csv3 "github.com/containership/cluster-manager/pkg/apis/containership.io/v3"
-
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	csv3 "github.com/containership/cluster-manager/pkg/apis/containership.io/v3"
 )
 
 var key1spec = csv3.SSHKeySpec{
@@ -93,6 +93,7 @@ func TestSSHKeysEqualCompare(t *testing.T) {
 	assert.Equal(t, true, sameTest, false)
 }
 
+var emptyUserSpec = csv3.UserSpec{}
 var emptyUser = &csv3.User{}
 
 var user1 = &csv3.User{
@@ -101,92 +102,75 @@ var user1 = &csv3.User{
 		Namespace: "containership",
 	},
 	Spec: csv3.UserSpec{
-		ID:      "1",
-		Name:    "User1",
-		SSHKeys: []csv3.SSHKeySpec{key1spec},
-	},
-}
-
-var user1spec = csv3.UserSpec{
-	ID:      "1",
-	Name:    "User1",
-	SSHKeys: []csv3.SSHKeySpec{key1spec},
-}
-
-var user2 = &csv3.User{
-	ObjectMeta: metav1.ObjectMeta{
-		Name:      "user2",
-		Namespace: "containership",
-	},
-	Spec: csv3.UserSpec{
-		ID:      "2",
-		Name:    "User2",
-		SSHKeys: []csv3.SSHKeySpec{key1spec, key2spec},
-	},
-}
-
-var user3 = &csv3.User{
-	ObjectMeta: metav1.ObjectMeta{
+		ID:        "1",
 		Name:      "user1",
-		Namespace: "containership",
+		AvatarURL: "https://www.gravatar.com/avatar",
+		AddedAt:   "123",
+		SSHKeys:   []csv3.SSHKeySpec{key1spec, key2spec},
 	},
-	Spec: csv3.UserSpec{
-		ID:      "1",
-		Name:    "User1",
-		SSHKeys: []csv3.SSHKeySpec{key1spec, key2spec},
-	},
-}
-
-var user2specDiff = csv3.UserSpec{
-	ID:      "2",
-	Name:    "User2",
-	SSHKeys: []csv3.SSHKeySpec{key3spec, key2spec},
 }
 
 func TestIsEqual(t *testing.T) {
 	c := NewCsUsers(nil)
-	// check for both being empty
-	emptySameTest, err := c.IsEqual(csv3.UserSpec{}, emptyUser)
-	assert.Nil(t, err)
-	assert.Equal(t, emptySameTest, true)
 
-	// check with spec being empty, and user being empty
-	emptyDiffTest, err := c.IsEqual(user1spec, emptyUser)
-	assert.Nil(t, err)
-	assert.Equal(t, emptyDiffTest, false)
-	emptyDiffTest2, err := c.IsEqual(csv3.UserSpec{}, user1)
-	assert.Nil(t, err)
-	assert.Equal(t, emptyDiffTest2, false)
+	_, err := c.IsEqual("wrong type", emptyUser)
+	assert.Error(t, err, "bad spec type")
 
-	// assert they are the same
-	sameTest, err := c.IsEqual(user1spec, user1)
-	assert.Nil(t, err)
-	assert.Equal(t, sameTest, true)
+	_, err = c.IsEqual(emptyUserSpec, "wrong type")
+	assert.Error(t, err, "bad parent type")
 
-	// check same with different keys same length
-	differentTest, err := c.IsEqual(user2specDiff, user2)
-	assert.Nil(t, err)
-	assert.Equal(t, differentTest, false)
+	eq, err := c.IsEqual(emptyUserSpec, emptyUser)
+	assert.NoError(t, err)
+	assert.True(t, eq, "both empty")
 
-	// check with different keys
-	diffLengths, err := c.IsEqual(user2specDiff, user1)
-	assert.Nil(t, err)
-	assert.Equal(t, diffLengths, false)
+	eq, err = c.IsEqual(emptyUserSpec, user1)
+	assert.NoError(t, err)
+	assert.False(t, eq, "spec only empty")
 
-	// check everything same except extra ssh key
-	diffLengths, err = c.IsEqual(user1spec, user3)
-	assert.Nil(t, err)
-	assert.False(t, diffLengths)
+	eq, err = c.IsEqual(user1.Spec, emptyUser)
+	assert.NoError(t, err)
+	assert.False(t, eq, "parent only empty")
 
-	_, err = c.IsEqual(user1, user1)
-	assert.Error(t, err)
+	same := user1.DeepCopy().Spec
+	eq, err = c.IsEqual(same, user1)
+	assert.NoError(t, err)
+	assert.True(t, eq, "copied spec")
 
-	_, err = c.IsEqual(user2specDiff, user2specDiff)
-	assert.Error(t, err)
+	diff := user1.DeepCopy().Spec
+	diff.ID = "different"
+	eq, err = c.IsEqual(diff, user1)
+	assert.NoError(t, err)
+	assert.False(t, eq, "different ID")
 
+	diff = user1.DeepCopy().Spec
+	diff.AddedAt = "different"
+	eq, err = c.IsEqual(diff, user1)
+	assert.NoError(t, err)
+	assert.False(t, eq, "different added_at")
+
+	diff = user1.DeepCopy().Spec
+	diff.AvatarURL = "different"
+	eq, err = c.IsEqual(diff, user1)
+	assert.NoError(t, err)
+	assert.False(t, eq, "different avatar URL")
+
+	diff = user1.DeepCopy().Spec
+	diff.SSHKeys = nil
+	eq, err = c.IsEqual(diff, user1)
+	assert.NoError(t, err)
+	assert.False(t, eq, "different keys - one nil")
+
+	diff = user1.DeepCopy().Spec
+	diff.SSHKeys = []csv3.SSHKeySpec{}
+	eq, err = c.IsEqual(diff, user1)
+	assert.NoError(t, err)
+	assert.False(t, eq, "different keys - one empty")
+
+	// Remaining SSH key equal tests are covered elsewhere
 }
 
-var userBytes = []byte(`[{
+func TestUsersCache(t *testing.T) {
+	userBytes := []byte(`[{
 	"id" : "1234",
 	"name" : "name",
 	"avatar_url" : "https://testing.com",
@@ -199,11 +183,11 @@ var userBytes = []byte(`[{
 	}]
 }]`)
 
-func TestUsersCache(t *testing.T) {
 	u := NewCsUsers(nil)
 
-	json.Unmarshal(userBytes, &u.cache)
-	c := u.Cache()
+	err := json.Unmarshal(userBytes, &u.cache)
+	assert.NoError(t, err, "unmarshal good data")
 
+	c := u.Cache()
 	assert.Equal(t, u.cache, c)
 }

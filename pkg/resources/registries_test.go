@@ -1,6 +1,7 @@
 package resources
 
 import (
+	"encoding/json"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -13,46 +14,7 @@ import (
 var emptyRegistrySpec = csv3.RegistrySpec{}
 var emptyRegistry = &csv3.Registry{}
 
-var registry1spec = csv3.RegistrySpec{
-	ID:            "1",
-	Description:   "description 1",
-	Organization:  "1234-234-567",
-	Email:         "",
-	Serveraddress: "hub.docker.com",
-	Provider:      "amazon_ec2_registry",
-	Credentials: map[string]string{
-		"key": "value",
-	},
-	Owner: "",
-}
-
-var registry2spec = csv3.RegistrySpec{
-	ID:            "2",
-	Description:   "description 2",
-	Organization:  "4321-657-4566",
-	Email:         "asdf@gmail.com",
-	Serveraddress: "ecr.aws.com",
-	Provider:      "amazon_ec2_registry",
-	Owner:         "",
-}
-
 var registry1 = &csv3.Registry{
-	ObjectMeta: metav1.ObjectMeta{
-		Name:      "registry1",
-		Namespace: "containership",
-	},
-	Spec: registry1spec,
-}
-
-var registry2 = &csv3.Registry{
-	ObjectMeta: metav1.ObjectMeta{
-		Name:      "registry2",
-		Namespace: "containership",
-	},
-	Spec: registry2spec,
-}
-
-var registry3 = &csv3.Registry{
 	ObjectMeta: metav1.ObjectMeta{
 		Name:      "registry1",
 		Namespace: "containership",
@@ -65,7 +27,7 @@ var registry3 = &csv3.Registry{
 		Serveraddress: "hub.docker.com",
 		Provider:      "amazon_ec2_registry",
 		Credentials: map[string]string{
-			"key": "differentvalue",
+			"key": "value",
 		},
 		Owner: "",
 	},
@@ -73,45 +35,99 @@ var registry3 = &csv3.Registry{
 
 func TestRegistryIsEqual(t *testing.T) {
 	c := NewCsRegistries(nil)
-	// check for both being empty
-	emptySameTest, err := c.IsEqual(emptyRegistrySpec, emptyRegistry)
-	assert.Nil(t, err)
-	assert.Equal(t, emptySameTest, true)
-	//
-	// check with spec being empty, and registry being empty
-	emptyDiffTest, err := c.IsEqual(registry1spec, emptyRegistry)
-	assert.Nil(t, err)
-	assert.Equal(t, emptyDiffTest, false)
-	emptyDiffTest2, err := c.IsEqual(emptyRegistrySpec, registry1)
-	assert.Nil(t, err)
-	assert.Equal(t, emptyDiffTest2, false)
 
-	// check same with different keys same length
-	differentTest, err := c.IsEqual(registry2spec, registry1)
-	assert.Nil(t, err)
-	assert.Equal(t, differentTest, false)
+	_, err := c.IsEqual("wrong type", emptyRegistry)
+	assert.Error(t, err, "bad spec type")
 
-	// assert they are the same
-	sameTest, err := c.IsEqual(registry2spec, registry2)
-	assert.Nil(t, err)
-	assert.Equal(t, sameTest, true)
+	_, err = c.IsEqual(emptyRegistrySpec, "wrong type")
+	assert.Error(t, err, "bad parent type")
 
-	same, err := c.IsEqual(registry1spec, registry1)
-	assert.Nil(t, err)
-	assert.Equal(t, same, true)
+	eq, err := c.IsEqual(emptyRegistrySpec, emptyRegistry)
+	assert.NoError(t, err)
+	assert.True(t, eq, "both empty")
 
-	differentCreds, err := c.IsEqual(registry1spec, registry3)
-	assert.Nil(t, err)
-	assert.False(t, differentCreds)
+	eq, err = c.IsEqual(emptyRegistrySpec, registry1)
+	assert.NoError(t, err)
+	assert.False(t, eq, "spec only empty")
 
-	_, err = c.IsEqual(registry1spec, registry1spec)
-	assert.Error(t, err)
+	eq, err = c.IsEqual(registry1.Spec, emptyRegistry)
+	assert.NoError(t, err)
+	assert.False(t, eq, "parent only empty")
 
-	_, err = c.IsEqual(registry1, registry1)
-	assert.Error(t, err)
+	same := registry1.DeepCopy().Spec
+	eq, err = c.IsEqual(same, registry1)
+	assert.NoError(t, err)
+	assert.True(t, eq, "copied spec")
+
+	diff := registry1.DeepCopy().Spec
+	diff.ID = "different"
+	eq, err = c.IsEqual(diff, registry1)
+	assert.NoError(t, err)
+	assert.False(t, eq, "different ID")
+
+	diff = registry1.DeepCopy().Spec
+	diff.AddedAt = "different"
+	eq, err = c.IsEqual(diff, registry1)
+	assert.NoError(t, err)
+	assert.False(t, eq, "different added_at")
+
+	diff = registry1.DeepCopy().Spec
+	diff.Description = "different"
+	eq, err = c.IsEqual(diff, registry1)
+	assert.NoError(t, err)
+	assert.False(t, eq, "different description")
+
+	diff = registry1.DeepCopy().Spec
+	diff.Organization = "different"
+	eq, err = c.IsEqual(diff, registry1)
+	assert.NoError(t, err)
+	assert.False(t, eq, "different org")
+
+	diff = registry1.DeepCopy().Spec
+	diff.Email = "different"
+	eq, err = c.IsEqual(diff, registry1)
+	assert.NoError(t, err)
+	assert.False(t, eq, "different email")
+
+	diff = registry1.DeepCopy().Spec
+	diff.Serveraddress = "different"
+	eq, err = c.IsEqual(diff, registry1)
+	assert.NoError(t, err)
+	assert.False(t, eq, "different server address")
+
+	diff = registry1.DeepCopy().Spec
+	diff.Provider = "different"
+	eq, err = c.IsEqual(diff, registry1)
+	assert.NoError(t, err)
+	assert.False(t, eq, "different provider")
+
+	diff = registry1.DeepCopy().Spec
+	diff.Owner = "different"
+	eq, err = c.IsEqual(diff, registry1)
+	assert.NoError(t, err)
+	assert.False(t, eq, "different owner")
+
+	diff = registry1.DeepCopy().Spec
+	diff.Credentials = nil
+	eq, err = c.IsEqual(diff, registry1)
+	assert.NoError(t, err)
+	assert.False(t, eq, "different credentials - one nil")
+
+	diff = registry1.DeepCopy().Spec
+	diff.Credentials = map[string]string{}
+	eq, err = c.IsEqual(diff, registry1)
+	assert.NoError(t, err)
+	assert.False(t, eq, "different credentials - one empty")
+
+	diff = registry1.DeepCopy().Spec
+	diff.Credentials["key"] = "different"
+	eq, err = c.IsEqual(diff, registry1)
+	assert.NoError(t, err)
+	assert.False(t, eq, "different credentials - different value")
 }
 
-var registryBytes = []byte(`[{
+func TestRegistriesCache(t *testing.T) {
+	registryBytes := []byte(`[{
 	"id": "1234",
 	"added_at": "addedtimestamp",
 	"description": "description",
@@ -131,10 +147,11 @@ var registryBytes = []byte(`[{
 	}
 }]`)
 
-func TestRegistriesCache(t *testing.T) {
 	r := NewCsRegistries(nil)
-	r.cache = []csv3.RegistrySpec{registry1spec}
-	c := r.Cache()
 
+	err := json.Unmarshal(registryBytes, &r.cache)
+	assert.NoError(t, err, "unmarshal good data")
+
+	c := r.Cache()
 	assert.Equal(t, r.cache, c)
 }
