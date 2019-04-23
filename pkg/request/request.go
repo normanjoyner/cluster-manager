@@ -15,11 +15,11 @@ import (
 // Requester returns an object that can be used for making requests to the
 // containership cloud api
 type Requester struct {
-	service CloudService
-	url     string
-	method  string
-	body    []byte
-	req     *http.Request
+	service     CloudService
+	url         string
+	method      string
+	body        []byte
+	httpRequest *http.Request
 }
 
 var urlParams = map[string]string{
@@ -47,9 +47,65 @@ func New(service CloudService, path, method string, body []byte) (*Requester, er
 	}
 
 	return &Requester{
-		service: service,
-		req:     req,
+		service:     service,
+		httpRequest: req,
 	}, nil
+}
+
+// AddHeader allows the user to add custom headers to the req property of a requester
+func (r *Requester) AddHeader(key, value string) {
+	r.httpRequest.Header.Set(key, value)
+}
+
+// Do makes a request using the req property of the requester
+func (r *Requester) Do() (*http.Response, error) {
+	client := createClient()
+
+	return r.parseResponse(client.Do(r.httpRequest))
+}
+
+// MakeRequest builds a request that is able to speak with the Containership API
+func (r *Requester) MakeRequest() (*http.Response, error) {
+	r.addAuthHeader()
+
+	if r.httpRequest.Body != nil {
+		r.addContentTypeHeader()
+	}
+
+	client := createClient()
+
+	return r.parseResponse(client.Do(r.httpRequest))
+}
+
+func (r *Requester) parseResponse(res *http.Response, err error) (*http.Response, error) {
+	if err != nil {
+		dumpRequest(r.httpRequest, true)
+		return res, err
+	}
+
+	// The request succeeded, but the status code may be bad
+	if res.StatusCode < http.StatusOK ||
+		res.StatusCode >= http.StatusMultipleChoices {
+		log.Debugf("%s responded with %d (%s)", r.service.String(), res.StatusCode,
+			http.StatusText(res.StatusCode))
+
+		// We can't dump the request body because it was already read
+		dumpRequest(r.httpRequest, false)
+		dumpResponse(res)
+
+		return res, fmt.Errorf("Request returned with status code %d", res.StatusCode)
+	}
+
+	return res, nil
+}
+
+func (r *Requester) addAuthHeader() {
+	r.AddHeader("Authorization", fmt.Sprintf("JWT %v", env.CloudClusterAPIKey()))
+}
+
+func (r *Requester) addContentTypeHeader() {
+	// the content type for all cloud requests should be json
+	r.AddHeader("Content-Type", "application/json")
 }
 
 func getPath(path string) (string, error) {
@@ -72,57 +128,10 @@ func appendToBaseURL(service CloudService, path string) string {
 	return fmt.Sprintf("%s/v3%s", base, path)
 }
 
-func addAuth(req *http.Request) {
-	req.Header.Set("Authorization", fmt.Sprintf("JWT %v", env.CloudClusterAPIKey()))
-}
-
 func createClient() *http.Client {
 	return &http.Client{
 		Timeout: time.Second * 10,
 	}
-}
-
-// AddHeader allows the user to add custom headers to the req property of a requester
-func (r *Requester) AddHeader(key, value string) {
-	r.req.Header.Set(key, value)
-}
-
-// Do makes a request using the req property of the requester
-func (r *Requester) Do() (*http.Response, error) {
-	client := createClient()
-
-	return r.parseResponse(client.Do(r.req))
-}
-
-// MakeRequest builds a request that is able to speak with the Containership API
-func (r *Requester) MakeRequest() (*http.Response, error) {
-	addAuth(r.req)
-
-	client := createClient()
-
-	return r.parseResponse(client.Do(r.req))
-}
-
-func (r *Requester) parseResponse(res *http.Response, err error) (*http.Response, error) {
-	if err != nil {
-		dumpRequest(r.req, true)
-		return res, err
-	}
-
-	// The request succeeded, but the status code may be bad
-	if res.StatusCode < http.StatusOK ||
-		res.StatusCode >= http.StatusMultipleChoices {
-		log.Debugf("%s responded with %d (%s)", r.service.String(), res.StatusCode,
-			http.StatusText(res.StatusCode))
-
-		// We can't dump the request body because it was already read
-		dumpRequest(r.req, false)
-		dumpResponse(res)
-
-		return res, fmt.Errorf("Request returned with status code %d", res.StatusCode)
-	}
-
-	return res, nil
 }
 
 // dumpRequest attempts to dump an HTTP request for debug purposes
