@@ -536,7 +536,7 @@ func (uc *UpgradeController) getNextUpgrade() (*provisioncsv3.ClusterUpgrade, er
 
 	var next *provisioncsv3.ClusterUpgrade
 	for _, upgrade := range upgrades {
-		if !isUpgradeDone(upgrade) {
+		if isUpgradePending(upgrade) {
 			if next == nil || upgrade.CreationTimestamp.Before(&next.CreationTimestamp) {
 				next = upgrade
 			}
@@ -576,6 +576,13 @@ func getFinalUpgradeStatus(cup *provisioncsv3.ClusterUpgrade) provisioncsv3.Upgr
 	}
 
 	return provisioncsv3.UpgradeSuccess
+}
+
+// isUpgradePending returns true if an upgrade has not been processed yet
+func isUpgradePending(cup *provisioncsv3.ClusterUpgrade) bool {
+	// ClusterUpgrades do not have a pending status; the empty status is
+	// recognized as pending.
+	return cup.Spec.Status.ClusterStatus == ""
 }
 
 // isUpgradeDone returns true if an upgrade has already been fully processed and has
