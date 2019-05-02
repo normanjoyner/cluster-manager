@@ -319,7 +319,7 @@ func (c *PluginController) deletePlugin(name string) error {
 	fileManager := pluginFileManager{
 		name,
 	}
-	pluginPath := fileManager.pluginDir()
+	pluginPath := fileManager.pluginManifestsDir()
 
 	var kc *kubectl.Kubectl
 	if stat, err := os.Stat(pluginPath); os.IsNotExist(err) || !stat.IsDir() {
