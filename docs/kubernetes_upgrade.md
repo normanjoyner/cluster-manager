@@ -10,8 +10,12 @@ This posts a `ClusterUpgrade` to the cluster, causing the `cluster-manager` to k
 
 Upgrades are performed in-place on a node-by-node basis.
 This is in contrast to e.g. `kops` which performs Kubernetes upgrades by replacing nodes.
+In-place upgrades are less disruptive than node replacements, and also typically much faster.
+By performing upgrades in this way, users do not have to worry about complications such as Persistent Volume Claims (PVCs) being released and delays associated with reattaching them.
+See the [upgrade process](#upgrade-process) section below for more details on how the in-place upgrades work.
 
 Downgrades are supported using exactly the same mechanism.
+Only rollbacks of failed upgrades are supported through the UI.
 
 ## ClusterUpgrade CRD
 
@@ -118,7 +122,7 @@ At the end of the upgrade process, the `coordinator` will mark `clusterStatus` a
 
 #### Retrying a Failed Upgrade
 
-If the unlikely event that a cluster upgrade fails, the `clusterStatus` will be marked as `Failed`.
+In the unlikely event that a cluster upgrade fails, the `clusterStatus` will be marked as `Failed`.
 In this case, the upgrade may be retried by simply posting a new `ClusterUpgrade` with the same `labelSelector` and `targetVersion`.
 The `id` *must* be unique across all `ClusterUpgrade`s for a cluster, even if it is considered a retry.
 
