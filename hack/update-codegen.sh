@@ -9,4 +9,4 @@ CODEGEN_PKG=${CODEGEN_PKG:-$(cd ${SCRIPT_ROOT}; ls -d -1 ./vendor/k8s.io/code-ge
 
 ${CODEGEN_PKG}/generate-groups.sh all \
   github.com/containership/cluster-manager/pkg/client github.com/containership/cluster-manager/pkg/apis \
-  "containership.io:v3 provision.containership.io:v3"
+  "containership.io:v3 provision.containership.io:v3 auth.containership.io:v3"

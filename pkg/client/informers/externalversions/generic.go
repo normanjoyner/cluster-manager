@@ -21,7 +21,8 @@ package externalversions
 import (
 	"fmt"
 
-	v3 "github.com/containership/cluster-manager/pkg/apis/containership.io/v3"
+	v3 "github.com/containership/cluster-manager/pkg/apis/auth.containership.io/v3"
+	containershipiov3 "github.com/containership/cluster-manager/pkg/apis/containership.io/v3"
 	provisioncontainershipiov3 "github.com/containership/cluster-manager/pkg/apis/provision.containership.io/v3"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	cache "k8s.io/client-go/tools/cache"
@@ -53,14 +54,20 @@ func (f *genericInformer) Lister() cache.GenericLister {
 // TODO extend this to unknown resources with a client pool
 func (f *sharedInformerFactory) ForResource(resource schema.GroupVersionResource) (GenericInformer, error) {
 	switch resource {
-	// Group=containership.io, Version=v3
-	case v3.SchemeGroupVersion.WithResource("clusterlabels"):
+	// Group=auth.containership.io, Version=v3
+	case v3.SchemeGroupVersion.WithResource("authorizationroles"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.ContainershipAuth().V3().AuthorizationRoles().Informer()}, nil
+	case v3.SchemeGroupVersion.WithResource("authorizationrolebindings"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.ContainershipAuth().V3().AuthorizationRoleBindings().Informer()}, nil
+
+		// Group=containership.io, Version=v3
+	case containershipiov3.SchemeGroupVersion.WithResource("clusterlabels"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Containership().V3().ClusterLabels().Informer()}, nil
-	case v3.SchemeGroupVersion.WithResource("plugins"):
+	case containershipiov3.SchemeGroupVersion.WithResource("plugins"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Containership().V3().Plugins().Informer()}, nil
-	case v3.SchemeGroupVersion.WithResource("registries"):
+	case containershipiov3.SchemeGroupVersion.WithResource("registries"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Containership().V3().Registries().Informer()}, nil
-	case v3.SchemeGroupVersion.WithResource("users"):
+	case containershipiov3.SchemeGroupVersion.WithResource("users"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Containership().V3().Users().Informer()}, nil
 
 		// Group=provision.containership.io, Version=v3

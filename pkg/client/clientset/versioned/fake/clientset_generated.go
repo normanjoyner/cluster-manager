@@ -20,6 +20,8 @@ package fake
 
 import (
 	clientset "github.com/containership/cluster-manager/pkg/client/clientset/versioned"
+	containershipauthv3 "github.com/containership/cluster-manager/pkg/client/clientset/versioned/typed/auth.containership.io/v3"
+	fakecontainershipauthv3 "github.com/containership/cluster-manager/pkg/client/clientset/versioned/typed/auth.containership.io/v3/fake"
 	containershipv3 "github.com/containership/cluster-manager/pkg/client/clientset/versioned/typed/containership.io/v3"
 	fakecontainershipv3 "github.com/containership/cluster-manager/pkg/client/clientset/versioned/typed/containership.io/v3/fake"
 	containershipprovisionv3 "github.com/containership/cluster-manager/pkg/client/clientset/versioned/typed/provision.containership.io/v3"
@@ -72,6 +74,16 @@ func (c *Clientset) Discovery() discovery.DiscoveryInterface {
 }
 
 var _ clientset.Interface = &Clientset{}
+
+// ContainershipAuthV3 retrieves the ContainershipAuthV3Client
+func (c *Clientset) ContainershipAuthV3() containershipauthv3.ContainershipAuthV3Interface {
+	return &fakecontainershipauthv3.FakeContainershipAuthV3{Fake: &c.Fake}
+}
+
+// ContainershipAuth retrieves the ContainershipAuthV3Client
+func (c *Clientset) ContainershipAuth() containershipauthv3.ContainershipAuthV3Interface {
+	return &fakecontainershipauthv3.FakeContainershipAuthV3{Fake: &c.Fake}
+}
 
 // ContainershipV3 retrieves the ContainershipV3Client
 func (c *Clientset) ContainershipV3() containershipv3.ContainershipV3Interface {

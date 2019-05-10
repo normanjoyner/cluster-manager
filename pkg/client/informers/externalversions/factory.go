@@ -24,6 +24,7 @@ import (
 	time "time"
 
 	versioned "github.com/containership/cluster-manager/pkg/client/clientset/versioned"
+	authcontainershipio "github.com/containership/cluster-manager/pkg/client/informers/externalversions/auth.containership.io"
 	containershipio "github.com/containership/cluster-manager/pkg/client/informers/externalversions/containership.io"
 	internalinterfaces "github.com/containership/cluster-manager/pkg/client/informers/externalversions/internalinterfaces"
 	provisioncontainershipio "github.com/containership/cluster-manager/pkg/client/informers/externalversions/provision.containership.io"
@@ -173,8 +174,13 @@ type SharedInformerFactory interface {
 	ForResource(resource schema.GroupVersionResource) (GenericInformer, error)
 	WaitForCacheSync(stopCh <-chan struct{}) map[reflect.Type]bool
 
+	ContainershipAuth() authcontainershipio.Interface
 	Containership() containershipio.Interface
 	ContainershipProvision() provisioncontainershipio.Interface
+}
+
+func (f *sharedInformerFactory) ContainershipAuth() authcontainershipio.Interface {
+	return authcontainershipio.New(f, f.namespace, f.tweakListOptions)
 }
 
 func (f *sharedInformerFactory) Containership() containershipio.Interface {
