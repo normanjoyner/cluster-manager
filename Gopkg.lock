@@ -87,7 +87,7 @@
   version = "v0.3.0-alpha"
 
 [[projects]]
-  digest = "1:b5dc0670d1063e7eaefe32b5d568bc153cf433d83dcc7dfc2850665df3f22a7b"
+  digest = "1:082fb4cba09e4a412ef87d2ce64eba8aa99441231a8ed6428f02140362f7f9dc"
   name = "github.com/containership/csctl"
   packages = [
     "cloud",
@@ -100,7 +100,7 @@
     "cloud/rest",
   ]
   pruneopts = "UT"
-  revision = "d7c893ac1936f3143019a5ee8e3d722208bdd484"
+  revision = "4b845813f9f4ff8e6574fd499aee543a1ed0e310"
 
 [[projects]]
   digest = "1:ffe9824d294da03b391f44e1ae8281281b4afc1bdaa9588c9097785e3af10cec"
@@ -227,14 +227,6 @@
   pruneopts = "UT"
   revision = "d2eab7d93009e9215fc85b2faa2c2f2a98c2af48"
   version = "v0.18.0"
-
-[[projects]]
-  digest = "1:ce431d26276fb2227ae64ad2f7d980e8da9126c93979d9c83f413c36215e7031"
-  name = "github.com/go-resty/resty"
-  packages = ["."]
-  pruneopts = "UT"
-  revision = "03c09fa32a21b7b27b8dbb3877826c1ab3d2daa2"
-  version = "v1.11.0"
 
 [[projects]]
   digest = "1:34e709f36fd4f868fb00dbaf8a6cab4c1ae685832d392874ba9d7c5dec2429d1"
@@ -598,6 +590,14 @@
   pruneopts = "UT"
   revision = "d2d2541c53f18d2a059457998ce2876cc8e67cbf"
   version = "v0.9.1"
+
+[[projects]]
+  digest = "1:41206f4d0410803e64cfb203f665330c3183988408cb532b56305a816a87bd99"
+  name = "gopkg.in/resty.v1"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "fa5875c0caa5c260ab78acec5a244215a730247f"
+  version = "v1.12.0"
 
 [[projects]]
   digest = "1:342378ac4dcb378a5448dd723f0784ae519383532f5e70ade24132c4c8693202"
