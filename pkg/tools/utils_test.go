@@ -42,3 +42,68 @@ func TestStringMapsAreEqual(t *testing.T) {
 	result = StringMapsAreEqual(map1, map4)
 	assert.False(t, result)
 }
+
+func TestStringSlicesAreEqual(t *testing.T) {
+	type sliceEqualityTest struct {
+		a        []string
+		b        []string
+		expected bool
+		message  string
+	}
+
+	tests := []sliceEqualityTest{
+		{
+			a:        nil,
+			b:        nil,
+			expected: true,
+			message:  "both nil",
+		},
+		{
+			a:        nil,
+			b:        []string{},
+			expected: false,
+			message:  "a nil, b empty",
+		},
+		{
+			a:        []string{},
+			b:        nil,
+			expected: false,
+			message:  "a empty, b nil",
+		},
+		{
+			a:        []string{},
+			b:        []string{},
+			expected: true,
+			message:  "both empty",
+		},
+		{
+			a:        []string{"1"},
+			b:        []string{},
+			expected: false,
+			message:  "a empty, b not empty",
+		},
+		{
+			a:        []string{},
+			b:        []string{"1"},
+			expected: false,
+			message:  "a not empty, b empty",
+		},
+		{
+			a:        []string{"1", "2", "3"},
+			b:        []string{"1", "3", "2"},
+			expected: false,
+			message:  "same elements out of order",
+		},
+		{
+			a:        []string{"1", "2", "3"},
+			b:        []string{"1", "2", "3"},
+			expected: true,
+			message:  "same elements in order",
+		},
+	}
+
+	for _, test := range tests {
+		result := StringSlicesAreEqual(test.a, test.b)
+		assert.Equal(t, test.expected, result, test.message)
+	}
+}

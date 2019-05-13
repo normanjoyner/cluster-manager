@@ -1,0 +1,15 @@
+apiVersion: apiextensions.k8s.io/v1beta1
+kind: CustomResourceDefinition
+metadata:
+  name: authorizationrolebindings.auth.containership.io
+  labels:
+    containership.io/managed: "true"
+spec:
+  group: auth.containership.io
+  version: v3
+  scope: Namespaced
+  names:
+    kind: AuthorizationRoleBinding
+    plural: authorizationrolebindings
+    shortNames:
+      - authbinding

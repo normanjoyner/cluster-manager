@@ -17,23 +17,30 @@ import (
 // CloudSynchronizer synchronizes Containership Cloud resources
 // into our Kubernetes CRDs.
 type CloudSynchronizer struct {
+	authorizationRoleBindingSyncController *synccontroller.AuthorizationRoleBindingSyncController
+	authorizationRoleSyncController        *synccontroller.AuthorizationRoleSyncController
+
 	autoscalingGroupSyncController  *synccontroller.AutoscalingGroupSyncController
 	autoscalingPolicySyncController *synccontroller.AutoscalingPolicySyncController
-	userSyncController              *synccontroller.UserSyncController
-	registrySyncController          *synccontroller.RegistrySyncController
-	pluginSyncController            *synccontroller.PluginSyncController
-	clusterLabelSyncController      *synccontroller.ClusterLabelSyncController
-	nodePoolLabelSyncController     *synccontroller.NodePoolLabelSyncController
-	syncStopCh                      chan struct{}
-	stopped                         bool
+
+	pluginSyncController   *synccontroller.PluginSyncController
+	registrySyncController *synccontroller.RegistrySyncController
+	userSyncController     *synccontroller.UserSyncController
+
+	clusterLabelSyncController  *synccontroller.ClusterLabelSyncController
+	nodePoolLabelSyncController *synccontroller.NodePoolLabelSyncController
+
+	syncStopCh chan struct{}
+	stopped    bool
 }
 
 // NewCloudSynchronizer constructs a new CloudSynchronizer.
 func NewCloudSynchronizer(csInformerFactory csinformers.SharedInformerFactory, cerebralInformerFactory cerebralinformers.SharedInformerFactory) *CloudSynchronizer {
 	cloudclientset, err := cscloud.New(cscloud.Config{
 		Token:            env.CloudClusterAPIKey(),
-		ProvisionBaseURL: env.ProvisionBaseURL(),
 		APIBaseURL:       env.APIBaseURL(),
+		AuthBaseURL:      env.AuthBaseURL(),
+		ProvisionBaseURL: env.ProvisionBaseURL(),
 	})
 
 	if err != nil {
@@ -41,7 +48,35 @@ func NewCloudSynchronizer(csInformerFactory csinformers.SharedInformerFactory, c
 	}
 
 	return &CloudSynchronizer{
-		userSyncController: synccontroller.NewUser(
+		authorizationRoleBindingSyncController: synccontroller.NewAuthorizationRoleBinding(
+			k8sutil.API().Client(),
+			k8sutil.CSAPI().Client(),
+			csInformerFactory,
+			cloudclientset,
+		),
+
+		authorizationRoleSyncController: synccontroller.NewAuthorizationRole(
+			k8sutil.API().Client(),
+			k8sutil.CSAPI().Client(),
+			csInformerFactory,
+			cloudclientset,
+		),
+
+		autoscalingGroupSyncController: synccontroller.NewAutoscalingGroupController(
+			k8sutil.API().Client(),
+			k8sutil.CerebralAPI().Client(),
+			cerebralInformerFactory,
+			cloudclientset,
+		),
+
+		autoscalingPolicySyncController: synccontroller.NewAutoscalingPolicyController(
+			k8sutil.API().Client(),
+			k8sutil.CerebralAPI().Client(),
+			cerebralInformerFactory,
+			cloudclientset,
+		),
+
+		pluginSyncController: synccontroller.NewPlugin(
 			k8sutil.API().Client(),
 			k8sutil.CSAPI().Client(),
 			csInformerFactory,
@@ -55,7 +90,7 @@ func NewCloudSynchronizer(csInformerFactory csinformers.SharedInformerFactory, c
 			cloudclientset,
 		),
 
-		pluginSyncController: synccontroller.NewPlugin(
+		userSyncController: synccontroller.NewUser(
 			k8sutil.API().Client(),
 			k8sutil.CSAPI().Client(),
 			csInformerFactory,
@@ -76,20 +111,6 @@ func NewCloudSynchronizer(csInformerFactory csinformers.SharedInformerFactory, c
 			cloudclientset,
 		),
 
-		autoscalingPolicySyncController: synccontroller.NewAutoscalingPolicyController(
-			k8sutil.API().Client(),
-			k8sutil.CerebralAPI().Client(),
-			cerebralInformerFactory,
-			cloudclientset,
-		),
-
-		autoscalingGroupSyncController: synccontroller.NewAutoscalingGroupController(
-			k8sutil.API().Client(),
-			k8sutil.CerebralAPI().Client(),
-			cerebralInformerFactory,
-			cloudclientset,
-		),
-
 		syncStopCh: make(chan struct{}),
 		stopped:    false,
 	}
@@ -98,11 +119,17 @@ func NewCloudSynchronizer(csInformerFactory csinformers.SharedInformerFactory, c
 // Run kicks off cloud sync routines.
 func (s *CloudSynchronizer) Run() {
 	log.Info("Running CloudSynchronizer")
+
+	go s.authorizationRoleBindingSyncController.SyncWithCloud(s.syncStopCh)
+	go s.authorizationRoleSyncController.SyncWithCloud(s.syncStopCh)
+
 	go s.autoscalingGroupSyncController.SyncWithCloud(s.syncStopCh)
 	go s.autoscalingPolicySyncController.SyncWithCloud(s.syncStopCh)
-	go s.userSyncController.SyncWithCloud(s.syncStopCh)
-	go s.registrySyncController.SyncWithCloud(s.syncStopCh)
+
 	go s.pluginSyncController.SyncWithCloud(s.syncStopCh)
+	go s.registrySyncController.SyncWithCloud(s.syncStopCh)
+	go s.userSyncController.SyncWithCloud(s.syncStopCh)
+
 	go s.clusterLabelSyncController.SyncWithCloud(s.syncStopCh)
 	go s.nodePoolLabelSyncController.SyncWithCloud(s.syncStopCh)
 }
