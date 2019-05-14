@@ -206,6 +206,11 @@ func (in *AuthorizationRuleSpec) DeepCopyInto(out *AuthorizationRuleSpec) {
 		*out = make([]string, len(*in))
 		copy(*out, *in)
 	}
+	if in.NonResourceURLs != nil {
+		in, out := &in.NonResourceURLs, &out.NonResourceURLs
+		*out = make([]string, len(*in))
+		copy(*out, *in)
+	}
 	return
 }
 

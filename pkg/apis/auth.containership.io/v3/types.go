@@ -30,18 +30,19 @@ type AuthorizationRoleSpec struct {
 
 // AuthorizationRuleSpec is the spec for a Containership Cloud auth rule.
 type AuthorizationRuleSpec struct {
-	ID             string                `json:"id"`
-	CreatedAt      string                `json:"created_at"`
-	UpdatedAt      string                `json:"updated_at"`
-	OrganizationID string                `json:"organization_id"`
-	Name           string                `json:"name"`
-	Description    string                `json:"description,omitempty"`
-	OwnerID        string                `json:"owner_id"`
-	Type           AuthorizationRuleType `json:"type"`
-	APIGroups      []string              `json:"api_groups,omitempty"`
-	Resources      []string              `json:"resources"`
-	ResourceNames  []string              `json:"resource_names"`
-	Verbs          []string              `json:"verbs"`
+	ID              string                `json:"id"`
+	CreatedAt       string                `json:"created_at"`
+	UpdatedAt       string                `json:"updated_at"`
+	OrganizationID  string                `json:"organization_id"`
+	Name            string                `json:"name"`
+	Description     string                `json:"description,omitempty"`
+	OwnerID         string                `json:"owner_id"`
+	Type            AuthorizationRuleType `json:"type"`
+	APIGroups       []string              `json:"api_groups,omitempty"`
+	Resources       []string              `json:"resources"`
+	ResourceNames   []string              `json:"resource_names"`
+	Verbs           []string              `json:"verbs"`
+	NonResourceURLs []string              `json:"non_resource_urls"`
 }
 
 // AuthorizationRuleType specifies the type of rule
