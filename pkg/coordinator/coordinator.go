@@ -20,11 +20,15 @@ var (
 	cerebralInformerFactory cerebralinformers.SharedInformerFactory
 
 	clusterLabelController  *ClusterLabelController
-	csController            *ContainershipController
-	cupController           *UpgradeController
 	nodePoolLabelController *NodePoolLabelController
-	plgnController          *PluginController
-	regController           *RegistryController
+
+	csController   *ContainershipController
+	cupController  *UpgradeController
+	plgnController *PluginController
+	regController  *RegistryController
+
+	authorizationRoleController        *AuthorizationRoleController
+	authorizationRoleBindingController *AuthorizationRoleBindingController
 
 	cloudSynchronizer *CloudSynchronizer
 )
@@ -64,6 +68,12 @@ func Initialize() {
 	regController = NewRegistryController(
 		k8sutil.API().Client(), k8sutil.CSAPI().Client(), kubeInformerFactory, csInformerFactory)
 
+	authorizationRoleController = NewAuthorizationRoleController(
+		k8sutil.API().Client(), k8sutil.CSAPI().Client(), kubeInformerFactory, csInformerFactory)
+
+	authorizationRoleBindingController = NewAuthorizationRoleBindingController(
+		k8sutil.API().Client(), k8sutil.CSAPI().Client(), kubeInformerFactory, csInformerFactory)
+
 	if env.IsClusterUpgradeEnabled() {
 		cupController = NewUpgradeController(
 			k8sutil.API().Client(), k8sutil.CSAPI().Client(), kubeInformerFactory, csInformerFactory)
@@ -86,10 +96,14 @@ func Run() {
 	cloudSynchronizer.Run()
 
 	go clusterLabelController.Run(1, stopCh)
-	go csController.Run(1, stopCh)
 	go nodePoolLabelController.Run(1, stopCh)
+
+	go csController.Run(1, stopCh)
 	go plgnController.Run(1, stopCh)
 	go regController.Run(1, stopCh)
+
+	go authorizationRoleController.Run(1, stopCh)
+	go authorizationRoleBindingController.Run(1, stopCh)
 
 	if env.IsClusterUpgradeEnabled() {
 		go cupController.Run(1, stopCh)
