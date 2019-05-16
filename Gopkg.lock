@@ -87,7 +87,7 @@
   version = "v0.3.0-alpha"
 
 [[projects]]
-  digest = "1:ed86db8acead633981f5f0a6ec2dbc0d58727fec523840fd06f0202eb5c7c99d"
+  digest = "1:4ebd4eeba9f5cfdfaaa05ab18a60f7d96c7944ad789f6ebc60ac85bda56a9c56"
   name = "github.com/containership/csctl"
   packages = [
     "cloud",
@@ -100,7 +100,7 @@
     "cloud/rest",
   ]
   pruneopts = "UT"
-  revision = "5ec81bee92ca258a25b7b72d6d4ff2d8463ec7b6"
+  revision = "b476a65382762a228c85a95ecf8cbdfb6cc91849"
 
 [[projects]]
   digest = "1:ffe9824d294da03b391f44e1ae8281281b4afc1bdaa9588c9097785e3af10cec"
