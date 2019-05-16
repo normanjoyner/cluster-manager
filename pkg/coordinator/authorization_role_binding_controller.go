@@ -308,12 +308,12 @@ func subjectFromBinding(binding csauthv3.AuthorizationRoleBinding) rbacv1.Subjec
 	case csauthv3.AuthorizationRoleBindingTypeTeam:
 		subject = rbacv1.Subject{
 			Kind: "Group",
-			Name: binding.Spec.TeamID,
+			Name: "containership.io/team_id#" + binding.Spec.TeamID,
 		}
 	case csauthv3.AuthorizationRoleBindingTypeUser:
 		subject = rbacv1.Subject{
 			Kind: "User",
-			Name: binding.Spec.UserID,
+			Name: "containership.io/user_id#" + binding.Spec.UserID,
 		}
 	}
 
