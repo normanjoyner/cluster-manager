@@ -224,7 +224,7 @@ func (c *AuthorizationRoleController) authorizationRoleSyncHandler(key string) e
 		return errors.Wrapf(err, "getting ClusterRole %s for reconciliation", id)
 	}
 
-	log.Infof("%s: Updating existing ClusterRole %s after AuthorizationRole update", authorizationRoleControllerName, id)
+	log.Debugf("%s: Updating existing ClusterRole %s", authorizationRoleControllerName, id)
 	role := clusterRoleFromAuthorizationRole(*authorizationRole)
 	_, err = c.kubeclientset.RbacV1().ClusterRoles().Update(&role)
 	return err

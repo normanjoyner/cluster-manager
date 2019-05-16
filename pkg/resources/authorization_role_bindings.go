@@ -27,7 +27,7 @@ func NewCsAuthorizationRoleBindings(cloud cscloud.Interface) *CsAuthorizationRol
 
 // Sync implements the CloudResource interface
 func (l *CsAuthorizationRoleBindings) Sync() error {
-	authorizationRoleBindings, err := l.cloud.Auth().AuthorizationRoleBindings(l.organizationID).List()
+	authorizationRoleBindings, err := l.cloud.Auth().AuthorizationRoleBindings(l.organizationID).ListForCluster(l.clusterID)
 	if err != nil {
 		return errors.Wrap(err, "listing authorization role bindings")
 	}

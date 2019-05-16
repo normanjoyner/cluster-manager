@@ -235,7 +235,7 @@ func (c *AuthorizationRoleBindingController) authorizationRoleBindingSyncHandler
 			return errors.Wrapf(err, "getting ClusterRoleBinding %s for reconciliation", id)
 		}
 
-		log.Infof("%s: Updating existing ClusterRoleBinding %s after AuthorizationRoleBinding update", authorizationRoleBindingControllerName, id)
+		log.Debugf("%s: Updating existing ClusterRoleBinding %s", authorizationRoleBindingControllerName, id)
 		binding := clusterRoleBindingFromAuthorizationRoleBinding(*authorizationRoleBinding)
 		_, err = c.kubeclientset.RbacV1().ClusterRoleBindings().Update(&binding)
 	} else {
@@ -253,7 +253,7 @@ func (c *AuthorizationRoleBindingController) authorizationRoleBindingSyncHandler
 			return errors.Wrapf(err, "getting RoleBinding %s for reconciliation in namespace %s", id, roleNamespace)
 		}
 
-		log.Infof("%s: Updating existing RoleBinding %s after AuthorizationRoleBinding update", authorizationRoleBindingControllerName, id)
+		log.Debugf("%s: Updating existing RoleBinding %s", authorizationRoleBindingControllerName, id)
 		binding := roleBindingFromAuthorizationRoleBinding(*authorizationRoleBinding)
 		_, err = c.kubeclientset.RbacV1().RoleBindings(roleNamespace).Update(&binding)
 	}
