@@ -120,7 +120,7 @@ func (c *AutoscalingGroupSyncController) doSync() {
 
 // Create takes an AutoscalingGroup in cache and creates the CR
 func (c *AutoscalingGroupSyncController) Create(ag cerebralv1alpha1.AutoscalingGroup) error {
-	autoscalingGroup, err := c.cerebralclientset.Cerebral().AutoscalingGroups().Create(&ag)
+	autoscalingGroup, err := c.cerebralclientset.CerebralV1alpha1().AutoscalingGroups().Create(&ag)
 	if err != nil {
 		return err
 	}
@@ -147,7 +147,7 @@ func (c *AutoscalingGroupSyncController) Update(updatedAG cerebralv1alpha1.Autos
 	pCopy := autoscalingGroup.DeepCopy()
 	pCopy.Spec = updatedAG.Spec
 
-	_, err := c.cerebralclientset.Cerebral().AutoscalingGroups().Update(pCopy)
+	_, err := c.cerebralclientset.CerebralV1alpha1().AutoscalingGroups().Update(pCopy)
 
 	if err != nil {
 		c.recorder.Eventf(autoscalingGroup, corev1.EventTypeWarning, "AutoscalingGroupUpdateError",
@@ -159,5 +159,5 @@ func (c *AutoscalingGroupSyncController) Update(updatedAG cerebralv1alpha1.Autos
 
 // Delete takes the name of the CR and deletes it
 func (c *AutoscalingGroupSyncController) Delete(name string) error {
-	return c.cerebralclientset.Cerebral().AutoscalingGroups().Delete(name, &metav1.DeleteOptions{})
+	return c.cerebralclientset.CerebralV1alpha1().AutoscalingGroups().Delete(name, &metav1.DeleteOptions{})
 }

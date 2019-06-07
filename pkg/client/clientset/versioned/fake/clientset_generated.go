@@ -80,27 +80,12 @@ func (c *Clientset) ContainershipAuthV3() containershipauthv3.ContainershipAuthV
 	return &fakecontainershipauthv3.FakeContainershipAuthV3{Fake: &c.Fake}
 }
 
-// ContainershipAuth retrieves the ContainershipAuthV3Client
-func (c *Clientset) ContainershipAuth() containershipauthv3.ContainershipAuthV3Interface {
-	return &fakecontainershipauthv3.FakeContainershipAuthV3{Fake: &c.Fake}
-}
-
 // ContainershipV3 retrieves the ContainershipV3Client
 func (c *Clientset) ContainershipV3() containershipv3.ContainershipV3Interface {
 	return &fakecontainershipv3.FakeContainershipV3{Fake: &c.Fake}
 }
 
-// Containership retrieves the ContainershipV3Client
-func (c *Clientset) Containership() containershipv3.ContainershipV3Interface {
-	return &fakecontainershipv3.FakeContainershipV3{Fake: &c.Fake}
-}
-
 // ContainershipProvisionV3 retrieves the ContainershipProvisionV3Client
 func (c *Clientset) ContainershipProvisionV3() containershipprovisionv3.ContainershipProvisionV3Interface {
-	return &fakecontainershipprovisionv3.FakeContainershipProvisionV3{Fake: &c.Fake}
-}
-
-// ContainershipProvision retrieves the ContainershipProvisionV3Client
-func (c *Clientset) ContainershipProvision() containershipprovisionv3.ContainershipProvisionV3Interface {
 	return &fakecontainershipprovisionv3.FakeContainershipProvisionV3{Fake: &c.Fake}
 }

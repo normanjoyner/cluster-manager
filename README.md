@@ -51,14 +51,15 @@ Please also refer to the [official changelog][cluster-management-changelog] for 
 ### Compatibility Matrix
 
 Support for previous Kubernetes versions can be inferred by using the sliding window.
-For example, `cluster-manager` 2.x supports Kubernetes versions 1.8.x - 1.10.x.
+For example, `cluster-manager` 6.x supports Kubernetes versions 1.12.x - 1.14.x.
 
-|                     | Kubernetes 1.13.x | Kubernetes 1.12.x | Kubernetes 1.11.x | Kubernetes 1.10.x |
-|---------------------|-------------------|-------------------|-------------------|-------------------|
-| cluster-manager 5.x | ✓                 | ✓                 | ✓                 | ✗                 |
-| cluster-manager 4.x | ✗                 | ✓                 | ✓                 | ✓                 |
-| cluster-manager 3.x | ✗                 | ✗                 | ✓                 | ✓                 |
-| cluster-manager 2.x | ✗                 | ✗                 | ✗                 | ✓                 |
+|                     | Kubernetes 1.14.x | Kubernetes 1.13.x | Kubernetes 1.12.x | Kubernetes 1.11.x | Kubernetes 1.10.x |
+|---------------------|-------------------|-------------------|-------------------|-------------------|-------------------|
+| cluster-manager 6.x | ✓                 | ✓                 | ✓                 | ✗                 | ✗                 |
+| cluster-manager 5.x | ✗                 | ✓                 | ✓                 | ✓                 | ✗                 |
+| cluster-manager 4.x | ✗                 | ✗                 | ✓                 | ✓                 | ✓                 |
+| cluster-manager 3.x | ✗                 | ✗                 | ✗                 | ✓                 | ✓                 |
+| cluster-manager 2.x | ✗                 | ✗                 | ✗                 | ✗                 | ✓                 |
 
 
 ## Contributing

@@ -49,19 +49,19 @@ required = [
 
 [[constraint]]
   name = "k8s.io/apimachinery"
-  version = "kubernetes-1.13.3"
+  version = "kubernetes-1.14.2"
 
 [[constraint]]
   name = "k8s.io/apiextensions-apiserver"
-  version = "kubernetes-1.13.3"
+  version = "kubernetes-1.14.2"
 
 [[constraint]]
   name = "k8s.io/client-go"
-  version = "10.0.0"
+  version = "kubernetes-1.14.2"
 
 [[constraint]]
   name = "github.com/containership/cerebral"
-  version = "0.3.0-alpha"
+  version = "0.5.0-alpha"
 
 [[constraint]]
   name = "github.com/containership/csctl"
@@ -69,7 +69,7 @@ required = [
 
 [[constraint]]
   name = "k8s.io/code-generator"
-  version = "kubernetes-1.13.3"
+  version = "kubernetes-1.14.2"
 
 [[constraint]]
   name = "k8s.io/klog"

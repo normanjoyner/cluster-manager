@@ -120,7 +120,7 @@ func (c *AutoscalingPolicySyncController) doSync() {
 
 // Create takes a AutoscalingPolicy in cache and creates the CR
 func (c *AutoscalingPolicySyncController) Create(ag cerebralv1alpha1.AutoscalingPolicy) error {
-	autoscalingPolicy, err := c.cerebralclientset.Cerebral().AutoscalingPolicies().Create(&ag)
+	autoscalingPolicy, err := c.cerebralclientset.CerebralV1alpha1().AutoscalingPolicies().Create(&ag)
 	if err != nil {
 		return err
 	}
@@ -147,7 +147,7 @@ func (c *AutoscalingPolicySyncController) Update(updatedAG cerebralv1alpha1.Auto
 	pCopy := autoscalingPolicy.DeepCopy()
 	pCopy.Spec = updatedAG.Spec
 
-	_, err := c.cerebralclientset.Cerebral().AutoscalingPolicies().Update(pCopy)
+	_, err := c.cerebralclientset.CerebralV1alpha1().AutoscalingPolicies().Update(pCopy)
 
 	if err != nil {
 		c.recorder.Eventf(autoscalingPolicy, corev1.EventTypeWarning, "AutoscalingPolicyUpdateError",
@@ -159,5 +159,5 @@ func (c *AutoscalingPolicySyncController) Update(updatedAG cerebralv1alpha1.Auto
 
 // Delete takes a name or the CRD and deletes it
 func (c *AutoscalingPolicySyncController) Delete(name string) error {
-	return c.cerebralclientset.Cerebral().AutoscalingPolicies().Delete(name, &metav1.DeleteOptions{})
+	return c.cerebralclientset.CerebralV1alpha1().AutoscalingPolicies().Delete(name, &metav1.DeleteOptions{})
 }

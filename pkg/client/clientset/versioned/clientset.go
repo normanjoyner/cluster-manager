@@ -30,14 +30,8 @@ import (
 type Interface interface {
 	Discovery() discovery.DiscoveryInterface
 	ContainershipAuthV3() containershipauthv3.ContainershipAuthV3Interface
-	// Deprecated: please explicitly pick a version if possible.
-	ContainershipAuth() containershipauthv3.ContainershipAuthV3Interface
 	ContainershipV3() containershipv3.ContainershipV3Interface
-	// Deprecated: please explicitly pick a version if possible.
-	Containership() containershipv3.ContainershipV3Interface
 	ContainershipProvisionV3() containershipprovisionv3.ContainershipProvisionV3Interface
-	// Deprecated: please explicitly pick a version if possible.
-	ContainershipProvision() containershipprovisionv3.ContainershipProvisionV3Interface
 }
 
 // Clientset contains the clients for groups. Each group has exactly one
@@ -54,31 +48,13 @@ func (c *Clientset) ContainershipAuthV3() containershipauthv3.ContainershipAuthV
 	return c.containershipAuthV3
 }
 
-// Deprecated: ContainershipAuth retrieves the default version of ContainershipAuthClient.
-// Please explicitly pick a version.
-func (c *Clientset) ContainershipAuth() containershipauthv3.ContainershipAuthV3Interface {
-	return c.containershipAuthV3
-}
-
 // ContainershipV3 retrieves the ContainershipV3Client
 func (c *Clientset) ContainershipV3() containershipv3.ContainershipV3Interface {
 	return c.containershipV3
 }
 
-// Deprecated: Containership retrieves the default version of ContainershipClient.
-// Please explicitly pick a version.
-func (c *Clientset) Containership() containershipv3.ContainershipV3Interface {
-	return c.containershipV3
-}
-
 // ContainershipProvisionV3 retrieves the ContainershipProvisionV3Client
 func (c *Clientset) ContainershipProvisionV3() containershipprovisionv3.ContainershipProvisionV3Interface {
-	return c.containershipProvisionV3
-}
-
-// Deprecated: ContainershipProvision retrieves the default version of ContainershipProvisionClient.
-// Please explicitly pick a version.
-func (c *Clientset) ContainershipProvision() containershipprovisionv3.ContainershipProvisionV3Interface {
 	return c.containershipProvisionV3
 }
 
