@@ -202,7 +202,7 @@ func (c *AuthorizationRoleController) authorizationRoleSyncHandler(key string) e
 	authorizationRole, err := c.authorizationRoleLister.AuthorizationRoles(namespace).Get(name)
 	if err != nil {
 		if kubeerrors.IsNotFound(err) {
-			// ClusterRole is no longer around so nothing to do
+			// AuthorizationRole is no longer around so nothing to do
 			// The ownerRef garbage collection will take care of the associated ClusterRole
 			return nil
 		}

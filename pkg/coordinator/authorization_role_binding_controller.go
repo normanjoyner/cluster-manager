@@ -209,7 +209,7 @@ func (c *AuthorizationRoleBindingController) authorizationRoleBindingSyncHandler
 	authorizationRoleBinding, err := c.authorizationRoleBindingLister.AuthorizationRoleBindings(namespace).Get(name)
 	if err != nil {
 		if kubeerrors.IsNotFound(err) {
-			// ClusterRoleBinding is no longer around so nothing to do
+			// AuthorizationRoleBinding is no longer around so nothing to do
 			// The ownerRef garbage collection will take care of the associated ClusterRoleBinding
 			return nil
 		}

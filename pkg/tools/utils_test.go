@@ -30,17 +30,26 @@ func TestStringMapsAreEqual(t *testing.T) {
 		"key3": "differentvalueforkey",
 	}
 
+	map5 := map[string]string{
+		"key2": "value2",
+		"key1": "value1",
+		"key3": "value3",
+	}
+
 	result := StringMapsAreEqual(map1, map1)
-	assert.True(t, result)
-	// does not match different lengths
+	assert.True(t, result, "compare map to itself")
+
 	result = StringMapsAreEqual(map1, map2)
-	assert.False(t, result)
-	// does not match same length
+	assert.False(t, result, "different lengths")
+
 	result = StringMapsAreEqual(map1, map3)
-	assert.False(t, result)
-	// key values do not match
+	assert.False(t, result, "same length, different contents")
+
 	result = StringMapsAreEqual(map1, map4)
-	assert.False(t, result)
+	assert.False(t, result, "same keys, different value")
+
+	result = StringMapsAreEqual(map1, map5)
+	assert.True(t, result, "same contents, different order")
 }
 
 func TestStringSlicesAreEqual(t *testing.T) {

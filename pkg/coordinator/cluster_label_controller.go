@@ -244,6 +244,11 @@ func (uc *ClusterLabelController) nodeSyncHandler(key string) error {
 
 	nodeLabels := buildLabelMapWithExactClusterLabels(node.Labels, clusterLabels)
 
+	if tools.StringMapsAreEqual(node.Labels, nodeLabels) {
+		// The labels haven't changed, so nothing to do
+		return nil
+	}
+
 	// Update the node
 	nodeCopy := node.DeepCopy()
 	nodeCopy.Labels = nodeLabels

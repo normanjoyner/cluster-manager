@@ -255,6 +255,11 @@ func (uc *NodePoolLabelController) nodeSyncHandler(key string) error {
 
 	nodeLabels := buildLabelMapWithExactNodePoolLabels(node.Labels, nodePoolLabels)
 
+	if tools.StringMapsAreEqual(node.Labels, nodeLabels) {
+		// The labels haven't changed, so nothing to do
+		return nil
+	}
+
 	// Update the node
 	nodeCopy := node.DeepCopy()
 	nodeCopy.Labels = nodeLabels
