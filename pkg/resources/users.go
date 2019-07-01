@@ -26,7 +26,10 @@ func NewCsUsers(cloud cscloud.Interface) *CsUsers {
 
 // Sync implements the CloudResource interface
 func (us *CsUsers) Sync() error {
-	users, err := us.cloud.API().Users(us.organizationID).List()
+	users, err := us.cloud.API().
+		Users(us.organizationID).
+		WithSSHAccess(us.clusterID).
+		List()
 	if err != nil {
 		return err
 	}

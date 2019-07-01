@@ -65,7 +65,7 @@ required = [
 
 [[constraint]]
   name = "github.com/containership/csctl"
-  revision = "b476a65382762a228c85a95ecf8cbdfb6cc91849"
+  revision = "af2f609a0a81a32808205bae89e823069fb09f6f"
 
 [[constraint]]
   name = "k8s.io/code-generator"
