@@ -66,7 +66,7 @@
   version = "v1.15.79"
 
 [[projects]]
-  digest = "1:3b2732c16e99b020add4e27a1ee582927ccd5875b98ea7835ec2714f26f878b1"
+  digest = "1:919178f68ff7a90ca13aba301d0ba2d95e518dbb107229cbd01882d8a839ac1c"
   name = "github.com/containership/cerebral"
   packages = [
     "pkg/apis/cerebral.containership.io",
@@ -83,11 +83,11 @@
     "pkg/client/listers/cerebral.containership.io/v1alpha1",
   ]
   pruneopts = "UT"
-  revision = "62de17fa591f5a9066f8f8a2a288df839699b086"
-  version = "v0.5.0-alpha"
+  revision = "d2015b523fd3d7272ad3bab7abe61019c212b1fa"
+  version = "v0.6.0-alpha"
 
 [[projects]]
-  digest = "1:d9971efbb41fa22c1355e78644cc36c8f5b327c070e3af194850c0b2501377ef"
+  digest = "1:bd9e9ce8ccadb26f49e3ddf1e0a775c50aac9a7b54f91167ac13dffe7e9aa611"
   name = "github.com/containership/csctl"
   packages = [
     "cloud",
@@ -100,7 +100,7 @@
     "cloud/rest",
   ]
   pruneopts = "UT"
-  revision = "af2f609a0a81a32808205bae89e823069fb09f6f"
+  revision = "1323959c504330f833fcbb51be0ac4b0c063e0cf"
 
 [[projects]]
   digest = "1:ffe9824d294da03b391f44e1ae8281281b4afc1bdaa9588c9097785e3af10cec"
@@ -260,6 +260,20 @@
   pruneopts = "UT"
   revision = "aa810b61a9c79d51363740d207bb46cf8e620ed5"
   version = "v1.2.0"
+
+[[projects]]
+  digest = "1:bf40199583e5143d1472fc34d10d6f4b69d97572142acf343b3e43136da40823"
+  name = "github.com/google/go-cmp"
+  packages = [
+    "cmp",
+    "cmp/internal/diff",
+    "cmp/internal/flags",
+    "cmp/internal/function",
+    "cmp/internal/value",
+  ]
+  pruneopts = "UT"
+  revision = "6f77996f0c42f7b84e5a2b252227263f93432e9b"
+  version = "v0.3.0"
 
 [[projects]]
   branch = "master"
@@ -618,7 +632,7 @@
   revision = "9b8cae951d65ea28a341b3262d38a058d0935f7c"
 
 [[projects]]
-  digest = "1:65226935ef0a84716e327aa46c5a11cf2158ca6d0c79b379202d0b2c2be0e9bc"
+  digest = "1:6ebbbb9b23658eb5f13ea339d58e5996fcf479adebcd7525206bc9f443c64a72"
   name = "k8s.io/apiextensions-apiserver"
   packages = [
     "pkg/apis/apiextensions",
@@ -628,11 +642,11 @@
     "pkg/client/clientset/clientset/typed/apiextensions/v1beta1",
   ]
   pruneopts = "UT"
-  revision = "bf6753f2aa24fe1d69a2abeea1c106042bcf3f5f"
-  version = "kubernetes-1.14.2"
+  revision = "d1ef975d28cef52202a75257723ffed4293eae3d"
+  version = "kubernetes-1.15.1"
 
 [[projects]]
-  digest = "1:d0bf8fddebd2921f5eae2b4a15ac648e5e1f1897d1e683aeb97533f2d240cb3b"
+  digest = "1:19f25947275fdb24f57a6b9884dc8520d8b5051b0f2894dcd775c5555e22d85f"
   name = "k8s.io/apimachinery"
   packages = [
     "pkg/api/errors",
@@ -679,11 +693,11 @@
     "third_party/forked/golang/reflect",
   ]
   pruneopts = "UT"
-  revision = "6a84e37a896db9780c75367af8d2ed2bb944022e"
-  version = "kubernetes-1.14.2"
+  revision = "1799e75a07195de9460b8ef7300883499f12127b"
+  version = "kubernetes-1.15.1"
 
 [[projects]]
-  digest = "1:2dff05dd4eaf4bfc45cf40e9a9d34adf6e147cd27a03f5201e16c134bce08ad0"
+  digest = "1:fbdd2e4201a6c81eaa47e5d1643e0a0c5786db110a975d98f38ae886010830f4"
   name = "k8s.io/client-go"
   packages = [
     "discovery",
@@ -875,11 +889,11 @@
     "util/workqueue",
   ]
   pruneopts = "UT"
-  revision = "ae8359b20417914b73a4b514b7a3d642597700bb"
-  version = "kubernetes-1.14.2"
+  revision = "8e956561bbf57253b1d19c449d0f24e8cb18d467"
+  version = "kubernetes-1.15.1"
 
 [[projects]]
-  digest = "1:742ce70d2c6de0f02b5331a25d4d549f55de6b214af22044455fd6e6b451cad9"
+  digest = "1:559e29865df733d697a8b075b9904a870400a28ddaccccc2afa35d72da6435f6"
   name = "k8s.io/code-generator"
   packages = [
     "cmd/client-gen",
@@ -907,8 +921,8 @@
     "pkg/util",
   ]
   pruneopts = ""
-  revision = "50b561225d70b3eb79a1faafd3dfe7b1a62cbe73"
-  version = "kubernetes-1.14.2"
+  revision = "18da4a14b22b17d2fa761e50037fabfbacec225b"
+  version = "kubernetes-1.15.1"
 
 [[projects]]
   branch = "master"
@@ -945,11 +959,12 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:03ce1a3e8094febc17dfaf3bfc7a445fb964e4fa96d3443822505dfc8567b648"
+  digest = "1:10fa14b8e5c4cf9701a69e20ee11c7bb992363b5c6d0f964b2b2edfdb9e14763"
   name = "k8s.io/utils"
   packages = [
     "buffer",
     "integer",
+    "pointer",
     "trace",
   ]
   pruneopts = "UT"
