@@ -55,7 +55,7 @@ func (in *ClusterUpgrade) DeepCopyObject() runtime.Object {
 func (in *ClusterUpgradeList) DeepCopyInto(out *ClusterUpgradeList) {
 	*out = *in
 	out.TypeMeta = in.TypeMeta
-	out.ListMeta = in.ListMeta
+	in.ListMeta.DeepCopyInto(&out.ListMeta)
 	if in.Items != nil {
 		in, out := &in.Items, &out.Items
 		*out = make([]ClusterUpgrade, len(*in))
@@ -183,7 +183,7 @@ func (in *NodePoolLabel) DeepCopyObject() runtime.Object {
 func (in *NodePoolLabelList) DeepCopyInto(out *NodePoolLabelList) {
 	*out = *in
 	out.TypeMeta = in.TypeMeta
-	out.ListMeta = in.ListMeta
+	in.ListMeta.DeepCopyInto(&out.ListMeta)
 	if in.Items != nil {
 		in, out := &in.Items, &out.Items
 		*out = make([]NodePoolLabel, len(*in))

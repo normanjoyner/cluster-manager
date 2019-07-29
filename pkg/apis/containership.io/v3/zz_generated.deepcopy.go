@@ -71,7 +71,7 @@ func (in *ClusterLabel) DeepCopyObject() runtime.Object {
 func (in *ClusterLabelList) DeepCopyInto(out *ClusterLabelList) {
 	*out = *in
 	out.TypeMeta = in.TypeMeta
-	out.ListMeta = in.ListMeta
+	in.ListMeta.DeepCopyInto(&out.ListMeta)
 	if in.Items != nil {
 		in, out := &in.Items, &out.Items
 		*out = make([]ClusterLabel, len(*in))
@@ -147,7 +147,7 @@ func (in *Plugin) DeepCopyObject() runtime.Object {
 func (in *PluginList) DeepCopyInto(out *PluginList) {
 	*out = *in
 	out.TypeMeta = in.TypeMeta
-	out.ListMeta = in.ListMeta
+	in.ListMeta.DeepCopyInto(&out.ListMeta)
 	if in.Items != nil {
 		in, out := &in.Items, &out.Items
 		*out = make([]Plugin, len(*in))
@@ -223,7 +223,7 @@ func (in *Registry) DeepCopyObject() runtime.Object {
 func (in *RegistryList) DeepCopyInto(out *RegistryList) {
 	*out = *in
 	out.TypeMeta = in.TypeMeta
-	out.ListMeta = in.ListMeta
+	in.ListMeta.DeepCopyInto(&out.ListMeta)
 	if in.Items != nil {
 		in, out := &in.Items, &out.Items
 		*out = make([]Registry, len(*in))
@@ -323,7 +323,7 @@ func (in *User) DeepCopyObject() runtime.Object {
 func (in *UserList) DeepCopyInto(out *UserList) {
 	*out = *in
 	out.TypeMeta = in.TypeMeta
-	out.ListMeta = in.ListMeta
+	in.ListMeta.DeepCopyInto(&out.ListMeta)
 	if in.Items != nil {
 		in, out := &in.Items, &out.Items
 		*out = make([]User, len(*in))

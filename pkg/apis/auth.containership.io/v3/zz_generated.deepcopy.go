@@ -82,7 +82,7 @@ func (in *AuthorizationRoleBinding) DeepCopyObject() runtime.Object {
 func (in *AuthorizationRoleBindingList) DeepCopyInto(out *AuthorizationRoleBindingList) {
 	*out = *in
 	out.TypeMeta = in.TypeMeta
-	out.ListMeta = in.ListMeta
+	in.ListMeta.DeepCopyInto(&out.ListMeta)
 	if in.Items != nil {
 		in, out := &in.Items, &out.Items
 		*out = make([]AuthorizationRoleBinding, len(*in))
@@ -131,7 +131,7 @@ func (in *AuthorizationRoleBindingSpec) DeepCopy() *AuthorizationRoleBindingSpec
 func (in *AuthorizationRoleList) DeepCopyInto(out *AuthorizationRoleList) {
 	*out = *in
 	out.TypeMeta = in.TypeMeta
-	out.ListMeta = in.ListMeta
+	in.ListMeta.DeepCopyInto(&out.ListMeta)
 	if in.Items != nil {
 		in, out := &in.Items, &out.Items
 		*out = make([]AuthorizationRole, len(*in))
