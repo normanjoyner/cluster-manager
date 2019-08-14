@@ -324,7 +324,7 @@ func ownerReferenceForAuthorizationRoleBinding(binding csauthv3.AuthorizationRol
 	return metav1.OwnerReference{
 		// Can't use binding TypeMeta because it's not guaranteed to be filled in
 		APIVersion: csauthv3.SchemeGroupVersion.String(),
-		Kind:       "AuthorizationRole",
+		Kind:       "AuthorizationRoleBinding",
 		Name:       binding.Name,
 		UID:        binding.UID,
 	}
