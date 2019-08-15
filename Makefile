@@ -11,7 +11,7 @@ GO_FILES := $(shell find . -type f -not -path './vendor/*' -name '*.go')
 VET_LIST := $(shell go list ./... | grep -v '/pkg/client/clientset/versioned/fake')
 
 .PHONY: all
-all: agent coordinator ## (default) Build and deploy agent and coordinator
+all: build-agent build-coordinator ## (default) Build agent and coordinator
 
 .PHONY: fmt-check
 fmt-check: ## Check the file format
