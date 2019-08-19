@@ -15,6 +15,12 @@ import (
 	"github.com/containership/cluster-manager/pkg/log"
 )
 
+const (
+	// IndexByIDFunctionName is the name of the index function we define to
+	// access items by ID.
+	IndexByIDFunctionName = "byID"
+)
+
 // MetaResourceNamespaceKeyFunc is a convenient KeyFunc which knows how to make
 // keys for API objects which implement meta.Interface.
 // The key uses the format <kind>/<namespace>/<name> unless <namespace> is empty,
@@ -54,7 +60,7 @@ func SplitMetaResourceNamespaceKeyFunc(key string) (kind, namespace, name string
 // IndexByIDKeyFun returns a function for indexing a cache by ID
 func IndexByIDKeyFun() cache.Indexers {
 	return cache.Indexers{
-		"byID": func(obj interface{}) ([]string, error) {
+		IndexByIDFunctionName: func(obj interface{}) ([]string, error) {
 			meta, err := meta.Accessor(obj)
 			if err != nil {
 				return []string{""}, fmt.Errorf("object has no meta: %v", err)

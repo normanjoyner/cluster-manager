@@ -79,7 +79,7 @@ func (c *AutoscalingPolicySyncController) doSync() {
 		cloudCacheByID[cloudItem.Name] = cloudItem
 
 		// Try to find cloud item in CR cache
-		item, err := c.informer.GetIndexer().ByIndex("byID", cloudItem.Name)
+		item, err := c.informer.GetIndexer().ByIndex(tools.IndexByIDFunctionName, cloudItem.Name)
 		if err == nil && len(item) == 0 {
 			log.Debugf("Cloud AutoscalingPolicy %s does not exist as CR - creating", cloudItem.Name)
 			err = c.Create(cloudItem)

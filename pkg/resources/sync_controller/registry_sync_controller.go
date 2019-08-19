@@ -97,7 +97,7 @@ func (c *RegistrySyncController) doSync() {
 		cloudCacheByID[cloudItem.ID] = cloudItem
 
 		// Try to find cloud item in CR cache
-		item, err := c.informer.GetIndexer().ByIndex("byID", cloudItem.ID)
+		item, err := c.informer.GetIndexer().ByIndex(tools.IndexByIDFunctionName, cloudItem.ID)
 		if err == nil && len(item) == 0 {
 			log.Debugf("Cloud Registry %s does not exist as CR - creating", cloudItem.ID)
 			err = c.Create(cloudItem)
