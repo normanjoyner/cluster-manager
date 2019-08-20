@@ -84,7 +84,8 @@ func NewAuthorizationRoleBindingController(kubeclientset kubernetes.Interface,
 			// unexpected *Binding deletions.
 			c.enqueueAuthorizationRoleBinding(new)
 		},
-		// We don't care about deletes because GC will take care of orphaned ClusterRoleBindings
+		// We don't need to listen for deletes because the finalizer logic
+		// depends only on update events.
 	})
 
 	// Listers are used for cache inspection and Synced functions
@@ -209,17 +210,51 @@ func (c *AuthorizationRoleBindingController) authorizationRoleBindingSyncHandler
 	authorizationRoleBinding, err := c.authorizationRoleBindingLister.AuthorizationRoleBindings(namespace).Get(name)
 	if err != nil {
 		if kubeerrors.IsNotFound(err) {
-			// AuthorizationRoleBinding is no longer around so nothing to do
-			// The ownerRef garbage collection will take care of the associated ClusterRoleBinding
+			// Nothing to do. Cleanup of generated {Cluster,}RoleBindings is
+			// handled by the finalizer logic below.
 			return nil
 		}
 
 		return errors.Wrapf(err, "getting AuthorizationRoleBinding %s for reconciliation", name)
 	}
 
+	roleNamespace := authorizationRoleBinding.Spec.Namespace
 	id := authorizationRoleBinding.Spec.ID
 
-	roleNamespace := authorizationRoleBinding.Spec.Namespace
+	if !authorizationRoleBinding.DeletionTimestamp.IsZero() {
+		// This AuthorizationRoleBinding is marked for deletion. We must delete
+		// the dependent/generated {Cluster,}RoleBinding we may have created
+		// and remove the finalizer on the CR before Kubernetes will actually
+		// delete it. The name of the generated {Cluster,}RoleBinding will be
+		// equal to the ID of this AuthorizationRoleBinding.
+		// If any errors occur, then return an error before removing the
+		// finalizer. We do this to create the guarantee that if an
+		// AuthorizationRoleBinding does not exist then no matching
+		// {Cluster,}RoleBindings will exist.
+		var err error
+		if roleNamespace == "" {
+			err = c.deleteClusterRoleBindingIfExists(id)
+		} else {
+			err = c.deleteRoleBindingIfExists(id, roleNamespace)
+		}
+		if err != nil {
+			return errors.Wrapf(err, "cleaning up generated Rolebinding or ClusterRoleBinding %s", name)
+		}
+
+		// Either we successfully removed the dependent {Cluster,}RoleBinding or it
+		// didn't exist, so now remove the finalizer and let Kubernetes take
+		// over.
+		bindingCopy := authorizationRoleBinding.DeepCopy()
+		bindingCopy.Finalizers = tools.RemoveStringFromSlice(bindingCopy.Finalizers, constants.AuthorizationRoleBindingFinalizerName)
+
+		_, err = c.csclientset.ContainershipAuthV3().AuthorizationRoleBindings(namespace).Update(bindingCopy)
+		if err != nil {
+			return errors.Wrap(err, "updating AuthorizationRoleBinding with finalizer removed")
+		}
+
+		return nil
+	}
+
 	if roleNamespace == "" {
 		// No namespace, so this should be synced to a ClusterRoleBinding
 		_, err = c.clusterRoleBindingLister.Get(id)
@@ -235,7 +270,8 @@ func (c *AuthorizationRoleBindingController) authorizationRoleBindingSyncHandler
 			return errors.Wrapf(err, "getting ClusterRoleBinding %s for reconciliation", id)
 		}
 
-		log.Debugf("%s: Updating existing ClusterRoleBinding %s", authorizationRoleBindingControllerName, id)
+		// Always call update and let Kubernetes figure out if an update is
+		// actually needed instead of determining that ourselves
 		binding := clusterRoleBindingFromAuthorizationRoleBinding(*authorizationRoleBinding)
 		_, err = c.kubeclientset.RbacV1().ClusterRoleBindings().Update(&binding)
 	} else {
@@ -253,7 +289,8 @@ func (c *AuthorizationRoleBindingController) authorizationRoleBindingSyncHandler
 			return errors.Wrapf(err, "getting RoleBinding %s for reconciliation in namespace %s", id, roleNamespace)
 		}
 
-		log.Debugf("%s: Updating existing RoleBinding %s", authorizationRoleBindingControllerName, id)
+		// Always call update and let Kubernetes figure out if an update is
+		// actually needed instead of determining that ourselves
 		binding := roleBindingFromAuthorizationRoleBinding(*authorizationRoleBinding)
 		_, err = c.kubeclientset.RbacV1().RoleBindings(roleNamespace).Update(&binding)
 	}
@@ -261,14 +298,42 @@ func (c *AuthorizationRoleBindingController) authorizationRoleBindingSyncHandler
 	return err
 }
 
+func (c *AuthorizationRoleBindingController) deleteClusterRoleBindingIfExists(name string) error {
+	_, err := c.clusterRoleBindingLister.Get(name)
+	if err != nil {
+		if kubeerrors.IsNotFound(err) {
+			return nil
+		}
+
+		return err
+	}
+
+	// It does exist, so delete it.
+	return c.kubeclientset.RbacV1().ClusterRoleBindings().Delete(name, &metav1.DeleteOptions{})
+}
+
+func (c *AuthorizationRoleBindingController) deleteRoleBindingIfExists(name string, namespace string) error {
+	_, err := c.roleBindingLister.RoleBindings(namespace).Get(name)
+	if err != nil {
+		if kubeerrors.IsNotFound(err) {
+			return nil
+		}
+
+		return err
+	}
+
+	// It does exist, so delete it.
+	return c.kubeclientset.RbacV1().RoleBindings(namespace).Delete(name, &metav1.DeleteOptions{})
+}
+
 func clusterRoleBindingFromAuthorizationRoleBinding(authRoleBinding csauthv3.AuthorizationRoleBinding) rbacv1.ClusterRoleBinding {
+	// We can't set an OwnerReference pointing to the AuthorizationRoleBinding
+	// here because a ClusterRoleBinding is not namespaced while an
+	// AuthorizationRoleBinding is.
 	return rbacv1.ClusterRoleBinding{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:   authRoleBinding.Spec.ID,
 			Labels: constants.BuildContainershipLabelMap(nil),
-			OwnerReferences: []metav1.OwnerReference{
-				ownerReferenceForAuthorizationRoleBinding(authRoleBinding),
-			},
 		},
 		Subjects: []rbacv1.Subject{
 			subjectFromBinding(authRoleBinding),
@@ -282,14 +347,14 @@ func clusterRoleBindingFromAuthorizationRoleBinding(authRoleBinding csauthv3.Aut
 }
 
 func roleBindingFromAuthorizationRoleBinding(authRoleBinding csauthv3.AuthorizationRoleBinding) rbacv1.RoleBinding {
+	// We can't set an OwnerReference pointing to the AuthorizationRoleBinding
+	// here because a RoleBinding is not guaranteed to live in the same
+	// namespace as the AuthorizationRoleBinding
 	return rbacv1.RoleBinding{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      authRoleBinding.Spec.ID,
 			Namespace: authRoleBinding.Spec.Namespace,
 			Labels:    constants.BuildContainershipLabelMap(nil),
-			OwnerReferences: []metav1.OwnerReference{
-				ownerReferenceForAuthorizationRoleBinding(authRoleBinding),
-			},
 		},
 		Subjects: []rbacv1.Subject{
 			subjectFromBinding(authRoleBinding),
@@ -318,14 +383,4 @@ func subjectFromBinding(binding csauthv3.AuthorizationRoleBinding) rbacv1.Subjec
 	}
 
 	return subject
-}
-
-func ownerReferenceForAuthorizationRoleBinding(binding csauthv3.AuthorizationRoleBinding) metav1.OwnerReference {
-	return metav1.OwnerReference{
-		// Can't use binding TypeMeta because it's not guaranteed to be filled in
-		APIVersion: csauthv3.SchemeGroupVersion.String(),
-		Kind:       "AuthorizationRoleBinding",
-		Name:       binding.Name,
-		UID:        binding.UID,
-	}
 }

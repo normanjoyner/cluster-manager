@@ -77,8 +77,10 @@ func (c *AuthorizationRoleSyncController) doSync() {
 		cloudCacheByID[cloudItem.ID] = cloudItem
 
 		// Try to find cloud item in CR cache
-		item, err := c.informer.GetIndexer().ByIndex(tools.IndexByIDFunctionName, cloudItem.ID)
-		if err == nil && len(item) == 0 {
+		// ByIndex() will only fail if the index name is invalid, i.e. a
+		// programming error in our case.
+		item, _ := c.informer.GetIndexer().ByIndex(tools.IndexByIDFunctionName, cloudItem.ID)
+		if len(item) == 0 {
 			log.Debugf("Cloud AuthorizationRole %s does not exist as CR - creating", cloudItem.ID)
 			err = c.Create(cloudItem)
 			if err != nil {
@@ -87,14 +89,30 @@ func (c *AuthorizationRoleSyncController) doSync() {
 			continue
 		}
 
-		authorizationRoleCR := item[0]
-		if equal, err := c.cloudResource.IsEqual(cloudItem, authorizationRoleCR); err == nil && !equal {
-			log.Debugf("Cloud AuthorizationRole %s does not match CR - updating", cloudItem.ID)
+		shouldUpdate := false
+		authorizationRoleCR := item[0].(*authv3.AuthorizationRole)
+		// Any errors would be programming errors - just ignore them
+		// TODO remove error return value from IsEqual() functions
+		equal, _ := c.cloudResource.IsEqual(cloudItem, authorizationRoleCR)
+		if !equal {
+			log.Debugf("Cloud AuthorizationRole %s does not match CR - will update", cloudItem.ID)
+			shouldUpdate = true
+		}
+
+		// If a CR does not contain the required finalizer and is not marked
+		// for deletion, it must be overwritten.
+		if authorizationRoleCR.DeletionTimestamp.IsZero() &&
+			!tools.StringSliceContains(authorizationRoleCR.Finalizers, constants.AuthorizationRoleFinalizerName) {
+			log.Debugf("Cloud AuthorizationRole %s is missing finalizer %s - will update",
+				cloudItem.ID, constants.AuthorizationRoleFinalizerName)
+			shouldUpdate = true
+		}
+
+		if shouldUpdate {
 			err = c.Update(cloudItem, authorizationRoleCR)
 			if err != nil {
 				log.Error("AuthorizationRole Update failed: ", err.Error())
 			}
-			continue
 		}
 	}
 
@@ -120,7 +138,8 @@ func (c *AuthorizationRoleSyncController) doSync() {
 func (c *AuthorizationRoleSyncController) Create(l authv3.AuthorizationRoleSpec) error {
 	authorizationRole, err := c.clientset.ContainershipAuthV3().AuthorizationRoles(constants.ContainershipNamespace).Create(&authv3.AuthorizationRole{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: l.ID,
+			Name:       l.ID,
+			Finalizers: []string{constants.AuthorizationRoleFinalizerName},
 		},
 		Spec: l,
 	})
@@ -149,6 +168,8 @@ func (c *AuthorizationRoleSyncController) Update(l authv3.AuthorizationRoleSpec,
 
 	pCopy := authorizationRole.DeepCopy()
 	pCopy.Spec = l
+	// Always add the required finalizer in case it was originally missing
+	pCopy.Finalizers = tools.AddStringToSliceIfMissing(pCopy.Finalizers, constants.AuthorizationRoleFinalizerName)
 
 	_, err := c.clientset.ContainershipAuthV3().AuthorizationRoles(constants.ContainershipNamespace).Update(pCopy)
 

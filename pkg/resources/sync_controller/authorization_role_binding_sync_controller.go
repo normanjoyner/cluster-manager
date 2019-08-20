@@ -77,8 +77,10 @@ func (c *AuthorizationRoleBindingSyncController) doSync() {
 		cloudCacheByID[cloudItem.ID] = cloudItem
 
 		// Try to find cloud item in CR cache
-		item, err := c.informer.GetIndexer().ByIndex(tools.IndexByIDFunctionName, cloudItem.ID)
-		if err == nil && len(item) == 0 {
+		// ByIndex() will only fail if the index name is invalid, i.e. a
+		// programming error in our case.
+		item, _ := c.informer.GetIndexer().ByIndex(tools.IndexByIDFunctionName, cloudItem.ID)
+		if len(item) == 0 {
 			log.Debugf("Cloud AuthorizationRoleBinding %s does not exist as CR - creating", cloudItem.ID)
 			err = c.Create(cloudItem)
 			if err != nil {
@@ -87,14 +89,30 @@ func (c *AuthorizationRoleBindingSyncController) doSync() {
 			continue
 		}
 
-		authorizationRoleBindingCR := item[0]
-		if equal, err := c.cloudResource.IsEqual(cloudItem, authorizationRoleBindingCR); err == nil && !equal {
-			log.Debugf("Cloud AuthorizationRoleBinding %s does not match CR - updating", cloudItem.ID)
+		shouldUpdate := false
+		authorizationRoleBindingCR := item[0].(*authv3.AuthorizationRoleBinding)
+		// Any errors would be programming errors - just ignore them
+		// TODO remove error return value from IsEqual() functions
+		equal, _ := c.cloudResource.IsEqual(cloudItem, authorizationRoleBindingCR)
+		if !equal {
+			log.Debugf("Cloud AuthorizationRoleBinding %s does not match CR - will update", cloudItem.ID)
+			shouldUpdate = true
+		}
+
+		// If a CR does not contain the required finalizer and is not marked
+		// for deletion, it must be overwritten.
+		if authorizationRoleBindingCR.DeletionTimestamp.IsZero() &&
+			!tools.StringSliceContains(authorizationRoleBindingCR.Finalizers, constants.AuthorizationRoleBindingFinalizerName) {
+			log.Debugf("Cloud AuthorizationRoleBinding %s is missing finalizer %s - will update",
+				cloudItem.ID, constants.AuthorizationRoleBindingFinalizerName)
+			shouldUpdate = true
+		}
+
+		if shouldUpdate {
 			err = c.Update(cloudItem, authorizationRoleBindingCR)
 			if err != nil {
 				log.Error("AuthorizationRoleBinding Update failed: ", err.Error())
 			}
-			continue
 		}
 	}
 
@@ -120,7 +138,8 @@ func (c *AuthorizationRoleBindingSyncController) doSync() {
 func (c *AuthorizationRoleBindingSyncController) Create(l authv3.AuthorizationRoleBindingSpec) error {
 	authorizationRoleBinding, err := c.clientset.ContainershipAuthV3().AuthorizationRoleBindings(constants.ContainershipNamespace).Create(&authv3.AuthorizationRoleBinding{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: l.ID,
+			Name:       l.ID,
+			Finalizers: []string{constants.AuthorizationRoleBindingFinalizerName},
 		},
 		Spec: l,
 	})
@@ -149,6 +168,8 @@ func (c *AuthorizationRoleBindingSyncController) Update(l authv3.AuthorizationRo
 
 	pCopy := authorizationRoleBinding.DeepCopy()
 	pCopy.Spec = l
+	// Always add the required finalizer in case it was originally missing
+	pCopy.Finalizers = tools.AddStringToSliceIfMissing(pCopy.Finalizers, constants.AuthorizationRoleBindingFinalizerName)
 
 	_, err := c.clientset.ContainershipAuthV3().AuthorizationRoleBindings(constants.ContainershipNamespace).Update(pCopy)
 

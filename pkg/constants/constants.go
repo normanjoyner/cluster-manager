@@ -34,6 +34,13 @@ const (
 )
 
 const (
+	// AuthorizationRoleFinalizerName is the name of the AuthorizationRole finalizer
+	AuthorizationRoleFinalizerName = "authorizationrole.finalizers.containership.io"
+	// AuthorizationRoleBindingFinalizerName is the name of the AuthorizationRoleBinding finalizer
+	AuthorizationRoleBindingFinalizerName = "authorizationrolebinding.finalizers.containership.io"
+)
+
+const (
 	// ClusterManagementPluginType is the name of the cluster management plugin type
 	ClusterManagementPluginType = "cluster_management"
 )

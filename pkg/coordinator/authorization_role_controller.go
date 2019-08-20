@@ -80,7 +80,8 @@ func NewAuthorizationRoleController(kubeclientset kubernetes.Interface,
 			// unexpected ClusterRole deletions.
 			c.enqueueAuthorizationRole(new)
 		},
-		// We don't care about deletes because GC will take care of orphaned ClusterRoles
+		// We don't need to listen for deletes because the finalizer logic
+		// depends only on update events.
 	})
 
 	// Listers are used for cache inspection and Synced functions
@@ -202,8 +203,8 @@ func (c *AuthorizationRoleController) authorizationRoleSyncHandler(key string) e
 	authorizationRole, err := c.authorizationRoleLister.AuthorizationRoles(namespace).Get(name)
 	if err != nil {
 		if kubeerrors.IsNotFound(err) {
-			// AuthorizationRole is no longer around so nothing to do
-			// The ownerRef garbage collection will take care of the associated ClusterRole
+			// Nothing to do. Cleanup of generated ClusterRoles is handled by
+			// the finalizer logic below.
 			return nil
 		}
 
@@ -211,6 +212,36 @@ func (c *AuthorizationRoleController) authorizationRoleSyncHandler(key string) e
 	}
 
 	id := authorizationRole.Spec.ID
+
+	if !authorizationRole.DeletionTimestamp.IsZero() {
+		// This AuthorizationRole is marked for deletion. We must delete the
+		// dependent/generated ClusterRole we may have created and remove the
+		// finalizer on the CR before Kubernetes will actually delete it.
+		// The name of the generated ClusterRole will be equal to the ID of this
+		// AuthorizationRole.
+		// If any errors occur, then return an error before removing the
+		// finalizer. We do this to create the guarantee that if an
+		// AuthorizationRole does not exist then no matching ClusterRoles will
+		// exist.
+		err := c.deleteClusterRoleIfExists(id)
+		if err != nil {
+			return errors.Wrapf(err, "cleaning up generated ClusterRole %s", name)
+		}
+
+		// Either we successfully removed the dependent ClusterRole or it
+		// didn't exist, so now remove the finalizer and let Kubernetes take
+		// over.
+		roleCopy := authorizationRole.DeepCopy()
+		roleCopy.Finalizers = tools.RemoveStringFromSlice(roleCopy.Finalizers, constants.AuthorizationRoleFinalizerName)
+
+		_, err = c.csclientset.ContainershipAuthV3().AuthorizationRoles(namespace).Update(roleCopy)
+		if err != nil {
+			return errors.Wrap(err, "updating AuthorizationRole with finalizer removed")
+		}
+
+		return nil
+	}
+
 	_, err = c.clusterRoleLister.Get(id)
 	if err != nil {
 		if kubeerrors.IsNotFound(err) {
@@ -224,10 +255,25 @@ func (c *AuthorizationRoleController) authorizationRoleSyncHandler(key string) e
 		return errors.Wrapf(err, "getting ClusterRole %s for reconciliation", id)
 	}
 
-	log.Debugf("%s: Updating existing ClusterRole %s", authorizationRoleControllerName, id)
+	// Always call update and let Kubernetes figure out if an update is
+	// actually needed instead of determining that ourselves
 	role := clusterRoleFromAuthorizationRole(*authorizationRole)
 	_, err = c.kubeclientset.RbacV1().ClusterRoles().Update(&role)
 	return err
+}
+
+func (c *AuthorizationRoleController) deleteClusterRoleIfExists(name string) error {
+	_, err := c.clusterRoleLister.Get(name)
+	if err != nil {
+		if kubeerrors.IsNotFound(err) {
+			return nil
+		}
+
+		return err
+	}
+
+	// It does exist, so delete it.
+	return c.kubeclientset.RbacV1().ClusterRoles().Delete(name, &metav1.DeleteOptions{})
 }
 
 func clusterRoleFromAuthorizationRole(authRole csauthv3.AuthorizationRole) rbacv1.ClusterRole {
@@ -242,24 +288,13 @@ func clusterRoleFromAuthorizationRole(authRole csauthv3.AuthorizationRole) rbacv
 		}
 	}
 
+	// We can't set an OwnerReference pointing to the AuthorizationRole here
+	// because a ClusterRole is not namespaced while an AuthorizationRole is.
 	return rbacv1.ClusterRole{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:   authRole.Spec.ID,
 			Labels: constants.BuildContainershipLabelMap(nil),
-			OwnerReferences: []metav1.OwnerReference{
-				ownerReferenceForAuthorizationRole(authRole),
-			},
 		},
 		Rules: rules,
-	}
-}
-
-func ownerReferenceForAuthorizationRole(authRole csauthv3.AuthorizationRole) metav1.OwnerReference {
-	return metav1.OwnerReference{
-		// Can't use authRole TypeMeta because it's not guaranteed to be filled in
-		APIVersion: csauthv3.SchemeGroupVersion.String(),
-		Kind:       "AuthorizationRole",
-		Name:       authRole.Name,
-		UID:        authRole.UID,
 	}
 }
