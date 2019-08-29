@@ -10,7 +10,7 @@ type coordinates struct {
 }
 
 var coordinatesLookup = map[string]map[string]coordinates{
-	"amazon_web_services": {
+	"aws": {
 		"ap-south-1": coordinates{
 			lat: 19.076,
 			lon: 72.8777,
@@ -272,7 +272,7 @@ var coordinatesLookup = map[string]map[string]coordinates{
 			lon: -79.3832,
 		},
 	},
-	"google": {
+	"gce": {
 		"asia-east1": coordinates{
 			lat: 24.0518,
 			lon: 120.5161,

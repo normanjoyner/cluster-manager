@@ -30,15 +30,39 @@ func TestForProviderAndRegion(t *testing.T) {
 		},
 		{
 			provider:    "amazon_web_services",
-			region:      "bad",
+			region:      "us-east-1",
 			shouldError: true,
-			message:     "nonexistent provider",
+			message:     "nonexistent provider due to errant spelling of aws provider",
 		},
 		{
-			provider: "amazon_web_services",
+			provider:    "aws",
+			region:      "bad",
+			shouldError: true,
+			message:     "nonexistent region for aws",
+		},
+		{
+			provider: "aws",
 			region:   "us-east-1",
 			expected: "dqbyhexqseyg",
-			message:  "good entry",
+			message:  "good entry for aws",
+		},
+		{
+			provider:    "google",
+			region:      "europe-west2",
+			shouldError: true,
+			message:     "nonexistent provider due to errant spelling of gce provider",
+		},
+		{
+			provider:    "gce",
+			region:      "bad",
+			shouldError: true,
+			message:     "nonexistent region for gce",
+		},
+		{
+			provider: "gce",
+			region:   "europe-west2",
+			expected: "gcpvj0duq533",
+			message:  "good entry for gce",
 		},
 	}
 
