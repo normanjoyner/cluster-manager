@@ -366,6 +366,14 @@
   version = "v1.1.2"
 
 [[projects]]
+  digest = "1:479ca43a5d310f88d54fef078013cb2902ff1c20ef59ba16e9e044d0d6a326c5"
+  name = "github.com/mmcloughlin/geohash"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "a84196f7a15d0ea8c5919f1ec0f15172fb518fba"
+  version = "v0.9.0"
+
+[[projects]]
   digest = "1:33422d238f147d247752996a26574ac48dcf472976eda7f5134015f06bf16563"
   name = "github.com/modern-go/concurrent"
   packages = ["."]
@@ -998,6 +1006,7 @@
     "github.com/dgrijalva/jwt-go",
     "github.com/fsnotify/fsnotify",
     "github.com/gorilla/mux",
+    "github.com/mmcloughlin/geohash",
     "github.com/pkg/errors",
     "github.com/spf13/afero",
     "github.com/stretchr/testify/assert",
