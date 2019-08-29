@@ -5,6 +5,7 @@ import (
 	"os/signal"
 	"syscall"
 
+	kubeinformers "k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes/scheme"
 
 	csscheme "github.com/containership/cluster-manager/pkg/client/clientset/versioned/scheme"
@@ -16,9 +17,12 @@ import (
 )
 
 var (
-	csInformerFactory csinformers.SharedInformerFactory
-	userController    *UserController
-	cupController     *UpgradeController
+	csInformerFactory   csinformers.SharedInformerFactory
+	kubeInformerFactory kubeinformers.SharedInformerFactory
+
+	cupController       *UpgradeController
+	nodeLabelController *NodeLabelController
+	userController      *UserController
 )
 
 // Initialize creates the informer factories and controllers.
@@ -44,6 +48,10 @@ func Initialize() {
 	// factories in order to share the same underlying caches.
 	interval := env.AgentInformerSyncInterval()
 	csInformerFactory = k8sutil.CSAPI().NewCSSharedInformerFactory(interval)
+	kubeInformerFactory = k8sutil.API().NewKubeSharedInformerFactory(interval)
+
+	nodeLabelController = NewNodeLabelController(
+		k8sutil.API().Client(), kubeInformerFactory)
 
 	userController = NewUserController(
 		k8sutil.CSAPI().Client(), csInformerFactory)
@@ -66,7 +74,9 @@ func Run() {
 	go signalHandler(signals, stopCh)
 
 	csInformerFactory.Start(stopCh)
+	kubeInformerFactory.Start(stopCh)
 
+	go nodeLabelController.Run(1, stopCh)
 	go userController.Run(1, stopCh)
 
 	if env.IsClusterUpgradeEnabled() {
