@@ -1,0 +1,6 @@
+_extends: containership/probot-root:.github/_settings.yml
+
+repository:
+    name: cluster-manager
+    description: Containership Cluster Management Plugin
+    private: false
