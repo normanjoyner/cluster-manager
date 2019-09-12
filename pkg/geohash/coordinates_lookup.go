@@ -73,163 +73,163 @@ var coordinatesLookup = map[string]map[string]coordinates{
 		},
 	},
 	"azure": {
-		"australia-central": coordinates{
+		"australiacentral": coordinates{
 			lat: -35.2809,
 			lon: 149.13,
 		},
-		"australia-central-2": coordinates{
+		"australiacentral2": coordinates{
 			lat: -35.2809,
 			lon: 149.13,
 		},
-		"australia-east": coordinates{
+		"australiaeast": coordinates{
 			lat: -31.2532,
 			lon: 146.9211,
 		},
-		"australia-southeast": coordinates{
+		"australiasoutheast": coordinates{
 			lat: -37.4713,
 			lon: 144.7852,
 		},
-		"brazil-south": coordinates{
+		"brazilsouth": coordinates{
 			lat: -23.5505,
 			lon: -46.6333,
 		},
-		"canada-central": coordinates{
+		"canadacentral": coordinates{
 			lat: 43.6532,
 			lon: -79.3832,
 		},
-		"canada-east": coordinates{
+		"canadaeast": coordinates{
 			lat: 46.8139,
 			lon: -71.208,
 		},
-		"central-india": coordinates{
+		"centralindia": coordinates{
 			lat: 18.5204,
 			lon: 73.8567,
 		},
-		"central-us": coordinates{
+		"centralus": coordinates{
 			lat: 41.5868,
 			lon: -93.625,
 		},
-		"china-east": coordinates{
+		"chinaeast": coordinates{
 			lat: 31.2304,
 			lon: 121.4737,
 		},
-		"china-east-2": coordinates{
+		"chinaeast2": coordinates{
 			lat: 31.2304,
 			lon: 121.4737,
 		},
-		"china-north": coordinates{
+		"chinanorth": coordinates{
 			lat: 39.9042,
 			lon: 116.4074,
 		},
-		"china-north-2": coordinates{
+		"chinanorth2": coordinates{
 			lat: 39.9042,
 			lon: 116.4074,
 		},
-		"east-asia": coordinates{
+		"eastasia": coordinates{
 			lat: 22.3193,
 			lon: 114.1694,
 		},
-		"east-us": coordinates{
+		"eastus": coordinates{
 			lat: 38.586,
 			lon: -79.395,
 		},
-		"east-us-2": coordinates{
+		"eastus2": coordinates{
 			lat: 38.586,
 			lon: -79.395,
 		},
-		"france-central": coordinates{
+		"francecentral": coordinates{
 			lat: 48.8566,
 			lon: 2.3522,
 		},
-		"france-south": coordinates{
+		"francesouth": coordinates{
 			lat: 43.2965,
 			lon: 5.3698,
 		},
-		"germany-central": coordinates{
+		"germanycentral": coordinates{
 			lat: 50.1109,
 			lon: 8.6821,
 		},
-		"germany-northeast": coordinates{
+		"germanynortheast": coordinates{
 			lat: 52.1205,
 			lon: 11.6276,
 		},
-		"japan-east": coordinates{
+		"japaneast": coordinates{
 			lat: 35.6762,
 			lon: 139.6503,
 		},
-		"japan-west": coordinates{
+		"japanwest": coordinates{
 			lat: 34.6937,
 			lon: 135.5023,
 		},
-		"korea-central": coordinates{
+		"koreacentral": coordinates{
 			lat: 37.5665,
 			lon: 126.978,
 		},
-		"korea-south": coordinates{
+		"koreasouth": coordinates{
 			lat: 35.1796,
 			lon: 129.0756,
 		},
-		"north-central-us": coordinates{
+		"northcentralus": coordinates{
 			lat: 41.8781,
 			lon: -87.6298,
 		},
-		"north-europe": coordinates{
+		"northeurope": coordinates{
 			lat: 53.3498,
 			lon: -6.2603,
 		},
-		"southeast-asia": coordinates{
+		"southeastasia": coordinates{
 			lat: 1.3521,
 			lon: 103.8198,
 		},
-		"south-africa-north": coordinates{
+		"southafricanorth": coordinates{
 			lat: -26.2041,
 			lon: 28.0473,
 		},
-		"south-africa-west": coordinates{
+		"southafricawest": coordinates{
 			lat: -33.9249,
 			lon: 18.4241,
 		},
-		"south-central-us": coordinates{
+		"southcentralus": coordinates{
 			lat: 29.4241,
 			lon: -98.4936,
 		},
-		"south-india": coordinates{
+		"southindia": coordinates{
 			lat: 13.0827,
 			lon: 80.2707,
 		},
-		"uea-central": coordinates{
+		"uaecentral": coordinates{
 			lat: 24.4539,
 			lon: 54.3773,
 		},
-		"uea-north": coordinates{
+		"uaenorth": coordinates{
 			lat: 25.2048,
 			lon: 55.2708,
 		},
-		"uk-south": coordinates{
+		"uksouth": coordinates{
 			lat: 51.5074,
 			lon: -0.1278,
 		},
-		"uk-west": coordinates{
+		"ukwest": coordinates{
 			lat: 51.4816,
 			lon: -3.1791,
 		},
-		"west-central-us": coordinates{
+		"westcentralus": coordinates{
 			lat: 41.14,
 			lon: -104.8202,
 		},
-		"west-europe": coordinates{
+		"westeurope": coordinates{
 			lat: 52.3667,
 			lon: 4.8945,
 		},
-		"west-india": coordinates{
+		"westindia": coordinates{
 			lat: 19.076,
 			lon: 72.8777,
 		},
-		"west-us": coordinates{
+		"westus": coordinates{
 			lat: 37.3688,
 			lon: -122.0363,
 		},
-		"west-us-2": coordinates{
+		"westus2": coordinates{
 			lat: 47.2343,
 			lon: -119.8526,
 		},
